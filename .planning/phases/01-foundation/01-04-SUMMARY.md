@@ -79,7 +79,7 @@ TDD task with RED/GREEN commits:
 1. **RED — failing tests** - `96d3ca0` (test): Convert 7 stub skips to real assertions
 2. **GREEN — implementation** - `9344d9a` (feat): save.py + v1.json fixture; all 7 tests pass
 
-**Plan metadata:** (docs commit — pending)
+**Plan metadata:** `7f9c0e4` (docs: complete plan)
 
 ## Files Created/Modified
 

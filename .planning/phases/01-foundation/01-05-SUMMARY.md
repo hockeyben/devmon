@@ -80,7 +80,8 @@ Each task was committed atomically:
 
 1. **Task 1: Implement devmon status command and wire CLI entry point** - `58f8d44` (feat)
 
-**Plan metadata:** pending (after human-verify checkpoint passes)
+**Plan metadata:** `52185a6` (docs: complete status command plan — checkpoint pending)
+**Verification approved:** `52185a6` (human-verify checkpoint passed — all 5 checks green)
 
 ## Files Created/Modified
 
@@ -105,43 +106,15 @@ None.
 
 None — no external service configuration required.
 
-## Checkpoint: Human Verification Required
+## Checkpoint: Human Verification
 
-Task 2 is a `checkpoint:human-verify` gate. Run the following checks:
+All 5 verification checks passed (approved 2026-04-03):
 
-1. **Full test suite green:**
-   ```
-   uv run pytest tests/ -v
-   ```
-   Expected: All 20 tests PASSED.
-
-2. **Fresh install simulation:**
-   ```
-   set DEVMON_HOME=C:\Temp\devmon_test_fresh
-   uv run devmon status
-   ```
-   Expected: Prints "No save file found. Starting new game..." then a Rich green panel showing "Trainer" at Level 1, XP: 0.
-   Expected: `C:\Temp\devmon_test_fresh\save.json` created.
-
-3. **Persistence across sessions:**
-   ```
-   set DEVMON_HOME=C:\Temp\devmon_test_persist
-   uv run devmon status
-   uv run devmon status
-   ```
-   Expected: Second run does NOT print "No save file found." — loads existing save.
-
-4. **Verify save file structure:**
-   ```
-   type C:\Temp\devmon_test_fresh\save.json
-   ```
-   Expected: Valid JSON with `"schema_version": 1` at root and `"player"` nested object.
-
-5. **CLI help is clean:**
-   ```
-   uv run devmon --help
-   ```
-   Expected: Shows "status" as a listed command with description. No errors.
+1. Full test suite: 20 passed in 0.16s
+2. Fresh install: Rich panel at Level 1 with correct output — "No save file found." printed, save.json created
+3. Persistence: Second run loads existing save correctly — "No save file found." not printed
+4. Save file: Valid JSON with `schema_version: 1` at root and nested `player` object
+5. CLI help: `status` listed as command with description, clean output
 
 ## Next Phase Readiness
 
