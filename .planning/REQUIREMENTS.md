@@ -177,13 +177,98 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Populated by roadmapper) | — | — |
+| SAVE-01 | Phase 1 | Pending |
+| SAVE-02 | Phase 1 | Pending |
+| SAVE-03 | Phase 1 | Pending |
+| SAVE-04 | Phase 1 | Pending |
+| PROF-01 | Phase 1 | Pending |
+| SHELL-01 | Phase 2 | Pending |
+| SHELL-02 | Phase 2 | Pending |
+| SHELL-03 | Phase 2 | Pending |
+| SHELL-04 | Phase 2 | Pending |
+| TRACK-01 | Phase 2 | Pending |
+| TRACK-02 | Phase 2 | Pending |
+| TRACK-03 | Phase 2 | Pending |
+| TRACK-04 | Phase 2 | Pending |
+| TRACK-05 | Phase 2 | Pending |
+| TRACK-06 | Phase 2 | Pending |
+| TRACK-07 | Phase 2 | Pending |
+| PROF-02 | Phase 3 | Pending |
+| PROF-03 | Phase 3 | Pending |
+| PROF-04 | Phase 3 | Pending |
+| CLI-01 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Pending |
+| CREA-01 | Phase 4 | Pending |
+| CREA-02 | Phase 4 | Pending |
+| CREA-03 | Phase 4 | Pending |
+| CREA-04 | Phase 4 | Pending |
+| ENCR-01 | Phase 5 | Pending |
+| ENCR-02 | Phase 5 | Pending |
+| ENCR-03 | Phase 5 | Pending |
+| ENCR-04 | Phase 5 | Pending |
+| ENCR-05 | Phase 5 | Pending |
+| ENCR-06 | Phase 5 | Pending |
+| CLI-09 | Phase 5 | Pending |
+| UI-02 | Phase 5 | Pending |
+| BATL-01 | Phase 6 | Pending |
+| BATL-02 | Phase 6 | Pending |
+| BATL-03 | Phase 6 | Pending |
+| BATL-04 | Phase 6 | Pending |
+| BATL-05 | Phase 6 | Pending |
+| BATL-06 | Phase 6 | Pending |
+| BATL-07 | Phase 6 | Pending |
+| BATL-08 | Phase 6 | Pending |
+| CAPT-01 | Phase 6 | Pending |
+| CAPT-02 | Phase 6 | Pending |
+| CAPT-03 | Phase 6 | Pending |
+| CAPT-04 | Phase 6 | Pending |
+| CAPT-05 | Phase 6 | Pending |
+| CAPT-06 | Phase 6 | Pending |
+| CAPT-07 | Phase 6 | Pending |
+| CREA-05 | Phase 6 | Pending |
+| CREA-06 | Phase 6 | Pending |
+| CLI-02 | Phase 6 | Pending |
+| UI-03 | Phase 6 | Pending |
+| PRTY-01 | Phase 7 | Pending |
+| PRTY-02 | Phase 7 | Pending |
+| PRTY-03 | Phase 7 | Pending |
+| PRTY-04 | Phase 7 | Pending |
+| COLL-01 | Phase 7 | Pending |
+| COLL-02 | Phase 7 | Pending |
+| COLL-03 | Phase 7 | Pending |
+| COLL-04 | Phase 7 | Pending |
+| COLL-05 | Phase 7 | Pending |
+| CLI-03 | Phase 7 | Pending |
+| CLI-04 | Phase 7 | Pending |
+| UI-05 | Phase 7 | Pending |
+| ECON-01 | Phase 8 | Pending |
+| ECON-02 | Phase 8 | Pending |
+| ECON-03 | Phase 8 | Pending |
+| ECON-04 | Phase 8 | Pending |
+| CLI-05 | Phase 8 | Pending |
+| CLI-06 | Phase 8 | Pending |
+| QUST-01 | Phase 9 | Pending |
+| QUST-02 | Phase 9 | Pending |
+| QUST-03 | Phase 9 | Pending |
+| QUST-04 | Phase 9 | Pending |
+| QUST-05 | Phase 9 | Pending |
+| QUST-06 | Phase 9 | Pending |
+| ACHV-01 | Phase 9 | Pending |
+| ACHV-02 | Phase 9 | Pending |
+| ACHV-03 | Phase 9 | Pending |
+| ACHV-04 | Phase 9 | Pending |
+| CLI-07 | Phase 9 | Pending |
+| CLI-08 | Phase 9 | Pending |
+| CREA-07 | Phase 10 | Pending |
+| CREA-08 | Phase 10 | Pending |
+| UI-04 | Phase 10 | Pending |
+| UI-06 | Phase 10 | Pending |
 
 **Coverage:**
 - v1 requirements: 68 total
-- Mapped to phases: 0
-- Unmapped: 68
+- Mapped to phases: 68
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-03*
-*Last updated: 2026-04-03 after initial definition*
+*Last updated: 2026-04-03 after roadmap creation — all 68 requirements mapped*
