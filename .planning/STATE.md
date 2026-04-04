@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-04T22:08:05.693Z"
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-04-04T22:33:10.711Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
@@ -122,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T22:08:05.690Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-creature-roster/04-CONTEXT.md
+Last session: 2026-04-04T22:33:10.707Z
+Stopped at: Phase 4 UI-SPEC approved
+Resume file: .planning/phases/04-creature-roster/04-UI-SPEC.md
