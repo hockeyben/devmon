@@ -94,9 +94,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — CreatureTemplate/OwnedCreature models, schema v4 migration, creature_loader, test scaffold (Wave 1)
-- [ ] 04-02-PLAN.md — 25 creature JSON data files, RARITY_COLORS, render_creature_panel (Wave 2)
-- [ ] 04-03-PLAN.md — Human verification: creature gallery visual check (Wave 3)
+- [x] 04-01-PLAN.md — CreatureTemplate/OwnedCreature models, schema v4 migration, creature_loader, test scaffold (Wave 1)
+- [x] 04-02-PLAN.md — 25 creature JSON data files, RARITY_COLORS, render_creature_panel (Wave 2)
+- [x] 04-03-PLAN.md — Human verification: creature gallery visual check (Wave 3)
 
 ### Phase 5: Encounter System
 **Goal**: Coding activity triggers wild creature encounters that queue non-intrusively and are ready when the player is
