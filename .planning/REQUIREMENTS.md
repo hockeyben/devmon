@@ -26,17 +26,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Player Profile
 
-- [ ] **PROF-01**: User has a persistent player profile with level, XP, currency, and stats
+- [x] **PROF-01**: User has a persistent player profile with level, XP, currency, and stats
 - [ ] **PROF-02**: User can view profile summary via `devmon status`
 - [ ] **PROF-03**: Player levels up when XP threshold is reached, with visible level-up notification
 - [ ] **PROF-04**: Player stats track: total creatures seen, captured, battles won, sessions, streak count
 
 ### Save State
 
-- [ ] **SAVE-01**: All game state persists in a JSON save file across sessions
-- [ ] **SAVE-02**: Save file uses atomic write (write-to-temp + rename) to prevent corruption
-- [ ] **SAVE-03**: Save file includes `schema_version` field for future migration support
-- [ ] **SAVE-04**: Save file stored in platform-appropriate data directory (via platformdirs)
+- [x] **SAVE-01**: All game state persists in a JSON save file across sessions
+- [x] **SAVE-02**: Save file uses atomic write (write-to-temp + rename) to prevent corruption
+- [x] **SAVE-03**: Save file includes `schema_version` field for future migration support
+- [x] **SAVE-04**: Save file stored in platform-appropriate data directory (via platformdirs)
 
 ### Creatures
 
@@ -177,11 +177,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SAVE-01 | Phase 1 | Pending |
-| SAVE-02 | Phase 1 | Pending |
-| SAVE-03 | Phase 1 | Pending |
-| SAVE-04 | Phase 1 | Pending |
-| PROF-01 | Phase 1 | Pending |
+| SAVE-01 | Phase 1 | Complete |
+| SAVE-02 | Phase 1 | Complete |
+| SAVE-03 | Phase 1 | Complete |
+| SAVE-04 | Phase 1 | Complete |
+| PROF-01 | Phase 1 | Complete |
 | SHELL-01 | Phase 2 | Pending |
 | SHELL-02 | Phase 2 | Pending |
 | SHELL-03 | Phase 2 | Pending |
