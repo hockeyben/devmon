@@ -73,8 +73,14 @@ Plans:
   2. Earning enough XP triggers a visible level-up notification during the next `devmon` invocation
   3. The status screen correctly reports total creatures seen, captured, battles won, sessions played, and streak count
   4. The game prompt annotation shows current level and XP progress without any game-invisible characters breaking the prompt width
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 5 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Test scaffold: xfail stubs for all Phase 3 requirements + schema_version 3 test updates (Wave 1)
+- [ ] 03-02-PLAN.md — Schema v3 bump: level_up_pending fields in PlayerProfile, _migrate_2_to_3, DEFAULT_CONFIG theme fix (Wave 2)
+- [ ] 03-03-PLAN.md — Theme system (render/themes.py), level-up detection in progression.py, status.py multi-panel upgrade (Wave 3)
+- [ ] 03-04-PLAN.md — devmon prompt + devmon settings subcommands, wire both in main.py (Wave 4)
+- [ ] 03-05-PLAN.md — Human verification: status panels, level-up banner, PS1 prompt, theme switching (Wave 5)
 
 ### Phase 4: Creature Roster
 **Goal**: The game has a complete, playable roster of 25 creatures that any game system can load and reference
@@ -122,7 +128,7 @@ Plans:
   1. Running `devmon party` displays the current 3-creature party with each creature's HP, level, and status; the player can swap any slot from their collection
   2. Fainted creatures display a distinct visual indicator in the party view and cannot be selected for battle until healed
   3. Running `devmon collection` lists all captured creatures with rarity color coding, sortable by rarity, level, or name
-  4. The codex shows every creature with its discovery state (unseen, seen, battled, defeated, captured, evolved) — creatures the player hasn't encountered appear as unknown entries
+  4. The codex shows every creature with its discovery state (unseen, seen, battled, defeated, captured, evolved) — creatures the player haven't encountered appear as unknown entries
   5. The player can rename any captured creature, and the new name persists in the save file and displays everywhere
 **Plans**: TBD
 **UI hint**: yes
@@ -175,7 +181,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-04-04 |
 | 2. Shell Integration | 6/6 | Complete   | 2026-04-04 |
-| 3. Player Profile | 0/TBD | Not started | - |
+| 3. Player Profile | 0/5 | Not started | - |
 | 4. Creature Roster | 0/TBD | Not started | - |
 | 5. Encounter System | 0/TBD | Not started | - |
 | 6. Battle and Capture | 0/TBD | Not started | - |
