@@ -80,7 +80,7 @@ Plans:
 - [x] 03-02-PLAN.md — Schema v3 bump: level_up_pending fields in PlayerProfile, _migrate_2_to_3, DEFAULT_CONFIG theme fix (Wave 2)
 - [x] 03-03-PLAN.md — Theme system (render/themes.py), level-up detection in progression.py, status.py multi-panel upgrade (Wave 3)
 - [x] 03-04-PLAN.md — devmon prompt + devmon settings subcommands, wire both in main.py (Wave 4)
-- [ ] 03-05-PLAN.md — Human verification: status panels, level-up banner, PS1 prompt, theme switching (Wave 5)
+- [x] 03-05-PLAN.md — Human verification: status panels, level-up banner, PS1 prompt, theme switching (Wave 5)
 
 ### Phase 4: Creature Roster
 **Goal**: The game has a complete, playable roster of 25 creatures that any game system can load and reference
