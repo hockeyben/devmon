@@ -22,6 +22,10 @@ Coding should feel rewarding — every terminal session fuels progression in a c
 - ✓ Level-up detection and one-shot banner notification — Phase 3
 - ✓ PS1-safe prompt annotation for shell integration — Phase 3
 - ✓ Theme system (neon/classic) with settings command — Phase 3
+- ✓ 25 starter creatures across 5 rarity tiers with Pydantic-validated JSON data — Phase 4
+- ✓ Creature stat blocks (HP, ATK, DEF, SPD, type, capture rate, evolution stubs, flavor text) — Phase 4
+- ✓ ASCII art per creature rendering in 80-col terminal via Rich panels — Phase 4
+- ✓ User-tweakable creature JSON files with DEVMON_HOME override — Phase 4
 
 ### Active
 
@@ -118,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-04 after Phase 3 completion*
+*Last updated: 2026-04-04 after Phase 4 completion*
