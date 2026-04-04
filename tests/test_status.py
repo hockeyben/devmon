@@ -72,7 +72,6 @@ def test_neon_theme_applied(runner, tmp_devmon_home):
     assert theme["border"] in result.output or result.output  # theme module must exist
 
 
-@pytest.mark.xfail(strict=True, reason="Level-up pending field not yet in model")
 def test_level_up_pending_field_exists():
     """PROF-03: PlayerProfile has level_up_pending and pending_level_value fields."""
     from devmon.models.state import PlayerProfile

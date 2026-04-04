@@ -60,7 +60,7 @@ DEFAULT_CONFIG: dict = {
         "streak_multiplier_cap": 2.0,     # max streak multiplier at 20 days
     },
     "ui": {
-        "theme": "default",
+        "theme": "neon",
         "verbosity": "normal",
         "ascii_art": True,
     },
