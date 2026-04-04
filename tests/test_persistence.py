@@ -165,6 +165,24 @@ def test_current_version_is_2():
     assert CURRENT_VERSION == 2
 
 
+@pytest.mark.xfail(strict=True, reason="v2->v3 migration not yet implemented")
+def test_migrate_v2_to_v3():
+    """Schema migration v2->v3 adds level_up_pending=False and pending_level_value=0."""
+    from devmon.persistence.migrations import migrate
+    data = {
+        "schema_version": 2,
+        "player": {
+            "name": "Trainer",
+            "level": 1,
+            "xp": 0,
+        }
+    }
+    result = migrate(data)
+    assert result["schema_version"] == 3
+    assert result["player"]["level_up_pending"] is False
+    assert result["player"]["pending_level_value"] == 0
+
+
 def test_default_config_has_xp_per_minute():
     """D-05: DEFAULT_CONFIG game section has xp_per_minute key."""
     from devmon.config.defaults import DEFAULT_CONFIG
