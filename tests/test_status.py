@@ -60,7 +60,6 @@ def test_levelup_banner_clears_flag(tmp_devmon_home):
     assert reloaded.player.level_up_pending is False
 
 
-@pytest.mark.xfail(strict=True, reason="Theme system not yet implemented")
 def test_neon_theme_applied(runner, tmp_devmon_home):
     """PROF-02: Neon theme (default) renders with theme-specific border color in output."""
     from devmon.main import app

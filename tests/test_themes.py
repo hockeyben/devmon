@@ -1,8 +1,6 @@
-"""Tests for render/themes.py get_theme() correctness (Phase 3 stubs)."""
-import pytest
+"""Tests for render/themes.py get_theme() correctness (Phase 3)."""
 
 
-@pytest.mark.xfail(strict=True, reason="render/themes.py not yet implemented")
 def test_get_theme_neon_returns_dict():
     from devmon.render.themes import get_theme
     t = get_theme("neon")
@@ -12,7 +10,6 @@ def test_get_theme_neon_returns_dict():
     assert "levelup_text" in t
 
 
-@pytest.mark.xfail(strict=True, reason="render/themes.py not yet implemented")
 def test_get_theme_classic_returns_dict():
     from devmon.render.themes import get_theme
     t = get_theme("classic")
@@ -20,7 +17,6 @@ def test_get_theme_classic_returns_dict():
     assert "levelup_border" in t
 
 
-@pytest.mark.xfail(strict=True, reason="render/themes.py not yet implemented")
 def test_aliases_cyberpunk_and_rpg():
     from devmon.render.themes import get_theme
     neon = get_theme("neon")
@@ -31,7 +27,6 @@ def test_aliases_cyberpunk_and_rpg():
     assert classic == rpg
 
 
-@pytest.mark.xfail(strict=True, reason="render/themes.py not yet implemented")
 def test_unknown_theme_falls_back_to_neon():
     from devmon.render.themes import get_theme
     result = get_theme("nonexistent")
