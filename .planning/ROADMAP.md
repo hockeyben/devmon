@@ -77,7 +77,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Test scaffold: xfail stubs for all Phase 3 requirements + schema_version 3 test updates (Wave 1)
-- [ ] 03-02-PLAN.md — Schema v3 bump: level_up_pending fields in PlayerProfile, _migrate_2_to_3, DEFAULT_CONFIG theme fix (Wave 2)
+- [x] 03-02-PLAN.md — Schema v3 bump: level_up_pending fields in PlayerProfile, _migrate_2_to_3, DEFAULT_CONFIG theme fix (Wave 2)
 - [ ] 03-03-PLAN.md — Theme system (render/themes.py), level-up detection in progression.py, status.py multi-panel upgrade (Wave 3)
 - [ ] 03-04-PLAN.md — devmon prompt + devmon settings subcommands, wire both in main.py (Wave 4)
 - [ ] 03-05-PLAN.md — Human verification: status panels, level-up banner, PS1 prompt, theme switching (Wave 5)
@@ -181,7 +181,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-04-04 |
 | 2. Shell Integration | 6/6 | Complete   | 2026-04-04 |
-| 3. Player Profile | 1/5 | In Progress|  |
+| 3. Player Profile | 2/5 | In Progress|  |
 | 4. Creature Roster | 0/TBD | Not started | - |
 | 5. Encounter System | 0/TBD | Not started | - |
 | 6. Battle and Capture | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-player-profile-01-PLAN.md
-last_updated: "2026-04-04T09:49:53.000Z"
+stopped_at: Completed 03-player-profile-02-PLAN.md
+last_updated: "2026-04-04T09:54:32.162Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 03 (player-profile) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-04
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-shell-integration P05 | 15 | 2 tasks | 4 files |
 | Phase 02-shell-integration P06 | 0 | 2 tasks | 0 files |
 | Phase 03-player-profile P01 | 3 | 2 tasks | 7 files |
+| Phase 03-player-profile P02 | 10 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 02-shell-integration]: Human checkpoint required for shell hook verification — pytest cannot simulate a live shell session with real rc file writes and PROMPT_COMMAND execution
 - [Phase 03-player-profile]: xfail tests must require Phase 3-specific behavior to prevent accidental XPASS(strict) failures before implementation ships
 - [Phase 03-player-profile]: tmp_devmon_home fixture added to conftest.py following tmp_save_dir pattern for Phase 3 test isolation
+- [Phase 03-player-profile]: GameState.schema_version bumped to 3 — CURRENT_VERSION in migrations.py must always equal schema_version default (enforced by test suite)
+- [Phase 03-player-profile]: _migrate_2_to_3 uses setdefault() for both new fields — pre-existing values on old saves are never overwritten
+- [Phase 03-player-profile]: ui.theme default changed from 'default' to 'neon' — neon is the intended Phase 3 default per PROF-02
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T09:49:52.995Z
-Stopped at: Completed 03-player-profile-01-PLAN.md
+Last session: 2026-04-04T09:54:32.159Z
+Stopped at: Completed 03-player-profile-02-PLAN.md
 Resume file: None
