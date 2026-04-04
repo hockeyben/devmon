@@ -10,6 +10,9 @@ RULES (per architecture):
 """
 from __future__ import annotations
 
+from datetime import date
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -29,6 +32,11 @@ class PlayerProfile(BaseModel):
     battles_won: int = 0
     streak_count: int = 0
 
+    # Phase 2 — shell integration fields (TRACK-05, TRACK-06, TRACK-07)
+    last_active_date: Optional[date] = None
+    streak_grace_used: bool = False
+    session_xp_earned: int = 0
+
 
 class GameState(BaseModel):
     """Root game state model — all mutable game data.
@@ -38,7 +46,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=1, description="Save file schema version for migration support")
+    schema_version: int = Field(default=2, description="Save file schema version for migration support")
     player: PlayerProfile
 
     @classmethod
