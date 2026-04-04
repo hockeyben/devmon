@@ -6,7 +6,6 @@ from datetime import date
 import pytest
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_successful_command_generates_xp(sample_events):
     """TRACK-01: Exit code 0 event generates positive XP."""
     from devmon.engine.progression import compute_event_xp
@@ -15,7 +14,6 @@ def test_successful_command_generates_xp(sample_events):
     assert xp > 0
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_failed_command_generates_no_xp(sample_events):
     """TRACK-01: Exit code non-zero generates 0 XP."""
     from devmon.engine.progression import compute_event_xp
@@ -25,7 +23,6 @@ def test_failed_command_generates_no_xp(sample_events):
     assert xp == 0
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_git_commit_event_generates_bonus_xp(sample_events):
     """TRACK-02: git_commit event type generates more XP than a plain cmd."""
     from devmon.engine.progression import compute_event_xp
@@ -35,7 +32,6 @@ def test_git_commit_event_generates_bonus_xp(sample_events):
     assert compute_event_xp(git_event, DEFAULT_CONFIG) > compute_event_xp(plain_event, DEFAULT_CONFIG)
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_test_pass_event_generates_bonus_xp():
     """TRACK-03: test_pass event type generates more XP than a plain cmd."""
     from devmon.engine.progression import compute_event_xp
@@ -45,7 +41,6 @@ def test_test_pass_event_generates_bonus_xp():
     assert compute_event_xp(test_event, DEFAULT_CONFIG) > compute_event_xp(plain_event, DEFAULT_CONFIG)
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_session_detected_from_events(sample_events):
     """TRACK-04: process_events updates total_sessions when new session detected."""
     from devmon.engine.progression import process_events
@@ -56,7 +51,6 @@ def test_session_detected_from_events(sample_events):
     assert state.player.total_sessions >= 1
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_streak_increments_on_new_day():
     """TRACK-05: streak_count increments when coding on a new consecutive day."""
     from devmon.engine.progression import update_streak
@@ -71,7 +65,6 @@ def test_streak_increments_on_new_day():
     assert state.player.streak_count == 4
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_streak_multiplier_increases_with_days():
     """TRACK-06: streak multiplier is higher for longer streaks (up to cap)."""
     from devmon.engine.progression import streak_multiplier
@@ -82,7 +75,6 @@ def test_streak_multiplier_increases_with_days():
     assert m1 < m7 < m100 or m7 == m100  # cap means 100-day same as 20-day
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_streak_grace_period_preserves_streak():
     """TRACK-07: Missing one day with grace available does not break streak."""
     from devmon.engine.progression import update_streak
@@ -99,7 +91,6 @@ def test_streak_grace_period_preserves_streak():
     assert state.player.streak_grace_used is True
 
 
-@pytest.mark.xfail(reason="progression not yet implemented", strict=True)
 def test_streak_breaks_after_grace_exhausted():
     """TRACK-07: Missing 2 days when grace already used resets streak to 1."""
     from devmon.engine.progression import update_streak
