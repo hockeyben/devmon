@@ -1,14 +1,28 @@
+"""DevMon CLI entry point.
+
+Flat subcommand structure (D-14): devmon status, devmon battle, etc.
+All at top level — no command groups.
+
+The bus singleton is imported here (CLI layer) and will be injected into
+systems as they are added in later phases.
+"""
+from __future__ import annotations
+
 from typing import Optional
 
 import typer
 
 from devmon import __version__
+from devmon.commands import status as status_cmd
+from devmon.engine.events import bus  # noqa: F401  — imported at CLI layer, not domain
 
 app = typer.Typer(
     name="devmon",
     no_args_is_help=True,
     help="DevMon CLI — gamified terminal RPG powered by coding activity.",
 )
+
+app.add_typer(status_cmd.app, name="status")
 
 
 def _version_callback(value: bool) -> None:
@@ -29,7 +43,3 @@ def main(
     ),
 ) -> None:
     """DevMon CLI — gamified terminal RPG powered by coding activity."""
-
-
-# Subcommands are registered here as they are implemented.
-# Phase 1: status command added in Plan 05.
