@@ -18,6 +18,10 @@ Coding should feel rewarding — every terminal session fuels progression in a c
 - ✓ Shell hook integration (preexec/postexec) for passive activity tracking — Phase 2
 - ✓ XP generation from development events (commands, commits, tests, sessions) — Phase 2
 - ✓ Session and streak tracking with reward multipliers — Phase 2
+- ✓ Player profile display with multi-panel Rich status (identity, stats, XP bar) — Phase 3
+- ✓ Level-up detection and one-shot banner notification — Phase 3
+- ✓ PS1-safe prompt annotation for shell integration — Phase 3
+- ✓ Theme system (neon/classic) with settings command — Phase 3
 
 ### Active
 
@@ -114,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-04 after Phase 2 completion*
+*Last updated: 2026-04-04 after Phase 3 completion*
