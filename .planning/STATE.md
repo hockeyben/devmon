@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-04-04T06:58:19.632Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-04-04T07:00:09.218Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
   completed_phases: 1
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 02 (shell-integration) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-04-04
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P05 | 5 | 1 tasks | 2 files |
 | Phase 02-shell-integration P01 | 132 | 3 tasks | 4 files |
 | Phase 02-shell-integration P03 | 4 | 3 tasks | 6 files |
+| Phase 02-shell-integration P02 | 15 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 02-shell-integration]: imports inside test bodies (not module level) so collection works without shell/ or engine/ packages existing
 - [Phase 02-shell-integration]: BASH_ZSH_HOOK_SNIPPET uses printf for zero-latency event logging — no Python process spawned from shell hooks (SHELL-03)
 - [Phase 02-shell-integration]: Installer idempotency: HOOK_BEGIN marker as presence sentinel; marker-delimited blocks enable clean uninstall via re.sub with re.DOTALL
+- [Phase 02-shell-integration]: GameState.schema_version bumped to 2 to match Phase 2 model additions — CURRENT_VERSION in migrations.py must always equal schema_version default
+- [Phase 02-shell-integration]: v1->v2 migration uses setdefault() so pre-existing v1 player fields are not overwritten
 
 ### Pending Todos
 
@@ -97,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T06:58:19.628Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-04-04T07:00:09.214Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
