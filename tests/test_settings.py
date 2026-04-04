@@ -1,4 +1,4 @@
-"""Tests for devmon settings command (CLI-01 stubs)."""
+"""Tests for devmon settings command (CLI-01)."""
 import pytest
 
 
@@ -8,7 +8,6 @@ def runner():
     return CliRunner()
 
 
-@pytest.mark.xfail(strict=True, reason="devmon settings command not yet implemented")
 def test_settings_shows_current_theme(runner, tmp_devmon_home):
     from devmon.main import app
     result = runner.invoke(app, ["settings"])
@@ -16,7 +15,6 @@ def test_settings_shows_current_theme(runner, tmp_devmon_home):
     assert "Theme" in result.output or "theme" in result.output.lower()
 
 
-@pytest.mark.xfail(strict=True, reason="devmon settings command not yet implemented")
 def test_settings_theme_flag_sets_classic(runner, tmp_devmon_home):
     """CLI-01: --theme classic saves theme to config."""
     from devmon.main import app
@@ -30,7 +28,6 @@ def test_settings_theme_flag_sets_classic(runner, tmp_devmon_home):
     assert cfg["ui"]["theme"] == "classic"
 
 
-@pytest.mark.xfail(strict=True, reason="devmon settings command not yet implemented")
 def test_settings_invalid_theme_exits_nonzero(runner, tmp_devmon_home):
     from devmon.main import app
     # First confirm settings command exists (exits 0 for valid theme)
@@ -41,7 +38,6 @@ def test_settings_invalid_theme_exits_nonzero(runner, tmp_devmon_home):
     assert result.exit_code != 0
 
 
-@pytest.mark.xfail(strict=True, reason="devmon settings command not yet implemented")
 def test_settings_theme_flag_sets_neon(runner, tmp_devmon_home):
     from devmon.main import app
     result = runner.invoke(app, ["settings", "--theme", "neon"])

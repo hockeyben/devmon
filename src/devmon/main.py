@@ -17,6 +17,8 @@ import typer
 
 from devmon import __version__
 from devmon.commands import hook as hook_cmd
+from devmon.commands import prompt as prompt_cmd
+from devmon.commands import settings as settings_cmd
 from devmon.commands import status as status_cmd
 from devmon.commands.hook import track_app
 from devmon.config.defaults import DEFAULT_CONFIG
@@ -36,6 +38,8 @@ app = typer.Typer(
 app.add_typer(status_cmd.app, name="status")
 app.add_typer(hook_cmd.app, name="hook")
 app.add_typer(track_app, name="track")
+app.add_typer(prompt_cmd.app, name="prompt")
+app.add_typer(settings_cmd.app, name="settings")
 
 
 def _version_callback(value: bool) -> None:
