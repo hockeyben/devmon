@@ -37,6 +37,10 @@ class PlayerProfile(BaseModel):
     streak_grace_used: bool = False
     session_xp_earned: int = 0
 
+    # Phase 3 — level-up notification fields (PROF-03)
+    level_up_pending: bool = False      # Set True when level threshold crossed; cleared after banner displays
+    pending_level_value: int = 0        # The new level to show in the banner
+
 
 class GameState(BaseModel):
     """Root game state model — all mutable game data.
@@ -46,7 +50,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=2, description="Save file schema version for migration support")
+    schema_version: int = Field(default=3, description="Save file schema version for migration support")
     player: PlayerProfile
 
     @classmethod
