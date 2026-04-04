@@ -1,0 +1,25 @@
+{
+  "id": "nullhound",
+  "name": "Nullhound",
+  "species": "Void Tracker",
+  "rarity": "uncommon",
+  "type": "Shadow",
+  "level_range": [3, 8],
+  "base_hp": 42,
+  "base_attack": 16,
+  "base_defense": 12,
+  "base_speed": 18,
+  "capture_rate": 0.48,
+  "flavor_text": "Hunts NullPointerExceptions by scent. It has never once found one it didn't cause.",
+  "ascii_art": [
+    "   /\\  /\\   ",
+    "  ( null )  ",
+    "   \\    /   ",
+    "   /|  |\\   ",
+    "  (_|  |_)  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "dim white",
+  "evolves_from": null,
+  "evolves_to": null
+}

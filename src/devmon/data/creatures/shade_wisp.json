@@ -1,0 +1,25 @@
+{
+  "id": "shade_wisp",
+  "name": "ShadeWisp",
+  "species": "Dim Flicker",
+  "rarity": "common",
+  "type": "Shadow",
+  "level_range": [1, 5],
+  "base_hp": 22,
+  "base_attack": 11,
+  "base_defense": 8,
+  "base_speed": 14,
+  "capture_rate": 0.67,
+  "flavor_text": "Lives in commented-out code that no one dares delete. It dissipates when you run `git blame`.",
+  "ascii_art": [
+    "  . * .  ",
+    " * (o) * ",
+    "  *   *  ",
+    " ~ ~ ~ ~ ",
+    "  .   .  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "dim white",
+  "evolves_from": null,
+  "evolves_to": null
+}

@@ -1,0 +1,25 @@
+{
+  "id": "storm_phoenix",
+  "name": "StormPhoenix",
+  "species": "Thunder Rebirth",
+  "rarity": "epic",
+  "type": "Electric",
+  "level_range": [8, 16],
+  "base_hp": 72,
+  "base_attack": 38,
+  "base_defense": 20,
+  "base_speed": 40,
+  "capture_rate": 0.10,
+  "flavor_text": "Rises from a crashed build server, fully charged. It restores uptime with a single wing beat.",
+  "ascii_art": [
+    "  ~*  *~  ",
+    " /  ~~  \\ ",
+    "< (o**o) >",
+    " \\ /  \\ / ",
+    "  ~    ~  "
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "bright_yellow",
+  "evolves_from": null,
+  "evolves_to": null
+}

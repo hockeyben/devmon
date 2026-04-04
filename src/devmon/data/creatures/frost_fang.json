@@ -1,0 +1,25 @@
+{
+  "id": "frost_fang",
+  "name": "FrostFang",
+  "species": "Ice Pup",
+  "rarity": "common",
+  "type": "Ice",
+  "level_range": [1, 5],
+  "base_hp": 26,
+  "base_attack": 10,
+  "base_defense": 10,
+  "base_speed": 12,
+  "capture_rate": 0.63,
+  "flavor_text": "Emerges when CI pipelines freeze. It bites through frozen build caches without mercy.",
+  "ascii_art": [
+    "  /^ ^\\  ",
+    " ( *,* ) ",
+    "  \\___/  ",
+    " /|   |\\ ",
+    "  *   *  "
+  ],
+  "primary_color": "bold white",
+  "accent_color": "bright_blue",
+  "evolves_from": null,
+  "evolves_to": null
+}

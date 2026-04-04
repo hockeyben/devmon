@@ -1,0 +1,25 @@
+{
+  "id": "boulder_bash",
+  "name": "BoulderBash",
+  "species": "Rock Smasher",
+  "rarity": "uncommon",
+  "type": "Earth",
+  "level_range": [3, 8],
+  "base_hp": 52,
+  "base_attack": 19,
+  "base_defense": 16,
+  "base_speed": 12,
+  "capture_rate": 0.50,
+  "flavor_text": "Formed from compressed tech debt. The longer you ignore it, the harder it hits.",
+  "ascii_art": [
+    "  _______  ",
+    " / O   O \\ ",
+    "|  _____  |",
+    "|_/     \\_|",
+    " [##] [##] "
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "green",
+  "evolves_from": null,
+  "evolves_to": null
+}

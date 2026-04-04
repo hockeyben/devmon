@@ -1,0 +1,25 @@
+{
+  "id": "drift_yeti",
+  "name": "DriftYeti",
+  "species": "Frost Giant",
+  "rarity": "rare",
+  "type": "Ice",
+  "level_range": [5, 12],
+  "base_hp": 68,
+  "base_attack": 22,
+  "base_defense": 24,
+  "base_speed": 16,
+  "capture_rate": 0.28,
+  "flavor_text": "Slows down builds by absorbing excess CPU cycles. Spotted only in freezing cold server rooms.",
+  "ascii_art": [
+    "  _______  ",
+    " / * . * \\ ",
+    "|  o   o  |",
+    "|   ___   |",
+    "|__|   |__|"
+  ],
+  "primary_color": "bold white",
+  "accent_color": "bright_blue",
+  "evolves_from": null,
+  "evolves_to": null
+}

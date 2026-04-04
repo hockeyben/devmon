@@ -1,0 +1,25 @@
+{
+  "id": "volt_whisker",
+  "name": "VoltWhisker",
+  "species": "Spark Mouse",
+  "rarity": "common",
+  "type": "Electric",
+  "level_range": [1, 5],
+  "base_hp": 24,
+  "base_attack": 13,
+  "base_defense": 6,
+  "base_speed": 16,
+  "capture_rate": 0.68,
+  "flavor_text": "Appears whenever you forget to close a WebSocket connection. Its whiskers are fully ionized.",
+  "ascii_art": [
+    " /\\/\\  ",
+    "(=^.^=)",
+    " )   ( ",
+    "/|   |\\",
+    " ~   ~ "
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "bright_yellow",
+  "evolves_from": null,
+  "evolves_to": null
+}

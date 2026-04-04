@@ -1,0 +1,25 @@
+{
+  "id": "moss_golem",
+  "name": "MossGolem",
+  "species": "Stone Sprout",
+  "rarity": "common",
+  "type": "Earth",
+  "level_range": [1, 5],
+  "base_hp": 38,
+  "base_attack": 10,
+  "base_defense": 12,
+  "base_speed": 8,
+  "capture_rate": 0.60,
+  "flavor_text": "Ancient as a monorepo with no README. It moves slowly but compiles faster than Gradle.",
+  "ascii_art": [
+    "  _____  ",
+    " /o   o\\ ",
+    "|  ___  |",
+    "|_/   \\_|",
+    " [_] [_] "
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "green",
+  "evolves_from": null,
+  "evolves_to": null
+}

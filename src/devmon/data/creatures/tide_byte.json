@@ -1,0 +1,25 @@
+{
+  "id": "tide_byte",
+  "name": "TideByte",
+  "species": "Data Splash",
+  "rarity": "common",
+  "type": "Water",
+  "level_range": [1, 5],
+  "base_hp": 32,
+  "base_attack": 9,
+  "base_defense": 11,
+  "base_speed": 10,
+  "capture_rate": 0.62,
+  "flavor_text": "Spawns exclusively during long `npm install` waits. It feeds on buffered stdin.",
+  "ascii_art": [
+    "   ~~~~~   ",
+    "  ( o_o )  ",
+    " ~|     |~ ",
+    "  \\_____/  ",
+    "  ~ ~ ~ ~  "
+  ],
+  "primary_color": "bold blue",
+  "accent_color": "bright_blue",
+  "evolves_from": null,
+  "evolves_to": null
+}

@@ -1,0 +1,25 @@
+{
+  "id": "zap_ferret",
+  "name": "ZapFerret",
+  "species": "Lightning Weasel",
+  "rarity": "uncommon",
+  "type": "Electric",
+  "level_range": [3, 8],
+  "base_hp": 35,
+  "base_attack": 20,
+  "base_defense": 10,
+  "base_speed": 21,
+  "capture_rate": 0.55,
+  "flavor_text": "Chews through unshielded USB cables for sport. It considers race conditions a lifestyle.",
+  "ascii_art": [
+    "  /~~\\   ",
+    " ( *.* ) ",
+    "  \\__/   ",
+    " /|  |\\ ",
+    " ~    ~ "
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "bright_yellow",
+  "evolves_from": null,
+  "evolves_to": null
+}

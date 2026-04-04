@@ -1,0 +1,25 @@
+{
+  "id": "inferno_drake",
+  "name": "InfernoDrake",
+  "species": "Blaze Wyrm",
+  "rarity": "rare",
+  "type": "Fire",
+  "level_range": [5, 12],
+  "base_hp": 62,
+  "base_attack": 28,
+  "base_defense": 15,
+  "base_speed": 26,
+  "capture_rate": 0.25,
+  "flavor_text": "Burns hot enough to melt Docker images. It has never once read a Dockerfile before igniting.",
+  "ascii_art": [
+    "   ___     ",
+    "  /   \\~~~ ",
+    " / o o \\   ",
+    "|  ===  |  ",
+    " \\_____/   "
+  ],
+  "primary_color": "bold red",
+  "accent_color": "yellow",
+  "evolves_from": null,
+  "evolves_to": null
+}

@@ -1,0 +1,25 @@
+{
+  "id": "bugbyte",
+  "name": "Bugbyte",
+  "species": "Glitch Bug",
+  "rarity": "common",
+  "type": "Psychic",
+  "level_range": [1, 5],
+  "base_hp": 20,
+  "base_attack": 14,
+  "base_defense": 6,
+  "base_speed": 13,
+  "capture_rate": 0.70,
+  "flavor_text": "Materializes at line 42 of every file you open. It considers undefined behavior its natural habitat.",
+  "ascii_art": [
+    " _______  ",
+    "| 0   1 | ",
+    "|_bug___|  ",
+    "  /   \\   ",
+    " *     *  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": null
+}

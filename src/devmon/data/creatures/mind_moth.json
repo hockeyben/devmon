@@ -1,0 +1,25 @@
+{
+  "id": "mind_moth",
+  "name": "MindMoth",
+  "species": "Thought Flutterer",
+  "rarity": "uncommon",
+  "type": "Psychic",
+  "level_range": [3, 8],
+  "base_hp": 32,
+  "base_attack": 19,
+  "base_defense": 12,
+  "base_speed": 19,
+  "capture_rate": 0.42,
+  "flavor_text": "Drawn irresistibly to bright monitor light at 2am. It reads your stack traces before you do.",
+  "ascii_art": [
+    " /|   |\\ ",
+    "< (o.o) >",
+    " \\|___|/ ",
+    "   | |   ",
+    "  /   \\  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": null
+}

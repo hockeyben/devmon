@@ -1,0 +1,25 @@
+{
+  "id": "char_mander",
+  "name": "CharMander",
+  "species": "Command Lizard",
+  "rarity": "uncommon",
+  "type": "Fire",
+  "level_range": [3, 8],
+  "base_hp": 40,
+  "base_attack": 17,
+  "base_defense": 11,
+  "base_speed": 14,
+  "capture_rate": 0.45,
+  "flavor_text": "Fluent in bash, zsh, and fish. It breathes fire every time someone runs `chmod 777`.",
+  "ascii_art": [
+    "  _____  ",
+    " /> . <\\ ",
+    "|  ===  |",
+    " \\_   _/ ",
+    "   | |   "
+  ],
+  "primary_color": "bold red",
+  "accent_color": "yellow",
+  "evolves_from": null,
+  "evolves_to": null
+}

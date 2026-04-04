@@ -1,0 +1,27 @@
+{
+  "id": "void_leviathan",
+  "name": "VoidLeviathan",
+  "species": "Null Abyss Entity",
+  "rarity": "legendary",
+  "type": "Shadow",
+  "level_range": [12, 20],
+  "base_hp": 110,
+  "base_attack": 50,
+  "base_defense": 44,
+  "base_speed": 36,
+  "capture_rate": 0.04,
+  "flavor_text": "Exists only in the space between the last commit and an unfinished feature. Its null check is a myth.",
+  "ascii_art": [
+    "   *     *   ",
+    " *  ___  * * ",
+    "  /(x x)\\   ",
+    " / |___| \\  ",
+    "*  /   \\  * ",
+    "  /     \\   ",
+    " |  void |  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "dim white",
+  "evolves_from": null,
+  "evolves_to": null
+}

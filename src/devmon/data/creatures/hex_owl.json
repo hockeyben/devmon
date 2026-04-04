@@ -1,0 +1,25 @@
+{
+  "id": "hex_owl",
+  "name": "HexOwl",
+  "species": "Cipher Raptor",
+  "rarity": "rare",
+  "type": "Psychic",
+  "level_range": [5, 12],
+  "base_hp": 50,
+  "base_attack": 26,
+  "base_defense": 18,
+  "base_speed": 24,
+  "capture_rate": 0.35,
+  "flavor_text": "Decodes obfuscated code by staring at it for exactly one hoot. Never asks for context.",
+  "ascii_art": [
+    "  /\\   /\\  ",
+    " (O     O) ",
+    "  \\ ___ /  ",
+    "   |   |   ",
+    "  /|   |\\  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": null
+}

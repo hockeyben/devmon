@@ -1,0 +1,25 @@
+{
+  "id": "wave_runner",
+  "name": "WaveRunner",
+  "species": "Current Dolphin",
+  "rarity": "uncommon",
+  "type": "Water",
+  "level_range": [3, 8],
+  "base_hp": 44,
+  "base_attack": 15,
+  "base_defense": 13,
+  "base_speed": 22,
+  "capture_rate": 0.43,
+  "flavor_text": "Surfs HTTP/2 streams at peak throughput. It clicks when your API returns 429.",
+  "ascii_art": [
+    "   ~>*<~   ",
+    "  (o___o)  ",
+    " /|     |\\ ",
+    "  \\_____/  ",
+    " ~ ~ ~ ~ ~ "
+  ],
+  "primary_color": "bold blue",
+  "accent_color": "bright_blue",
+  "evolves_from": null,
+  "evolves_to": null
+}

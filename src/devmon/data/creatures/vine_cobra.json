@@ -1,0 +1,25 @@
+{
+  "id": "vine_cobra",
+  "name": "VineCobra",
+  "species": "Root Serpent",
+  "rarity": "rare",
+  "type": "Nature",
+  "level_range": [5, 12],
+  "base_hp": 58,
+  "base_attack": 25,
+  "base_defense": 20,
+  "base_speed": 22,
+  "capture_rate": 0.30,
+  "flavor_text": "Coils through tangled dependency graphs. It hisses at `import *` and spits when you violate DRY.",
+  "ascii_art": [
+    "  @@@@@  ",
+    " @(o.o)@ ",
+    "  @|||@  ",
+    " @|   |@ ",
+    "  @@@@@  "
+  ],
+  "primary_color": "bold green",
+  "accent_color": "green",
+  "evolves_from": null,
+  "evolves_to": null
+}

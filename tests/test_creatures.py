@@ -201,7 +201,6 @@ def test_migrate_3_to_4_preserves_existing():
 # Task 2: creature_loader tests — need JSON data files (xfail, Plan 02)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="Phase 4 Plan 02: creature JSON data files not yet created")
 def test_roster_count():
     """load_all_creatures() must return exactly 25 creatures (CREA-01)."""
     from devmon.engine.creature_loader import load_all_creatures
@@ -209,7 +208,6 @@ def test_roster_count():
     assert len(registry) == 25, f"Expected 25 creatures, got {len(registry)}"
 
 
-@pytest.mark.xfail(strict=True, reason="Phase 4 Plan 02: creature JSON data files not yet created")
 def test_rarity_distribution():
     """Rarity distribution must be 8 common, 7 uncommon, 5 rare, 3 epic, 2 legendary (D-14)."""
     from devmon.engine.creature_loader import load_all_creatures
@@ -224,7 +222,6 @@ def test_rarity_distribution():
     assert counts.get("legendary", 0) == 2
 
 
-@pytest.mark.xfail(strict=True, reason="Phase 4 Plan 02: creature JSON data files not yet created")
 def test_all_creature_types_used():
     """All 8 elemental types must appear at least once across the roster (D-02)."""
     from devmon.engine.creature_loader import load_all_creatures
@@ -249,7 +246,6 @@ def test_devmon_home_override(tmp_devmon_home):
     assert "custom_creature" in registry, "Override creature must be loaded from DEVMON_HOME/creatures/"
 
 
-@pytest.mark.xfail(strict=True, reason="Phase 4 Plan 02: creature JSON data files not yet created")
 def test_fallback_to_bundled(tmp_devmon_home):
     """With DEVMON_HOME set but no creatures/ subdir, bundled data should load normally."""
     from devmon.engine.creature_loader import load_all_creatures

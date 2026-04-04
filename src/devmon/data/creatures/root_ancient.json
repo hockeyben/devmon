@@ -1,0 +1,27 @@
+{
+  "id": "root_ancient",
+  "name": "RootAncient",
+  "species": "Primordial Trunk",
+  "rarity": "legendary",
+  "type": "Nature",
+  "level_range": [12, 20],
+  "base_hp": 118,
+  "base_attack": 42,
+  "base_defense": 48,
+  "base_speed": 30,
+  "capture_rate": 0.03,
+  "flavor_text": "Older than version control. Its roots contain the original source code for everything, indented with tabs.",
+  "ascii_art": [
+    "    @@@    ",
+    "   @@@@@   ",
+    "  @@ | @@  ",
+    " @@  |  @@ ",
+    "   __|__   ",
+    "   |   |   ",
+    "  /|   |\\  "
+  ],
+  "primary_color": "bold green",
+  "accent_color": "green",
+  "evolves_from": null,
+  "evolves_to": null
+}

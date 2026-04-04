@@ -1,0 +1,25 @@
+{
+  "id": "stackcat",
+  "name": "Stackcat",
+  "species": "Memory Feline",
+  "rarity": "uncommon",
+  "type": "Psychic",
+  "level_range": [3, 8],
+  "base_hp": 36,
+  "base_attack": 18,
+  "base_defense": 10,
+  "base_speed": 20,
+  "capture_rate": 0.52,
+  "flavor_text": "Pushes and pops its thoughts at O(1). It panics only when the call stack overflows.",
+  "ascii_art": [
+    "  /\\  /\\ ",
+    " ( ^  ^ )",
+    "  \\LIFO/ ",
+    "   |  |  ",
+    "  [__]   "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": null
+}
