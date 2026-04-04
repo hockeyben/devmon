@@ -75,3 +75,45 @@ def test_level_up_pending_field_exists():
     assert p.level_up_pending is False
     assert hasattr(p, "pending_level_value")
     assert p.pending_level_value == 0
+
+
+def test_stats_panel_shows_all_prof04_fields(runner, tmp_devmon_home):
+    """PROF-04: Status display shows all five tracked stat fields:
+    sessions, streak, battles_won, total_creatures_seen, total_creatures_captured."""
+    from devmon.main import app
+    result = runner.invoke(app, ["status"])
+    assert result.exit_code == 0
+    output_lower = result.output.lower()
+    # Sessions must appear
+    assert "sessions" in output_lower, "PROF-04: 'Sessions' must appear in status output"
+    # Streak must appear
+    assert "streak" in output_lower, "PROF-04: 'Streak' must appear in status output"
+    # Battles won must appear
+    assert "battles" in output_lower, "PROF-04: 'Battles' must appear in status output"
+    # Captures must appear (covers total_creatures_captured)
+    assert "captures" in output_lower, "PROF-04: 'Captures' must appear in status output"
+
+
+def test_status_profile_stats_reflect_player_data(tmp_devmon_home):
+    """PROF-04: Status output reflects actual PlayerProfile stat values
+    (sessions, streak_count, battles_won, total_creatures_captured)."""
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+    from typer.testing import CliRunner
+    from devmon.main import app
+
+    state = GameState.new_game("TestTrainer")
+    state.player.total_sessions = 7
+    state.player.streak_count = 3
+    state.player.battles_won = 5
+    state.player.total_creatures_captured = 2
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["status"])
+    assert result.exit_code == 0
+    # All non-zero stat values must be visible in the output
+    assert "7" in result.output, "Session count 7 must appear in status output"
+    assert "3" in result.output, "Streak count 3 must appear in status output"
+    assert "5" in result.output, "Battles won 5 must appear in status output"
+    assert "2" in result.output, "Captures 2 must appear in status output"
