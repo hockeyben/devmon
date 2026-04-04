@@ -12,7 +12,7 @@ DevMon is built layer by layer following strict dependency order: persistence an
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Models, persistent JSON save state, atomic writes, schema versioning, and event bus
+- [x] **Phase 1: Foundation** - Models, persistent JSON save state, atomic writes, schema versioning, and event bus (completed 2026-04-04)
 - [ ] **Phase 2: Shell Integration** - Hook installer for bash/zsh/fish, passive activity logging, XP generation, session and streak tracking
 - [ ] **Phase 3: Player Profile** - Player profile commands, level-up logic, profile stats, and the devmon status command
 - [ ] **Phase 4: Creature Roster** - 25 starter creatures across 5 rarity tiers with stats, types, ASCII art, and data loading
@@ -42,7 +42,7 @@ Plans:
 - [x] 01-02-PLAN.md — GameState + PlayerProfile Pydantic v2 models and migration runner (Wave 2)
 - [x] 01-03-PLAN.md — Typed EventBus with dataclasses and TOML config system (Wave 2, parallel with 01-02)
 - [x] 01-04-PLAN.md — Atomic save/load with 3-file backup rotation and corruption recovery (Wave 3)
-- [ ] 01-05-PLAN.md — CLI entry point, devmon status command, Rich panel output, human verification (Wave 4)
+- [x] 01-05-PLAN.md — CLI entry point, devmon status command, Rich panel output, human verification (Wave 4)
 
 ### Phase 2: Shell Integration
 **Goal**: Coding activity in the terminal passively generates XP, session data, and streak records without blocking any command
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/5 | In Progress|  |
+| 1. Foundation | 5/5 | Complete   | 2026-04-04 |
 | 2. Shell Integration | 0/TBD | Not started | - |
 | 3. Player Profile | 0/TBD | Not started | - |
 | 4. Creature Roster | 0/TBD | Not started | - |

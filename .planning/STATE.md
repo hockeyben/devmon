@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-foundation/01-04-PLAN.md
-last_updated: "2026-04-04T04:29:36.703Z"
+status: verifying
+stopped_at: "Awaiting human-verify checkpoint: 01-foundation/01-05-PLAN.md Task 2"
+last_updated: "2026-04-04T04:32:39.864Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 01 (foundation) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-04
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P02 | 12 | 2 tasks | 4 files |
 | Phase 01-foundation P03 | 15 | 2 tasks | 4 files |
 | Phase 01-foundation P04 | 2 | 1 tasks | 3 files |
+| Phase 01-foundation P05 | 5 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: load_config() uses deep-merge so user config.toml only needs overrides — defaults fill missing keys for forward compatibility
 - [Phase 01-foundation]: Corrupt save files renamed to .corrupt.bak (not deleted) — kept for user investigation (D-16)
 - [Phase 01-foundation]: load() returns None (not raises) when no valid save exists — CLI layer decides what to do (new game prompt)
+- [Phase 01-foundation]: status command uses app.callback(invoke_without_command=True) pattern for single-command Typer sub-app
+- [Phase 01-foundation]: bus singleton imported in commands/status.py at CLI layer only — domain modules never import bus
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T04:29:36.699Z
-Stopped at: Completed 01-foundation/01-04-PLAN.md
+Last session: 2026-04-04T04:32:39.860Z
+Stopped at: Awaiting human-verify checkpoint: 01-foundation/01-05-PLAN.md Task 2
 Resume file: None
