@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-foundation/01-02-PLAN.md
-last_updated: "2026-04-04T04:26:18.403Z"
+stopped_at: Completed 01-foundation/01-03-PLAN.md
+last_updated: "2026-04-04T04:26:26.189Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
@@ -72,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: CURRENT_VERSION in migrations.py must always equal GameState.schema_version default — enforced by test suite
 - [Phase 01-foundation]: migrate() raises ValueError for unknown future schema versions — fail loud on corrupt saves rather than silently loading bad data
 - [Phase 01-foundation]: GameState and PlayerProfile are pure data containers — no imports from commands, engine, or render enforced as architecture rule
+- [Phase 01-foundation]: EventBus implemented as pure dict[type, list[Callable]] dispatcher — synchronous dispatch sufficient for MVP, no blinker dependency needed (D-05)
+- [Phase 01-foundation]: load_config() uses deep-merge so user config.toml only needs overrides — defaults fill missing keys for forward compatibility
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T04:26:06.429Z
-Stopped at: Completed 01-foundation/01-02-PLAN.md
+Last session: 2026-04-04T04:26:26.185Z
+Stopped at: Completed 01-foundation/01-03-PLAN.md
 Resume file: None
