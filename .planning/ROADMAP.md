@@ -35,7 +35,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The save file contains a `schema_version` field readable by a migration runner that can process zero-migration upgrades cleanly
   4. The player profile (level, XP, currency) persists across two terminal sessions
   5. Internal events can be emitted and subscribed to without any domain system importing from any other domain system
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold: uv init, pyproject.toml, src/devmon skeleton, pytest stubs (Wave 1)
+- [ ] 01-02-PLAN.md — GameState + PlayerProfile Pydantic v2 models and migration runner (Wave 2)
+- [ ] 01-03-PLAN.md — Typed EventBus with dataclasses and TOML config system (Wave 2, parallel with 01-02)
+- [ ] 01-04-PLAN.md — Atomic save/load with 3-file backup rotation and corruption recovery (Wave 3)
+- [ ] 01-05-PLAN.md — CLI entry point, devmon status command, Rich panel output, human verification (Wave 4)
 
 ### Phase 2: Shell Integration
 **Goal**: Coding activity in the terminal passively generates XP, session data, and streak records without blocking any command
@@ -159,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/5 | Ready to execute | - |
 | 2. Shell Integration | 0/TBD | Not started | - |
 | 3. Player Profile | 0/TBD | Not started | - |
 | 4. Creature Roster | 0/TBD | Not started | - |
