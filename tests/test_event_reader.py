@@ -6,7 +6,6 @@ import json
 import pytest
 
 
-@pytest.mark.xfail(reason="event_reader not yet implemented", strict=True)
 def test_read_valid_jsonlines(tmp_event_log, sample_events):
     """Parses valid JSON Lines from event log into list of dicts."""
     from devmon.shell.event_reader import read_and_consume
@@ -20,7 +19,6 @@ def test_read_valid_jsonlines(tmp_event_log, sample_events):
     assert result[0]["type"] == "cmd"
 
 
-@pytest.mark.xfail(reason="event_reader not yet implemented", strict=True)
 def test_malformed_lines_skipped(tmp_event_log):
     """Malformed JSON lines are silently skipped."""
     from devmon.shell.event_reader import read_and_consume
@@ -32,7 +30,6 @@ def test_malformed_lines_skipped(tmp_event_log):
     assert len(result) == 1
 
 
-@pytest.mark.xfail(reason="event_reader not yet implemented", strict=True)
 def test_log_truncated_after_read(tmp_event_log, sample_events):
     """Event log is truncated (consumed) after read_and_consume()."""
     from devmon.shell.event_reader import read_and_consume
@@ -44,7 +41,6 @@ def test_log_truncated_after_read(tmp_event_log, sample_events):
     assert tmp_event_log.read_text(encoding="utf-8") == ""
 
 
-@pytest.mark.xfail(reason="event_reader not yet implemented", strict=True)
 def test_missing_log_returns_empty(tmp_event_log):
     """Returns empty list when log file does not exist."""
     from devmon.shell.event_reader import read_and_consume
