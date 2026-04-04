@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 2 context gathered
-last_updated: "2026-04-04T05:46:23.049Z"
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-04-04T06:52:07.310Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 11
+  completed_plans: 6
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Coding should feel rewarding — every terminal session fuels progression in a creature-collection game that makes productive development addictive without ever blocking real work.
-**Current focus:** Phase 01 — foundation
+**Current focus:** Phase 02 — shell-integration
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 02 (shell-integration) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
 Last activity: 2026-04-04
 
 Progress: [░░░░░░░░░░] 0%
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P03 | 15 | 2 tasks | 4 files |
 | Phase 01-foundation P04 | 2 | 1 tasks | 3 files |
 | Phase 01-foundation P05 | 5 | 1 tasks | 2 files |
+| Phase 02-shell-integration P01 | 132 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: load() returns None (not raises) when no valid save exists — CLI layer decides what to do (new game prompt)
 - [Phase 01-foundation]: status command uses app.callback(invoke_without_command=True) pattern for single-command Typer sub-app
 - [Phase 01-foundation]: bus singleton imported in commands/status.py at CLI layer only — domain modules never import bus
+- [Phase 02-shell-integration]: xfail strict=True for all Phase 2 stubs — fails loudly if module accidentally exists and tests unexpectedly pass
+- [Phase 02-shell-integration]: imports inside test bodies (not module level) so collection works without shell/ or engine/ packages existing
 
 ### Pending Todos
 
@@ -91,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T05:46:23.039Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-shell-integration/02-CONTEXT.md
+Last session: 2026-04-04T06:52:07.306Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

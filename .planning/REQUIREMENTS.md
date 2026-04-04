@@ -9,20 +9,20 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Shell Integration
 
-- [ ] **SHELL-01**: User can install shell hooks via `devmon hook install` for bash and zsh
-- [ ] **SHELL-02**: Shell hooks passively track command execution (command text, exit code, duration) without blocking the terminal
-- [ ] **SHELL-03**: Hook writes events to a lightweight log file/pipe — never spawns Python process directly
-- [ ] **SHELL-04**: User can uninstall hooks via `devmon hook uninstall`
+- [x] **SHELL-01**: User can install shell hooks via `devmon hook install` for bash and zsh
+- [x] **SHELL-02**: Shell hooks passively track command execution (command text, exit code, duration) without blocking the terminal
+- [x] **SHELL-03**: Hook writes events to a lightweight log file/pipe — never spawns Python process directly
+- [x] **SHELL-04**: User can uninstall hooks via `devmon hook uninstall`
 
 ### Activity Tracking
 
-- [ ] **TRACK-01**: Successful commands generate XP based on event type and session context
-- [ ] **TRACK-02**: Git commits detected from shell commands generate bonus XP
-- [ ] **TRACK-03**: Test suite passes detected from shell commands generate bonus XP
-- [ ] **TRACK-04**: Session start/end is tracked automatically from hook activity
-- [ ] **TRACK-05**: Daily coding streaks are tracked with consecutive-day detection
-- [ ] **TRACK-06**: Streaks apply XP multipliers up to a configurable cap
-- [ ] **TRACK-07**: Streaks have a grace period (streak freeze) to prevent loss-aversion abandonment
+- [x] **TRACK-01**: Successful commands generate XP based on event type and session context
+- [x] **TRACK-02**: Git commits detected from shell commands generate bonus XP
+- [x] **TRACK-03**: Test suite passes detected from shell commands generate bonus XP
+- [x] **TRACK-04**: Session start/end is tracked automatically from hook activity
+- [x] **TRACK-05**: Daily coding streaks are tracked with consecutive-day detection
+- [x] **TRACK-06**: Streaks apply XP multipliers up to a configurable cap
+- [x] **TRACK-07**: Streaks have a grace period (streak freeze) to prevent loss-aversion abandonment
 
 ### Player Profile
 
@@ -182,17 +182,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SAVE-03 | Phase 1 | Complete |
 | SAVE-04 | Phase 1 | Complete |
 | PROF-01 | Phase 1 | Complete |
-| SHELL-01 | Phase 2 | Pending |
-| SHELL-02 | Phase 2 | Pending |
-| SHELL-03 | Phase 2 | Pending |
-| SHELL-04 | Phase 2 | Pending |
-| TRACK-01 | Phase 2 | Pending |
-| TRACK-02 | Phase 2 | Pending |
-| TRACK-03 | Phase 2 | Pending |
-| TRACK-04 | Phase 2 | Pending |
-| TRACK-05 | Phase 2 | Pending |
-| TRACK-06 | Phase 2 | Pending |
-| TRACK-07 | Phase 2 | Pending |
+| SHELL-01 | Phase 2 | Complete |
+| SHELL-02 | Phase 2 | Complete |
+| SHELL-03 | Phase 2 | Complete |
+| SHELL-04 | Phase 2 | Complete |
+| TRACK-01 | Phase 2 | Complete |
+| TRACK-02 | Phase 2 | Complete |
+| TRACK-03 | Phase 2 | Complete |
+| TRACK-04 | Phase 2 | Complete |
+| TRACK-05 | Phase 2 | Complete |
+| TRACK-06 | Phase 2 | Complete |
+| TRACK-07 | Phase 2 | Complete |
 | PROF-02 | Phase 3 | Pending |
 | PROF-03 | Phase 3 | Pending |
 | PROF-04 | Phase 3 | Pending |

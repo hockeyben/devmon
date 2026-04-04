@@ -54,8 +54,15 @@ Plans:
   3. Running `devmon hook uninstall` cleanly removes all devmon hook lines from shell configs
   4. Running a git commit command causes the next `devmon` invocation to award bonus XP for the commit event
   5. A player who codes on consecutive days sees their XP multiplier increase; a player who misses one day within the grace period does not lose their streak
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 6 plans
+
+Plans:
+- [x] 02-01-PLAN.md — Test scaffold: conftest fixtures, xfail stubs for all 11 requirements (Wave 1)
+- [ ] 02-02-PLAN.md — PlayerProfile fields + config game-balance keys + v1→v2 migration (Wave 2)
+- [ ] 02-03-PLAN.md — Shell hook snippets, installer.py, devmon hook install/uninstall CLI (Wave 2, parallel)
+- [ ] 02-04-PLAN.md — event_reader.py + progression.py: XP, session, streak logic (Wave 3)
+- [ ] 02-05-PLAN.md — Wire event processing into devmon startup + devmon track test-pass command (Wave 4)
+- [ ] 02-06-PLAN.md — Human verification: full shell integration end-to-end (Wave 5)
 
 ### Phase 3: Player Profile
 **Goal**: The player can see their identity, progress, and stats in the terminal at any time
@@ -167,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-04-04 |
-| 2. Shell Integration | 0/TBD | Not started | - |
+| 2. Shell Integration | 1/6 | In Progress|  |
 | 3. Player Profile | 0/TBD | Not started | - |
 | 4. Creature Roster | 0/TBD | Not started | - |
 | 5. Encounter System | 0/TBD | Not started | - |
