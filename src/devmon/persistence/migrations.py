@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 
 def migrate(data: dict) -> dict:
@@ -28,6 +28,7 @@ def migrate(data: dict) -> dict:
 
     migrations = {
         0: _migrate_0_to_1,
+        1: _migrate_1_to_2,
     }
 
     while version < CURRENT_VERSION:
@@ -52,4 +53,18 @@ def migrate(data: dict) -> dict:
 def _migrate_0_to_1(data: dict) -> dict:
     """Version 0 -> 1: Initial schema. Stamp the version field."""
     data["schema_version"] = 1
+    return data
+
+
+def _migrate_1_to_2(data: dict) -> dict:
+    """Version 1 -> 2: Phase 2 shell integration fields added to PlayerProfile.
+
+    Adds last_active_date, streak_grace_used, session_xp_earned to player
+    dict if missing, using the same defaults as PlayerProfile field definitions.
+    """
+    player = data.setdefault("player", {})
+    player.setdefault("last_active_date", None)
+    player.setdefault("streak_grace_used", False)
+    player.setdefault("session_xp_earned", 0)
+    data["schema_version"] = 2
     return data

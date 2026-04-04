@@ -41,9 +41,23 @@ def _default_event_log() -> str:
 
 DEFAULT_CONFIG: dict = {
     "game": {
+        # Existing keys (Phase 1):
         "xp_rate": 1.0,
         "encounter_frequency": "normal",
         "capture_odds_multiplier": 1.0,
+        # Phase 2 XP formula keys (D-05, D-07):
+        "xp_per_minute": 5,               # base XP earned per minute of activity
+        "xp_multiplier_growth": 1.2,      # per-minute compounding factor
+        "xp_multiplier_cap": 3.0,         # max per-minute multiplier (inflation guard)
+        "xp_base_level": 100,             # XP for level 1 -> level 2
+        "xp_level_exponent": 1.5,         # exponential level curve (D-06)
+        "xp_min_streak_day": 10,          # minimum XP to count as a coding day (D-08)
+        # Flat XP per event type (TRACK-02, TRACK-03):
+        "xp_git_commit": 50,              # bonus XP for git_commit event
+        "xp_test_pass": 75,               # bonus XP for test_pass event
+        # Streak multiplier (D-10, Pattern 8):
+        "streak_xp_bonus_per_day": 0.05,  # +5% per consecutive day
+        "streak_multiplier_cap": 2.0,     # max streak multiplier at 20 days
     },
     "ui": {
         "theme": "default",

@@ -15,7 +15,7 @@ def test_save_persist(tmp_save_dir):
     loaded = load()
     assert loaded is not None
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 1
+    assert loaded.schema_version == 2
 
 
 def test_atomic_write(tmp_save_dir):
@@ -37,7 +37,7 @@ def test_schema_version(tmp_save_dir):
     state = GameState.new_game("Ash")
     save(state)
     data = json_mod.loads((tmp_save_dir / "save.json").read_text(encoding="utf-8"))
-    assert data["schema_version"] == 1
+    assert data["schema_version"] == 2
 
 
 def test_data_dir(tmp_save_dir):
@@ -90,20 +90,28 @@ def test_no_save_returns_none(tmp_save_dir):
 
 
 def test_migration_runner_noop():
-    """SAVE-03: Migration runner handles zero-migration (v1 -> v1) cleanly."""
+    """SAVE-03: Migration runner handles current version (v2 -> v2) cleanly — no-op."""
     from devmon.persistence.migrations import migrate
-    data = {"schema_version": 1, "player": {"name": "Ash"}}
+    data = {
+        "schema_version": 2,
+        "player": {
+            "name": "Ash",
+            "last_active_date": None,
+            "streak_grace_used": False,
+            "session_xp_earned": 0,
+        }
+    }
     result = migrate(data)
-    assert result["schema_version"] == 1
+    assert result["schema_version"] == 2
     assert result["player"]["name"] == "Ash"
 
 
 def test_migration_from_v0():
-    """SAVE-03: Save without schema_version (v0) is migrated to v1."""
+    """SAVE-03: Save without schema_version (v0) is migrated to current version (v2)."""
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 1
+    assert result["schema_version"] == 2
 
 
 def test_migration_unknown_version():
@@ -111,3 +119,88 @@ def test_migration_unknown_version():
     from devmon.persistence.migrations import migrate
     with pytest.raises(ValueError, match="No migration path"):
         migrate({"schema_version": 99, "player": {"name": "Ash"}})
+
+
+# --- Phase 2 migration and config tests (TRACK-01, TRACK-05, TRACK-06, TRACK-07) ---
+
+def test_migration_v1_to_v2_adds_phase2_fields():
+    """TRACK-01: v1 save dicts gain Phase 2 player fields on migration to v2."""
+    from devmon.persistence.migrations import migrate
+    data = {"schema_version": 1, "player": {"name": "Ash"}}
+    result = migrate(data)
+    assert result["schema_version"] == 2
+    assert result["player"]["last_active_date"] is None
+    assert result["player"]["streak_grace_used"] is False
+    assert result["player"]["session_xp_earned"] == 0
+
+
+def test_migration_v0_to_v2_full_path():
+    """TRACK-01: v0 save migrates all the way to v2 via chained migrations."""
+    from devmon.persistence.migrations import migrate
+    data = {"player": {"name": "Ash"}}
+    result = migrate(data)
+    assert result["schema_version"] == 2
+    assert "last_active_date" in result["player"]
+
+
+def test_migration_v2_is_noop():
+    """TRACK-01: v2 save dict passes through migration unchanged."""
+    from devmon.persistence.migrations import migrate
+    data = {
+        "schema_version": 2,
+        "player": {
+            "name": "Ash",
+            "last_active_date": None,
+            "streak_grace_used": False,
+            "session_xp_earned": 0,
+        }
+    }
+    result = migrate(data)
+    assert result["schema_version"] == 2
+
+
+def test_current_version_is_2():
+    """TRACK-01: migrations.CURRENT_VERSION equals 2 after Phase 2 bump."""
+    from devmon.persistence.migrations import CURRENT_VERSION
+    assert CURRENT_VERSION == 2
+
+
+def test_default_config_has_xp_per_minute():
+    """D-05: DEFAULT_CONFIG game section has xp_per_minute key."""
+    from devmon.config.defaults import DEFAULT_CONFIG
+    assert "xp_per_minute" in DEFAULT_CONFIG["game"]
+    assert DEFAULT_CONFIG["game"]["xp_per_minute"] == 5
+
+
+def test_default_config_has_xp_git_commit():
+    """TRACK-02: DEFAULT_CONFIG game section has xp_git_commit key."""
+    from devmon.config.defaults import DEFAULT_CONFIG
+    assert "xp_git_commit" in DEFAULT_CONFIG["game"]
+    assert DEFAULT_CONFIG["game"]["xp_git_commit"] == 50
+
+
+def test_default_config_has_streak_multiplier_cap():
+    """D-10: DEFAULT_CONFIG game section has streak_multiplier_cap key."""
+    from devmon.config.defaults import DEFAULT_CONFIG
+    assert "streak_multiplier_cap" in DEFAULT_CONFIG["game"]
+    assert DEFAULT_CONFIG["game"]["streak_multiplier_cap"] == 2.0
+
+
+def test_default_config_has_all_phase2_game_keys():
+    """D-05 through D-10: DEFAULT_CONFIG game section has all required Phase 2 keys."""
+    from devmon.config.defaults import DEFAULT_CONFIG
+    game = DEFAULT_CONFIG["game"]
+    required_keys = [
+        "xp_per_minute",
+        "xp_multiplier_growth",
+        "xp_multiplier_cap",
+        "xp_base_level",
+        "xp_level_exponent",
+        "xp_min_streak_day",
+        "xp_git_commit",
+        "xp_test_pass",
+        "streak_xp_bonus_per_day",
+        "streak_multiplier_cap",
+    ]
+    for key in required_keys:
+        assert key in game, f"Missing key in DEFAULT_CONFIG['game']: {key}"
