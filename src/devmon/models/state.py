@@ -15,6 +15,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from devmon.models.creature import OwnedCreature
+
 
 class PlayerProfile(BaseModel):
     """Player identity and progression stats (PROF-01)."""
@@ -50,8 +52,9 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=3, description="Save file schema version for migration support")
+    schema_version: int = Field(default=4, description="Save file schema version for migration support")
     player: PlayerProfile
+    creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":

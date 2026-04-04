@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 3
+CURRENT_VERSION = 4
 
 
 def migrate(data: dict) -> dict:
@@ -30,6 +30,7 @@ def migrate(data: dict) -> dict:
         0: _migrate_0_to_1,
         1: _migrate_1_to_2,
         2: _migrate_2_to_3,
+        3: _migrate_3_to_4,
     }
 
     while version < CURRENT_VERSION:
@@ -77,4 +78,11 @@ def _migrate_2_to_3(data: dict) -> dict:
     player.setdefault("level_up_pending", False)
     player.setdefault("pending_level_value", 0)
     data["schema_version"] = 3
+    return data
+
+
+def _migrate_3_to_4(data: dict) -> dict:
+    """Version 3 -> 4: Phase 4 adds creature_collection to GameState."""
+    data.setdefault("creature_collection", [])
+    data["schema_version"] = 4
     return data

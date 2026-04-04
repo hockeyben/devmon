@@ -234,7 +234,6 @@ def test_all_creature_types_used():
     assert expected_types == found_types, f"Missing types: {expected_types - found_types}"
 
 
-@pytest.mark.xfail(strict=True, reason="Phase 4 Plan 02: creature JSON data files not yet created")
 def test_devmon_home_override(tmp_devmon_home):
     """A creature JSON in DEVMON_HOME/creatures/ should be loaded by load_all_creatures()."""
     from devmon.engine.creature_loader import load_all_creatures
@@ -259,7 +258,6 @@ def test_fallback_to_bundled(tmp_devmon_home):
     assert len(registry) > 0, "Should fall back to bundled creature data"
 
 
-@pytest.mark.xfail(strict=True, reason="Phase 4 Plan 02: creature JSON data files not yet created")
 def test_invalid_creature_json_fails_fast(tmp_devmon_home):
     """Invalid JSON in override dir should raise ValueError from loader (D-11)."""
     from devmon.engine.creature_loader import load_all_creatures
