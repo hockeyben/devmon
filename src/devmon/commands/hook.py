@@ -102,3 +102,61 @@ def uninstall(
             console.print(f"[green]{shell_name} hook removed from {rc}[/green]")
 
     console.print("[bold]DevMon hooks uninstalled.[/bold] Restart your terminal to deactivate.")
+
+
+# ---------------------------------------------------------------------------
+# devmon track — explicit activity tracking commands (TRACK-03, Pattern 6)
+# ---------------------------------------------------------------------------
+
+track_app = typer.Typer(
+    name="track",
+    help="Manually track coding events for XP rewards.",
+    no_args_is_help=True,
+)
+
+
+@track_app.command("test-pass")
+def track_test_pass() -> None:
+    """Record a test suite pass event for bonus XP.
+
+    Add to your test alias: alias pytest='pytest && devmon track test-pass'
+    XP is awarded on the next devmon invocation. (TRACK-03)
+    """
+    import json
+    import os
+    import time
+
+    try:
+        from devmon.config.loader import load_config
+        config = load_config()
+    except Exception:
+        from devmon.config.defaults import DEFAULT_CONFIG
+        config = DEFAULT_CONFIG
+
+    # Resolve event log path dynamically — _default_event_log() reads DEVMON_HOME at call time
+    from devmon.config.defaults import _default_event_log
+    dynamic_default = _default_event_log()
+    shell_cfg = config.get("shell", {})
+    configured_log = shell_cfg.get("event_log", dynamic_default)
+
+    # Use configured_log only if it's a real user override (not the stale import-time default)
+    from devmon.config.defaults import DEFAULT_CONFIG as _DC
+    if configured_log == _DC["shell"]["event_log"] and configured_log != dynamic_default:
+        log_path = Path(dynamic_default)
+    else:
+        log_path = Path(configured_log)
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    event = {
+        "ts": int(time.time() * 1000),
+        "exit": 0,
+        "dur": 0,
+        "cwd": os.getcwd(),
+        "type": "test_pass",
+    }
+
+    with log_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(event) + "\n")
+
+    console.print("[green]Test pass recorded![/green] XP will be awarded on next devmon invocation.")

@@ -53,15 +53,20 @@ def test_track_test_pass_writes_event_to_log(tmp_save_dir):
 
 
 def test_track_test_pass_appends_not_overwrites(tmp_save_dir):
-    """devmon track test-pass appends to existing log rather than truncating."""
-    from devmon.main import app
+    """devmon track test-pass appends to the log (open with 'a' mode, not 'w')."""
+    # Test the track_test_pass function directly to avoid startup processing consuming the log
+    from devmon.commands.hook import track_test_pass
+    from typer.testing import CliRunner as _Runner
+    import typer
 
     log_path = tmp_save_dir / "events.log"
     # Pre-populate the log with an existing event
+    import json as _json
     existing = {"ts": 1700000000000, "exit": 0, "dur": 0, "cwd": "/existing", "type": "cmd"}
-    log_path.write_text(json.dumps(existing) + "\n", encoding="utf-8")
+    log_path.write_text(_json.dumps(existing) + "\n", encoding="utf-8")
 
-    runner.invoke(app, ["track", "test-pass"])
+    # Call track_test_pass directly (bypasses startup processing)
+    track_test_pass()
 
     lines = [l.strip() for l in log_path.read_text(encoding="utf-8").splitlines() if l.strip()]
     assert len(lines) == 2  # original + new test_pass
