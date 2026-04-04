@@ -61,7 +61,7 @@ Plans:
 - [x] 02-02-PLAN.md — PlayerProfile fields + config game-balance keys + v1→v2 migration (Wave 2)
 - [x] 02-03-PLAN.md — Shell hook snippets, installer.py, devmon hook install/uninstall CLI (Wave 2, parallel)
 - [x] 02-04-PLAN.md — event_reader.py + progression.py: XP, session, streak logic (Wave 3)
-- [ ] 02-05-PLAN.md — Wire event processing into devmon startup + devmon track test-pass command (Wave 4)
+- [x] 02-05-PLAN.md — Wire event processing into devmon startup + devmon track test-pass command (Wave 4)
 - [ ] 02-06-PLAN.md — Human verification: full shell integration end-to-end (Wave 5)
 
 ### Phase 3: Player Profile
