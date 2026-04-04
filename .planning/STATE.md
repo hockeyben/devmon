@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-foundation/01-01-PLAN.md
-last_updated: "2026-04-04T04:22:07.217Z"
+stopped_at: Completed 01-foundation/01-02-PLAN.md
+last_updated: "2026-04-04T04:26:18.403Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 01 (foundation) — EXECUTING
-Plan: 2 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-04-04
 
@@ -53,6 +53,8 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 20 | 2 tasks | 16 files |
+| Phase 01-foundation P02 | 12 | 2 tasks | 4 files |
+| Phase 01-foundation P03 | 15 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -67,6 +69,9 @@ Recent decisions affecting current work:
 - Creature design: 25 creatures is a significant creative workload. Plan time for content production, not just code.
 - [Phase 01-foundation]: Typer app.callback() pattern required when no_args_is_help=True with zero subcommands — avoids RuntimeError on --help
 - [Phase 01-foundation]: hatchling used as build backend (plan spec) instead of uv init default uv_build
+- [Phase 01-foundation]: CURRENT_VERSION in migrations.py must always equal GameState.schema_version default — enforced by test suite
+- [Phase 01-foundation]: migrate() raises ValueError for unknown future schema versions — fail loud on corrupt saves rather than silently loading bad data
+- [Phase 01-foundation]: GameState and PlayerProfile are pure data containers — no imports from commands, engine, or render enforced as architecture rule
 
 ### Pending Todos
 
@@ -78,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T04:22:07.214Z
-Stopped at: Completed 01-foundation/01-01-PLAN.md
+Last session: 2026-04-04T04:26:06.429Z
+Stopped at: Completed 01-foundation/01-02-PLAN.md
 Resume file: None

@@ -39,8 +39,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold: uv init, pyproject.toml, src/devmon skeleton, pytest stubs (Wave 1)
-- [ ] 01-02-PLAN.md — GameState + PlayerProfile Pydantic v2 models and migration runner (Wave 2)
-- [ ] 01-03-PLAN.md — Typed EventBus with dataclasses and TOML config system (Wave 2, parallel with 01-02)
+- [x] 01-02-PLAN.md — GameState + PlayerProfile Pydantic v2 models and migration runner (Wave 2)
+- [x] 01-03-PLAN.md — Typed EventBus with dataclasses and TOML config system (Wave 2, parallel with 01-02)
 - [ ] 01-04-PLAN.md — Atomic save/load with 3-file backup rotation and corruption recovery (Wave 3)
 - [ ] 01-05-PLAN.md — CLI entry point, devmon status command, Rich panel output, human verification (Wave 4)
 
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/5 | In Progress|  |
+| 1. Foundation | 3/5 | In Progress|  |
 | 2. Shell Integration | 0/TBD | Not started | - |
 | 3. Player Profile | 0/TBD | Not started | - |
 | 4. Creature Roster | 0/TBD | Not started | - |
