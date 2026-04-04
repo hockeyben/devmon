@@ -15,13 +15,13 @@ Coding should feel rewarding — every terminal session fuels progression in a c
 - ✓ Player profile with persistent XP, level, currency, and stats — Phase 1
 - ✓ Persistent JSON save state with atomic writes and schema versioning — Phase 1
 - ✓ Event-driven architecture for modularity — Phase 1
+- ✓ Shell hook integration (preexec/postexec) for passive activity tracking — Phase 2
+- ✓ XP generation from development events (commands, commits, tests, sessions) — Phase 2
+- ✓ Session and streak tracking with reward multipliers — Phase 2
 
 ### Active
 
-- [ ] Shell hook integration (preexec/postexec) for passive activity tracking
-- [ ] Shell hook integration (preexec/postexec) for passive activity tracking
 - [ ] Explicit CLI commands for all game actions (battle, collection, quests, etc.)
-- [ ] XP generation from development events (commands, commits, tests, sessions)
 - [ ] Wild creature encounter system triggered by coding activity
 - [ ] Queued encounter model — notifications appear, user battles when ready
 - [ ] Turn-based battle system with attack, special, defend, item, switch, capture, flee
@@ -114,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-04 after Phase 1 completion*
+*Last updated: 2026-04-04 after Phase 2 completion*
