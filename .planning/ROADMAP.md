@@ -91,7 +91,12 @@ Plans:
   2. Each creature has a complete stat block (HP, attack, defense, speed, type, capture rate, evolution chain, flavor text) that passes Pydantic schema validation
   3. Each creature's ASCII art renders correctly in an 80-column terminal without overflow or corruption
   4. Editing a creature's name or stats in the JSON data file is reflected immediately on the next game invocation without code changes
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — CreatureTemplate/OwnedCreature models, schema v4 migration, creature_loader, test scaffold (Wave 1)
+- [ ] 04-02-PLAN.md — 25 creature JSON data files, RARITY_COLORS, render_creature_panel (Wave 2)
+- [ ] 04-03-PLAN.md — Human verification: creature gallery visual check (Wave 3)
 
 ### Phase 5: Encounter System
 **Goal**: Coding activity triggers wild creature encounters that queue non-intrusively and are ready when the player is
@@ -182,7 +187,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundation | 5/5 | Complete   | 2026-04-04 |
 | 2. Shell Integration | 6/6 | Complete   | 2026-04-04 |
 | 3. Player Profile | 4/5 | In Progress|  |
-| 4. Creature Roster | 0/TBD | Not started | - |
+| 4. Creature Roster | 0/3 | Not started | - |
 | 5. Encounter System | 0/TBD | Not started | - |
 | 6. Battle and Capture | 0/TBD | Not started | - |
 | 7. Party and Collection | 0/TBD | Not started | - |
