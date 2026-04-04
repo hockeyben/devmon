@@ -27,9 +27,9 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Player Profile
 
 - [x] **PROF-01**: User has a persistent player profile with level, XP, currency, and stats
-- [ ] **PROF-02**: User can view profile summary via `devmon status`
-- [ ] **PROF-03**: Player levels up when XP threshold is reached, with visible level-up notification
-- [ ] **PROF-04**: Player stats track: total creatures seen, captured, battles won, sessions, streak count
+- [x] **PROF-02**: User can view profile summary via `devmon status`
+- [x] **PROF-03**: Player levels up when XP threshold is reached, with visible level-up notification
+- [x] **PROF-04**: Player stats track: total creatures seen, captured, battles won, sessions, streak count
 
 ### Save State
 
@@ -119,7 +119,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Terminal UI
 
-- [ ] **UI-01**: Game prompt shows player level, party status, and XP progress
+- [x] **UI-01**: Game prompt shows player level, party status, and XP progress
 - [ ] **UI-02**: Encounter notifications are colorful and dramatic (Rich panels/banners)
 - [ ] **UI-03**: Battle screen shows creature art, health bars, and action menu with Rich rendering
 - [ ] **UI-04**: Level-up, evolution, and achievement events display animated Rich notifications
@@ -128,7 +128,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### CLI Commands
 
-- [ ] **CLI-01**: `devmon status` — player profile summary
+- [x] **CLI-01**: `devmon status` — player profile summary
 - [ ] **CLI-02**: `devmon battle` — engage queued encounter
 - [ ] **CLI-03**: `devmon party` — manage active party
 - [ ] **CLI-04**: `devmon collection` — view creature collection and codex
@@ -193,11 +193,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRACK-05 | Phase 2 | Complete |
 | TRACK-06 | Phase 2 | Complete |
 | TRACK-07 | Phase 2 | Complete |
-| PROF-02 | Phase 3 | Pending |
-| PROF-03 | Phase 3 | Pending |
-| PROF-04 | Phase 3 | Pending |
-| CLI-01 | Phase 3 | Pending |
-| UI-01 | Phase 3 | Pending |
+| PROF-02 | Phase 3 | Complete |
+| PROF-03 | Phase 3 | Complete |
+| PROF-04 | Phase 3 | Complete |
+| CLI-01 | Phase 3 | Complete |
+| UI-01 | Phase 3 | Complete |
 | CREA-01 | Phase 4 | Pending |
 | CREA-02 | Phase 4 | Pending |
 | CREA-03 | Phase 4 | Pending |
