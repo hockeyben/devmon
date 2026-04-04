@@ -45,6 +45,16 @@ THEME_ALIASES: dict[str, str] = {
 }
 
 
+# Rarity tier colors — used by creature panels (Phase 4+)
+RARITY_COLORS: dict[str, str] = {
+    "common":    "white",
+    "uncommon":  "green",
+    "rare":      "bright_blue",
+    "epic":      "magenta",
+    "legendary": "bold yellow",
+}
+
+
 def get_theme(name: str) -> dict[str, str]:
     """Return the theme dict for the given theme name.
 
