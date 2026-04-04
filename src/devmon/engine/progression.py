@@ -118,6 +118,26 @@ def xp_for_level(level: int, config: dict) -> int:
     return int(base * (level ** exponent))
 
 
+def xp_within_level(profile: "PlayerProfile", config: dict) -> tuple[int, int]:
+    """Return XP progress within the current level as (earned, needed).
+
+    Used by status display to show level-relative XP bar (not cumulative).
+    D-06: xp field is cumulative; bar shows progress toward next level.
+
+    Args:
+        profile: PlayerProfile with current level and xp.
+        config: DevMon config dict.
+
+    Returns:
+        (xp_earned_in_level, xp_needed_to_level_up) — both positive integers.
+    """
+    threshold_current = xp_for_level(profile.level, config)
+    threshold_next = xp_for_level(profile.level + 1, config)
+    earned = max(0, profile.xp - threshold_current)
+    needed = max(1, threshold_next - threshold_current)  # prevent division by zero
+    return earned, needed
+
+
 def update_streak(
     profile: "PlayerProfile",
     today: date,
@@ -221,6 +241,15 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     final_xp = int(total_event_xp * multiplier)
 
     profile.xp += final_xp
+
+    # Level-up detection (Phase 3, PROF-03)
+    old_level = profile.level
+    while profile.xp >= xp_for_level(profile.level + 1, config):
+        profile.level += 1
+    if profile.level > old_level:
+        profile.level_up_pending = True
+        profile.pending_level_value = profile.level
+
     profile.session_xp_earned += session_xp_this_run
     profile.total_sessions += session_count
 
