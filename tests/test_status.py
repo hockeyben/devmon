@@ -1,4 +1,4 @@
-"""Tests for status command multi-panel + level-up banner (Phase 3 stubs)."""
+"""Tests for status command multi-panel + level-up banner (Phase 3)."""
 import pytest
 
 
@@ -8,7 +8,6 @@ def runner():
     return CliRunner()
 
 
-@pytest.mark.xfail(strict=True, reason="Multi-panel status not yet implemented")
 def test_status_shows_level(runner, tmp_devmon_home):
     from devmon.main import app
     result = runner.invoke(app, ["status"])
@@ -18,7 +17,6 @@ def test_status_shows_level(runner, tmp_devmon_home):
     assert re.search(r"\d+/\d+", result.output), "Multi-panel status must show XP fraction"
 
 
-@pytest.mark.xfail(strict=True, reason="Multi-panel status not yet implemented")
 def test_status_shows_xp_fraction(runner, tmp_devmon_home):
     from devmon.main import app
     result = runner.invoke(app, ["status"])
@@ -30,7 +28,6 @@ def test_status_shows_xp_fraction(runner, tmp_devmon_home):
     assert "XP" in result.output.upper()
 
 
-@pytest.mark.xfail(strict=True, reason="Multi-panel status not yet implemented")
 def test_stats_panel_fields(runner, tmp_devmon_home):
     from devmon.main import app
     result = runner.invoke(app, ["status"])
@@ -39,7 +36,6 @@ def test_stats_panel_fields(runner, tmp_devmon_home):
     assert "Battles" in result.output or "battles" in result.output.lower()
 
 
-@pytest.mark.xfail(strict=True, reason="Level-up banner not yet implemented")
 def test_levelup_banner_clears_flag(tmp_devmon_home):
     """PROF-03: Banner renders when level_up_pending=True and clears the flag."""
     from devmon.models.state import GameState
