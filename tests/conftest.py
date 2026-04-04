@@ -41,6 +41,20 @@ def tmp_rc_file(tmp_path):
 
 
 @pytest.fixture
+def tmp_devmon_home(tmp_path):
+    """Isolated DEVMON_HOME directory for Phase 3 tests."""
+    home_dir = tmp_path / "devmon_home"
+    home_dir.mkdir()
+    old = os.environ.get("DEVMON_HOME")
+    os.environ["DEVMON_HOME"] = str(home_dir)
+    yield home_dir
+    if old is None:
+        os.environ.pop("DEVMON_HOME", None)
+    else:
+        os.environ["DEVMON_HOME"] = old
+
+
+@pytest.fixture
 def sample_events():
     """Five valid JSON Lines event dicts for progression tests."""
     base_ts = 1700000000000
