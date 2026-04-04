@@ -13,7 +13,7 @@ DevMon is built layer by layer following strict dependency order: persistence an
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Models, persistent JSON save state, atomic writes, schema versioning, and event bus (completed 2026-04-04)
-- [ ] **Phase 2: Shell Integration** - Hook installer for bash/zsh/fish, passive activity logging, XP generation, session and streak tracking
+- [x] **Phase 2: Shell Integration** - Hook installer for bash/zsh/fish, passive activity logging, XP generation, session and streak tracking (completed 2026-04-04)
 - [ ] **Phase 3: Player Profile** - Player profile commands, level-up logic, profile stats, and the devmon status command
 - [ ] **Phase 4: Creature Roster** - 25 starter creatures across 5 rarity tiers with stats, types, ASCII art, and data loading
 - [ ] **Phase 5: Encounter System** - Rarity-weighted encounter spawning, encounter queue, notifications, and encounter inspection
@@ -62,7 +62,7 @@ Plans:
 - [x] 02-03-PLAN.md — Shell hook snippets, installer.py, devmon hook install/uninstall CLI (Wave 2, parallel)
 - [x] 02-04-PLAN.md — event_reader.py + progression.py: XP, session, streak logic (Wave 3)
 - [x] 02-05-PLAN.md — Wire event processing into devmon startup + devmon track test-pass command (Wave 4)
-- [ ] 02-06-PLAN.md — Human verification: full shell integration end-to-end (Wave 5)
+- [x] 02-06-PLAN.md — Human verification: full shell integration end-to-end (Wave 5)
 
 ### Phase 3: Player Profile
 **Goal**: The player can see their identity, progress, and stats in the terminal at any time
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete   | 2026-04-04 |
-| 2. Shell Integration | 4/6 | In Progress|  |
+| 2. Shell Integration | 6/6 | Complete   | 2026-04-04 |
 | 3. Player Profile | 0/TBD | Not started | - |
 | 4. Creature Roster | 0/TBD | Not started | - |
 | 5. Encounter System | 0/TBD | Not started | - |
