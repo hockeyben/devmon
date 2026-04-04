@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-04T06:52:07.310Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-04-04T06:58:19.632Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 10
   completed_phases: 1
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 02 (shell-integration) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-04-04
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P04 | 2 | 1 tasks | 3 files |
 | Phase 01-foundation P05 | 5 | 1 tasks | 2 files |
 | Phase 02-shell-integration P01 | 132 | 3 tasks | 4 files |
+| Phase 02-shell-integration P03 | 4 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: bus singleton imported in commands/status.py at CLI layer only — domain modules never import bus
 - [Phase 02-shell-integration]: xfail strict=True for all Phase 2 stubs — fails loudly if module accidentally exists and tests unexpectedly pass
 - [Phase 02-shell-integration]: imports inside test bodies (not module level) so collection works without shell/ or engine/ packages existing
+- [Phase 02-shell-integration]: BASH_ZSH_HOOK_SNIPPET uses printf for zero-latency event logging — no Python process spawned from shell hooks (SHELL-03)
+- [Phase 02-shell-integration]: Installer idempotency: HOOK_BEGIN marker as presence sentinel; marker-delimited blocks enable clean uninstall via re.sub with re.DOTALL
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T06:52:07.306Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-04T06:58:19.628Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
