@@ -13,6 +13,7 @@ from typing import Optional
 import typer
 
 from devmon import __version__
+from devmon.commands import hook as hook_cmd
 from devmon.commands import status as status_cmd
 from devmon.engine.events import bus  # noqa: F401  — imported at CLI layer, not domain
 
@@ -23,6 +24,7 @@ app = typer.Typer(
 )
 
 app.add_typer(status_cmd.app, name="status")
+app.add_typer(hook_cmd.app, name="hook")
 
 
 def _version_callback(value: bool) -> None:
