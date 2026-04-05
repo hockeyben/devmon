@@ -21,6 +21,8 @@ def render_creature_panel(
     template: CreatureTemplate,
     console: Console,
     theme: dict[str, str] | None = None,
+    encounter_level: int | None = None,
+    encounter_type: str | None = None,
 ) -> None:
     """Render a creature in a rarity-colored Rich Panel.
 
@@ -31,6 +33,9 @@ def render_creature_panel(
         template: The CreatureTemplate to display.
         console: Rich Console instance to print to.
         theme: Optional theme dict (semantic keys). Defaults to neon theme.
+        encounter_level: When provided, inserts a LVL row as the first stat row.
+        encounter_type: When provided and not "normal", appends encounter tier
+            indicator to the panel subtitle.
     """
     if theme is None:
         theme = get_theme("neon")
@@ -46,10 +51,21 @@ def render_creature_panel(
 
     # Build two-column stat block
     stats = Text()
+
+    # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
+    if encounter_level is not None:
+        stats.append("LVL ", style=theme["stat_key"])
+        stats.append(f"{encounter_level:<6}", style=theme["stat_value"])
+        stats.append("  Type    ", style=theme["stat_key"])
+        stats.append(f"{template.type}\n", style=theme["stat_value"])
+
     stats.append("HP  ", style=theme["stat_key"])
     stats.append(f"{template.base_hp:<6}", style=theme["stat_value"])
-    stats.append("  Type    ", style=theme["stat_key"])
-    stats.append(f"{template.type}\n", style=theme["stat_value"])
+    if encounter_level is None:
+        stats.append("  Type    ", style=theme["stat_key"])
+        stats.append(f"{template.type}\n", style=theme["stat_value"])
+    else:
+        stats.append("\n")
 
     stats.append("ATK ", style=theme["stat_key"])
     stats.append(f"{template.base_attack:<6}", style=theme["stat_value"])
@@ -72,10 +88,20 @@ def render_creature_panel(
     body.append("\n\n")
     body.append_text(flavor)
 
+    # Build subtitle with optional encounter type indicator (UI-SPEC)
+    subtitle = f"[dim]{template.rarity.title()} - {template.type}[/dim]"
+    if encounter_type and encounter_type != "normal":
+        if encounter_type == "rare":
+            subtitle += " - [dim]Rare Encounter[/dim]"
+        elif encounter_type == "elite":
+            subtitle += " - [dim]Elite Encounter[/dim]"
+        elif encounter_type == "boss":
+            subtitle += " - [bold red]BOSS ENCOUNTER[/bold red]"
+
     panel = Panel(
         body,
         title=f"[{border_color}]{template.name}[/{border_color}]",
-        subtitle=f"[dim]{template.rarity.title()} - {template.type}[/dim]",
+        subtitle=subtitle,
         border_style=border_color,
         box=box.ROUNDED,
         expand=False,
