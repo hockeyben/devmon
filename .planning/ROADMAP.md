@@ -132,9 +132,9 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 06-01-PLAN.md — Ability model, schema v6 migration, party field, xfail test scaffold (Wave 1)
-- [ ] 06-02-PLAN.md — Creature JSON abilities data: 25 creatures, 75 unique abilities (Wave 1)
-- [ ] 06-03-PLAN.md — Battle engine pure logic: damage, capture, rewards, creature XP, wild AI (Wave 2)
+- [x] 06-01-PLAN.md — Ability model, schema v6 migration, party field, xfail test scaffold (Wave 1)
+- [x] 06-02-PLAN.md — Creature JSON abilities data: 25 creatures, 75 unique abilities (Wave 1)
+- [x] 06-03-PLAN.md — Battle engine pure logic: damage, capture, rewards, creature XP, wild AI (Wave 2)
 - [ ] 06-04-PLAN.md — Battle render: HP bars, panels, capture animation, result screens (Wave 3)
 - [ ] 06-05-PLAN.md — Battle command: CLI wiring, Rich Live loop, party bootstrap, encounter integration (Wave 4)
 - [ ] 06-06-PLAN.md — Human verification: battle visuals, capture flow, HP transitions (Wave 5)
@@ -203,7 +203,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Player Profile | 4/5 | In Progress|  |
 | 4. Creature Roster | 0/3 | Not started | - |
 | 5. Encounter System | 0/4 | Not started | - |
-| 6. Battle and Capture | 0/5 | Not started | - |
+| 6. Battle and Capture | 3/6 | In Progress|  |
 | 7. Party and Collection | 0/TBD | Not started | - |
 | 8. Economy and Shop | 0/TBD | Not started | - |
 | 9. Quests and Achievements | 0/TBD | Not started | - |

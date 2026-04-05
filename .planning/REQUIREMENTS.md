@@ -44,7 +44,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **CREA-02**: Each creature has: name, species, rarity, level, XP, HP, attack, defense, speed, type, capture rate, evolution chain, flavor text
 - [ ] **CREA-03**: Each creature has ASCII art displayed in battles and collection viewer
 - [ ] **CREA-04**: Creature data loaded from JSON data files (user-tweakable)
-- [ ] **CREA-05**: Creatures gain XP from battles and level up with stat improvements
+- [x] **CREA-05**: Creatures gain XP from battles and level up with stat improvements
 - [ ] **CREA-06**: Creatures learn new abilities at defined levels
 - [ ] **CREA-07**: Creatures evolve when meeting level thresholds or special conditions
 - [ ] **CREA-08**: Evolution transforms creature into a new form with updated stats, art, and abilities
@@ -62,21 +62,21 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **BATL-01**: User initiates battle via `devmon battle` using their active party creature
 - [ ] **BATL-02**: Battle is turn-based with actions: attack, special ability, defend, use item, switch creature, attempt capture, flee
-- [ ] **BATL-03**: Turn order determined by creature speed stat
-- [ ] **BATL-04**: Damage calculation uses RPG formula with attack, defense, type effectiveness, and randomness
+- [x] **BATL-03**: Turn order determined by creature speed stat
+- [x] **BATL-04**: Damage calculation uses RPG formula with attack, defense, type effectiveness, and randomness
 - [ ] **BATL-05**: Battle displays Rich-rendered health bars, creature art, and action menu
-- [ ] **BATL-06**: Winning a battle grants player XP, creature XP, and currency
-- [ ] **BATL-07**: Losing a battle causes active creature to faint — no capture opportunity, encounter ends
+- [x] **BATL-06**: Winning a battle grants player XP, creature XP, and currency
+- [x] **BATL-07**: Losing a battle causes active creature to faint — no capture opportunity, encounter ends
 - [ ] **BATL-08**: User can switch active creature mid-battle (costs a turn)
 
 ### Capture
 
 - [ ] **CAPT-01**: User can attempt capture during battle instead of attacking
-- [ ] **CAPT-02**: Capture chance depends on creature rarity, current HP percentage, and capture item used
-- [ ] **CAPT-03**: Weakened creatures (lower HP) are significantly easier to capture
-- [ ] **CAPT-04**: Different capture items provide different success bonuses (basic capsule, enhanced, ultra, etc.)
+- [x] **CAPT-02**: Capture chance depends on creature rarity, current HP percentage, and capture item used
+- [x] **CAPT-03**: Weakened creatures (lower HP) are significantly easier to capture
+- [x] **CAPT-04**: Different capture items provide different success bonuses (basic capsule, enhanced, ultra, etc.)
 - [ ] **CAPT-05**: Successful capture adds creature to collection and grants capture bonus XP
-- [ ] **CAPT-06**: Failed capture continues the battle — creature may become harder to catch
+- [x] **CAPT-06**: Failed capture continues the battle — creature may become harder to catch
 - [ ] **CAPT-07**: User chooses between defeating for guaranteed XP/loot or attempting capture for collection value
 
 ### Party
@@ -212,20 +212,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-02 | Phase 5 | Pending |
 | BATL-01 | Phase 6 | Pending |
 | BATL-02 | Phase 6 | Pending |
-| BATL-03 | Phase 6 | Pending |
-| BATL-04 | Phase 6 | Pending |
+| BATL-03 | Phase 6 | Complete |
+| BATL-04 | Phase 6 | Complete |
 | BATL-05 | Phase 6 | Pending |
-| BATL-06 | Phase 6 | Pending |
-| BATL-07 | Phase 6 | Pending |
+| BATL-06 | Phase 6 | Complete |
+| BATL-07 | Phase 6 | Complete |
 | BATL-08 | Phase 6 | Pending |
 | CAPT-01 | Phase 6 | Pending |
-| CAPT-02 | Phase 6 | Pending |
-| CAPT-03 | Phase 6 | Pending |
-| CAPT-04 | Phase 6 | Pending |
+| CAPT-02 | Phase 6 | Complete |
+| CAPT-03 | Phase 6 | Complete |
+| CAPT-04 | Phase 6 | Complete |
 | CAPT-05 | Phase 6 | Pending |
-| CAPT-06 | Phase 6 | Pending |
+| CAPT-06 | Phase 6 | Complete |
 | CAPT-07 | Phase 6 | Pending |
-| CREA-05 | Phase 6 | Pending |
+| CREA-05 | Phase 6 | Complete |
 | CREA-06 | Phase 6 | Pending |
 | CLI-02 | Phase 6 | Pending |
 | UI-03 | Phase 6 | Pending |

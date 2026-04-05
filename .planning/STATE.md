@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-04-05T06:16:11.650Z"
-last_activity: 2026-04-05 -- Phase 06 planning complete
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-04-05T06:32:26.328Z"
+last_activity: 2026-04-05
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 29
-  completed_plans: 23
-  percent: 79
+  completed_plans: 26
+  percent: 90
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Coding should feel rewarding — every terminal session fuels progression in a creature-collection game that makes productive development addictive without ever blocking real work.
-**Current focus:** Phase 05 — encounter-system
+**Current focus:** Phase 06 — battle-and-capture
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 06 (battle-and-capture) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-04-05 -- Phase 06 planning complete
+Last activity: 2026-04-05
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-player-profile P02 | 10 | 2 tasks | 5 files |
 | Phase 03-player-profile P03 | 20 | 3 tasks | 6 files |
 | Phase 03-player-profile P04 | 5 | 2 tasks | 5 files |
+| Phase 06-battle-and-capture P03 | 15 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,8 @@ Recent decisions affecting current work:
 - [Phase 03-player-profile]: Level-up flag cleared atomically with save() immediately after banner render (Pitfall 3 avoidance)
 - [Phase 03-player-profile]: prompt uses sys.stdout.buffer.write() with CliRunner fallback for PS1-safe UTF-8 output (D-07)
 - [Phase 03-player-profile]: settings validates theme against THEMES.keys() — only canonical names accepted as input to config.toml
+- [Phase 06-battle-and-capture]: battle_engine.py imports models only via TYPE_CHECKING — no runtime circular deps, pure logic module enforces six-layer architecture
+- [Phase 06-battle-and-capture]: Creature level-up threshold is level*50 XP — simple predictable linear curve (Claude's discretion)
 
 ### Pending Todos
 
@@ -124,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T05:37:07.273Z
-Stopped at: Phase 6 UI-SPEC approved
-Resume file: .planning/phases/06-battle-and-capture/06-UI-SPEC.md
+Last session: 2026-04-05T06:32:26.324Z
+Stopped at: Completed 06-03-PLAN.md
+Resume file: None
