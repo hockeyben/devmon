@@ -89,10 +89,33 @@ def test_damage_uses_atk_def_type_effectiveness():
 # (render layer — implemented in Plan 04)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="Phase 6: battle render not yet implemented")
 def test_battle_screen_renders_hp_bars_and_art():
-    from devmon.render.battle import render_battle_creature_panel
-    assert False, "BATL-05"
+    """BATL-05: HP bar and battle creature panel render correctly."""
+    from unittest.mock import MagicMock
+    from rich.text import Text
+    from rich.panel import Panel
+    from devmon.render.battle import render_hp_bar, render_battle_creature_panel
+
+    # render_hp_bar: returns Rich Text
+    hp_text = render_hp_bar(45, 80)
+    assert isinstance(hp_text, Text)
+
+    # render_battle_creature_panel: returns Rich Panel
+    template = MagicMock()
+    template.name = "EmberFox"
+    template.type = "Fire"
+    template.ascii_art = [" /\\_/\\  ", "(>^.^<)", " (___) "]
+    template.primary_color = "bold red"
+
+    panel = render_battle_creature_panel(
+        template=template,
+        current_hp=45,
+        max_hp=80,
+        level=5,
+        prefix="WILD",
+        rarity="uncommon",
+    )
+    assert isinstance(panel, Panel)
 
 
 # ---------------------------------------------------------------------------
