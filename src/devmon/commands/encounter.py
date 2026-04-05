@@ -2,7 +2,7 @@
 
 Implements the encounter action menu (UI-SPEC Surface 2 and 5, CLI-09, ENCR-05):
 - Shows creature panel with encounter level when a creature is queued
-- Action menu: Battle (Phase 6 stub), Flee (clears queue), Items (coming soon)
+- Action menu: Battle (redirects to devmon battle per D-06), Flee (clears queue), Items (coming soon)
 - Empty state: encouraging message when no encounter is queued
 
 ARCHITECTURE: CLI layer only — imports from engine/, persistence/, render/,
@@ -61,8 +61,9 @@ def encounter_cmd() -> None:
         choice = input("  Enter choice [1-3]: ").strip()
 
         if choice == "1":
-            # Phase 6 stub (UI-SPEC: preserve encounter, print stub message)
-            console.print("Battle system coming in Phase 6! Encounter preserved.")
+            # Per D-06: devmon battle is the battle entry point, not the encounter menu.
+            # Encounter menu is for inspection; battle is a separate command.
+            console.print("Run [bold]devmon battle[/bold] to fight this encounter!")
             raise typer.Exit()
         elif choice == "2":
             # Flee: clear encounter, save, print confirmation (D-22)

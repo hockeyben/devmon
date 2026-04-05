@@ -685,9 +685,9 @@ def test_encounter_cmd_flee_clears_queue(tmp_devmon_home):
     assert saved.flee_count == 1
 
 
-# ENCR-05: Battle prints Phase 6 stub and preserves encounter
+# ENCR-05: Battle option redirects to devmon battle (D-06) and preserves encounter
 def test_encounter_cmd_battle_stub(tmp_devmon_home):
-    """Battle option prints Phase 6 stub and preserves encounter queue."""
+    """Battle option prints redirect to devmon battle and preserves encounter queue (D-06)."""
     import time
     from typer.testing import CliRunner
     from devmon.commands.encounter import app
@@ -713,8 +713,9 @@ def test_encounter_cmd_battle_stub(tmp_devmon_home):
     runner = CliRunner()
     result = runner.invoke(app, [], input="1\n")
     assert result.exit_code == 0
-    assert "Phase 6" in result.output
-    # Encounter preserved
+    # Per D-06: encounter battle option redirects user to devmon battle command
+    assert "devmon battle" in result.output
+    # Encounter preserved — redirect does not clear the queue
     saved = load()
     assert saved.encounter_queue is not None
 
