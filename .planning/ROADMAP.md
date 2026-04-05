@@ -108,8 +108,14 @@ Plans:
   3. Rare, elite, and boss encounter types appear at substantially lower frequency than normal encounters, verified against the rarity weight table
   4. A queued encounter that exceeds the configured timeout expires cleanly with no orphaned state
   5. A power user running 500+ commands in one session does not encounter creatures every command — session-time ticks gate encounter spawning
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 05-01-PLAN.md — Data models: EncounterEntry, allowed_rarities, GameState v5, migration, test scaffold (Wave 1)
+- [ ] 05-02-PLAN.md — Encounter engine: rarity selection, level formula, timer/probability, expiry (Wave 2)
+- [ ] 05-03-PLAN.md — CLI wiring: encounter command, render extension, PS1 indicator, main.py integration, AI detection (Wave 3)
+- [ ] 05-04-PLAN.md — Human verification: encounter visuals and CLI flow (Wave 4)
 
 ### Phase 6: Battle and Capture
 **Goal**: The player can engage a queued encounter in a full turn-based battle, choose to defeat or capture the creature, and earn rewards
@@ -188,7 +194,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Shell Integration | 6/6 | Complete   | 2026-04-04 |
 | 3. Player Profile | 4/5 | In Progress|  |
 | 4. Creature Roster | 0/3 | Not started | - |
-| 5. Encounter System | 0/TBD | Not started | - |
+| 5. Encounter System | 0/4 | Not started | - |
 | 6. Battle and Capture | 0/TBD | Not started | - |
 | 7. Party and Collection | 0/TBD | Not started | - |
 | 8. Economy and Shop | 0/TBD | Not started | - |
