@@ -153,10 +153,10 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 07-01-PLAN.md — Schema v7 migration (codex_state), party display command, test scaffold (Wave 1)
-- [ ] 07-02-PLAN.md — Party swap command (interactive + direct), display_name helper, nickname integration (Wave 2)
-- [ ] 07-03-PLAN.md — Collection viewer, detail view, codex subcommand, rename command (Wave 2, parallel with 07-02)
-- [ ] 07-04-PLAN.md — Human verification: party, collection, codex, rename end-to-end (Wave 3)
+- [x] 07-01-PLAN.md — Schema v7 migration (codex_state), party display command, test scaffold (Wave 1)
+- [x] 07-02-PLAN.md — Party swap command (interactive + direct), display_name helper, nickname integration (Wave 2)
+- [x] 07-03-PLAN.md — Collection viewer, detail view, codex subcommand, rename command (Wave 2, parallel with 07-02)
+- [x] 07-04-PLAN.md — Human verification: party, collection, codex, rename end-to-end (Wave 3)
 
 ### Phase 8: Economy and Shop
 **Goal**: The player earns currency through gameplay and can spend it on items that meaningfully affect battle and capture outcomes
