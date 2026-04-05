@@ -1,12 +1,15 @@
-"""devmon party — display the active 3-slot party.
+"""devmon party — display the active 3-slot party, manage party composition.
 
 CLI layer: reads game state, renders party table via Rich.
 Must NOT be imported by domain modules.
 
-Requirements: PRTY-01, PRTY-03, CLI-03, D-01, D-03
-Threat: T-07-02 — capture_rate is never displayed here (HARD RULE).
+Requirements: PRTY-01, PRTY-02, PRTY-03, PRTY-04, CLI-03, D-01, D-03, D-13
+Threat: T-07-02, T-07-03 — capture_rate is NEVER displayed here (HARD RULE).
+        T-07-04 — No infinite loop in interactive prompts (re-prompt once, then abort).
 """
 from __future__ import annotations
+
+from typing import Optional
 
 import typer
 from rich import box
@@ -16,11 +19,13 @@ from rich.text import Text
 
 from devmon.engine.creature_loader import get_creature
 from devmon.persistence.save import load as load_state
+from devmon.persistence.save import save as save_state
+from devmon.render.party import display_name
 from devmon.render.themes import RARITY_COLORS
 
 app = typer.Typer()
 
-# Party size is 3 slots for MVP (PROJECT.md key decision)
+# Party size is 3 slots for MVP (PROJECT.md key decision, D-04)
 _PARTY_SIZE = 3
 
 
@@ -36,19 +41,16 @@ def _hp_color(current: int, max_hp: int) -> str:
     return "red"
 
 
-@app.callback(invoke_without_command=True)
-def party_cmd(ctx: typer.Context) -> None:
-    """Show the active party (3 slots)."""
-    if ctx.invoked_subcommand is not None:
-        return
+def _render_party_table(state, console: Console) -> None:
+    """Render the party table to the given console.
 
-    console = Console()
-    state = load_state()
+    Extracted into a helper so party_cmd and swap_cmd can both call it.
+    Pure render — no I/O, no state mutation.
 
-    if state is None:
-        console.print("No save file found.")
-        return
-
+    Args:
+        state: GameState instance (read-only).
+        console: Rich Console to print to.
+    """
     # Empty collection shortcut
     if len(state.creature_collection) == 0:
         console.print(
@@ -105,10 +107,10 @@ def party_cmd(ctx: typer.Context) -> None:
                 )
                 continue
 
-            # Name: nickname if set, else template name; styled by rarity
-            display_name = owned.nickname if owned.nickname else template.name
+            # Name: use display_name helper (D-13 — nickname replaces species name everywhere)
+            name = display_name(owned, template)
             rarity_style = RARITY_COLORS.get(template.rarity, "white")
-            name_cell = Text(display_name, style=rarity_style)
+            name_cell = Text(name, style=rarity_style)
 
             # Level
             level_cell = f"Lv.{owned.level}"
@@ -144,3 +146,191 @@ def party_cmd(ctx: typer.Context) -> None:
             "Tip: Use 'devmon party swap <slot>' to fill your party.",
             style="dim white",
         )
+
+
+@app.callback(invoke_without_command=True)
+def party_cmd(ctx: typer.Context) -> None:
+    """Show the active party (3 slots)."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    console = Console()
+    state = load_state()
+
+    if state is None:
+        console.print("No save file found.")
+        return
+
+    _render_party_table(state, console)
+
+
+@app.command("swap")
+def swap_cmd(
+    slot: int = typer.Argument(..., help="Party slot 1-3"),
+    creature_name: Optional[str] = typer.Argument(None, help="Creature name to assign"),
+) -> None:
+    """Swap a creature into the given party slot (interactive or direct mode).
+
+    Requirements: PRTY-02, PRTY-04
+    Threat: T-07-03 — validate slot and creature inputs; T-07-04 — no capture_rate shown;
+            T-07-05 — re-prompt once then abort (no infinite loop).
+    """
+    console = Console()
+
+    # Validate slot (T-07-03)
+    if slot not in (1, 2, 3):
+        console.print("Slot must be 1, 2, or 3.", style="dim white")
+        return
+
+    # Load state
+    state = load_state()
+    if state is None:
+        console.print("No save file found.", style="dim white")
+        return
+
+    # Build set of template_ids currently in party (excluding the slot being swapped)
+    current_party_ids: set[str] = set()
+    for i, tid in enumerate(state.party):
+        if i != (slot - 1) and tid:  # exclude the slot being replaced
+            current_party_ids.add(tid)
+
+    # Build candidate list: non-fainted creatures NOT already in another slot
+    # Per PRTY-04: fainted creatures excluded from swap candidates
+    candidates = []
+    for owned in state.creature_collection:
+        if owned.is_fainted:
+            continue  # PRTY-04: fainted excluded
+        if owned.template_id in current_party_ids:
+            continue  # already in another slot — can't duplicate
+        try:
+            template = get_creature(owned.template_id)
+        except (KeyError, ValueError):
+            continue  # skip unknown templates
+        candidates.append((owned, template))
+
+    if not candidates:
+        console.print(
+            "No available creatures to add to this slot.", style="dim white"
+        )
+        return
+
+    selected_owned = None
+
+    # -------------------------------------------------------------------
+    # Direct mode: creature_name provided
+    # -------------------------------------------------------------------
+    if creature_name is not None:
+        query = creature_name.lower()
+        matches = [
+            (owned, tmpl)
+            for owned, tmpl in candidates
+            if query in display_name(owned, tmpl).lower()
+        ]
+
+        if len(matches) == 0:
+            console.print(
+                f"No creature named '{creature_name}' in your collection.",
+                style="dim white",
+            )
+            return
+        elif len(matches) > 1:
+            console.print(
+                "Multiple creatures match. Please be more specific:",
+                style="dim white",
+            )
+            for owned, tmpl in matches:
+                console.print(
+                    f"  {display_name(owned, tmpl)}  (Lv.{owned.level})",
+                    style="dim white",
+                )
+            return
+        else:
+            selected_owned = matches[0][0]
+
+    # -------------------------------------------------------------------
+    # Interactive mode: no creature_name provided
+    # -------------------------------------------------------------------
+    else:
+        # Show current party first
+        _render_party_table(state, console)
+        console.print()
+
+        # Show numbered candidate list (T-07-04: NO capture_rate shown)
+        for i, (owned, tmpl) in enumerate(candidates, 1):
+            rarity_style = RARITY_COLORS.get(tmpl.rarity, "white")
+            name = display_name(owned, tmpl)
+            console.print(
+                f"  [{i}] "
+                + f"[{rarity_style}]{name}[/{rarity_style}]"
+                + f"  LVL {owned.level}  ({tmpl.rarity})"
+            )
+
+        console.print()
+
+        # First prompt (T-07-05: re-prompt once, then abort — no infinite loop)
+        raw = input(f"Choose a creature [1-{len(candidates)}, or 0 to cancel]: ").strip()
+
+        # Attempt parse
+        idx: Optional[int] = None
+        try:
+            idx = int(raw)
+        except ValueError:
+            idx = None
+
+        if idx is None:
+            # Invalid first input — re-prompt once (T-07-05)
+            raw2 = input(f"Choose a creature [1-{len(candidates)}, or 0 to cancel]: ").strip()
+            try:
+                idx = int(raw2)
+            except ValueError:
+                idx = None
+
+        if idx is None or idx == 0 or idx == "" or not (1 <= idx <= len(candidates)):
+            if idx == 0 or raw.strip() == "0":
+                console.print("Swap cancelled.", style="dim white")
+            elif idx is None:
+                console.print("Swap cancelled.", style="dim white")
+            else:
+                console.print("Swap cancelled.", style="dim white")
+            return
+
+        selected_owned = candidates[idx - 1][0]
+
+    # -------------------------------------------------------------------
+    # Assignment logic (shared by both modes)
+    # -------------------------------------------------------------------
+    # Remove selected creature from any other slot it currently occupies (no duplicates)
+    selected_tid = selected_owned.template_id
+    state.party = [
+        tid for i, tid in enumerate(state.party)
+        if not (tid == selected_tid and i != (slot - 1))
+    ]
+
+    # Extend party list to accommodate the target slot
+    while len(state.party) < slot:
+        state.party.append("")
+
+    # Assign the creature to the slot
+    state.party[slot - 1] = selected_tid
+
+    # Remove trailing empty-string placeholders
+    while state.party and state.party[-1] == "":
+        state.party.pop()
+
+    # Enforce max 3 (D-04)
+    state.party = state.party[:_PARTY_SIZE]
+
+    # Persist
+    save_state(state)
+
+    # Look up template for confirmation message
+    try:
+        selected_template = get_creature(selected_tid)
+        selected_display = display_name(selected_owned, selected_template)
+    except (KeyError, ValueError):
+        selected_display = selected_tid
+
+    console.print(
+        f"{selected_display} moved to slot {slot}.",
+        style="white",
+    )

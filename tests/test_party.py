@@ -1,12 +1,13 @@
-"""Tests for party system — PRTY-01, PRTY-03, CLI-03.
+"""Tests for party system — PRTY-01, PRTY-02, PRTY-03, PRTY-04, CLI-03, D-13.
 
 Phase 7 plan 01: Schema v7 migration, party display command.
+Phase 7 plan 02: Party swap command (interactive + direct), display_name helper.
 """
 import pytest
 from typer.testing import CliRunner
 
 from devmon.models.state import GameState
-from devmon.models.creature import OwnedCreature
+from devmon.models.creature import OwnedCreature, CreatureTemplate
 
 
 # ---------------------------------------------------------------------------
@@ -132,3 +133,197 @@ def test_party_display_fainted_creature(tmp_save_dir):
 
     assert result.exit_code == 0
     assert "FAINTED" in result.output
+
+
+# ---------------------------------------------------------------------------
+# display_name helper tests (D-13: nicknames replace species name everywhere)
+# ---------------------------------------------------------------------------
+
+def test_display_name_nickname():
+    """D-13: OwnedCreature with nickname returns nickname from display_name."""
+    from devmon.render.party import display_name as dn
+
+    # Minimal CreatureTemplate using real bugbyte data via get_creature
+    from devmon.engine.creature_loader import get_creature
+    template = get_creature("bugbyte")
+
+    owned = OwnedCreature(template_id="bugbyte", nickname="Sparky")
+    assert dn(owned, template) == "Sparky"
+
+
+def test_display_name_no_nickname():
+    """D-13: OwnedCreature with no nickname returns template.name from display_name."""
+    from devmon.render.party import display_name as dn
+    from devmon.engine.creature_loader import get_creature
+
+    template = get_creature("bugbyte")
+    owned = OwnedCreature(template_id="bugbyte", nickname=None)
+    assert dn(owned, template) == template.name
+
+
+# ---------------------------------------------------------------------------
+# Party swap command tests (PRTY-02, PRTY-04)
+# ---------------------------------------------------------------------------
+
+def test_party_swap_direct_mode(tmp_save_dir):
+    """PRTY-02: Direct mode assigns creature to slot 1 by name match."""
+    from devmon.commands.party import app as party_app
+    from devmon.persistence.save import save as save_state, load as load_state
+    from devmon.models.state import PlayerProfile
+
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[
+            OwnedCreature(template_id="bugbyte", level=5),
+            OwnedCreature(template_id="stackcat", level=3),
+        ],
+        party=["stackcat"],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    result = runner.invoke(party_app, ["swap", "1", "Bugbyte"])
+
+    assert result.exit_code == 0, result.output
+    assert "moved to slot 1" in result.output
+
+    # Verify persistence
+    saved = load_state()
+    assert saved is not None
+    assert saved.party[0] == "bugbyte"
+
+
+def test_party_swap_invalid_slot(tmp_save_dir):
+    """T-07-03: Slot outside 1-3 is rejected with helpful message."""
+    from devmon.commands.party import app as party_app
+    from devmon.persistence.save import save as save_state
+    from devmon.models.state import PlayerProfile
+
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[OwnedCreature(template_id="bugbyte", level=5)],
+        party=["bugbyte"],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    result = runner.invoke(party_app, ["swap", "5", "Bugbyte"])
+
+    assert result.exit_code == 0
+    assert "Slot must be 1, 2, or 3" in result.output
+
+
+def test_fainted_excluded_from_swap(tmp_save_dir):
+    """PRTY-04: Fainted creatures are NOT in the interactive candidate list."""
+    from devmon.commands.party import app as party_app
+    from devmon.persistence.save import save as save_state
+    from devmon.models.state import PlayerProfile
+
+    # volt_whisker is fainted — should not appear as swap candidate
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[
+            OwnedCreature(template_id="bugbyte", level=5),
+            OwnedCreature(template_id="volt_whisker", level=2, is_fainted=True),
+        ],
+        party=["bugbyte"],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    # Direct mode: try to swap fainted creature by name — should fail with "No creature named"
+    result = runner.invoke(party_app, ["swap", "2", "Volt"])
+
+    assert result.exit_code == 0, result.output
+    # Fainted creature not found in candidates
+    assert "No creature named" in result.output or "No available creatures" in result.output
+
+
+def test_party_swap_preserves_save(tmp_save_dir):
+    """PRTY-02: Swap persists to save file and survives reload."""
+    from devmon.commands.party import app as party_app
+    from devmon.persistence.save import save as save_state, load as load_state
+    from devmon.models.state import PlayerProfile
+
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[
+            OwnedCreature(template_id="bugbyte", level=5),
+            OwnedCreature(template_id="ember_fox", level=4),
+        ],
+        party=["bugbyte"],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    result = runner.invoke(party_app, ["swap", "2", "Ember"])
+
+    assert result.exit_code == 0, result.output
+    assert "moved to slot 2" in result.output
+
+    # Reload and verify
+    reloaded = load_state()
+    assert reloaded is not None
+    assert "ember_fox" in reloaded.party
+
+
+def test_party_swap_case_insensitive(tmp_save_dir):
+    """PRTY-02: Direct mode match is case-insensitive."""
+    from devmon.commands.party import app as party_app
+    from devmon.persistence.save import save as save_state, load as load_state
+    from devmon.models.state import PlayerProfile
+
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[
+            OwnedCreature(template_id="bugbyte", level=5),
+            OwnedCreature(template_id="stackcat", level=3),
+        ],
+        party=["stackcat"],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    # Use all-lowercase — should still match "Bugbyte"
+    result = runner.invoke(party_app, ["swap", "1", "bugbyte"])
+
+    assert result.exit_code == 0, result.output
+    assert "moved to slot 1" in result.output
+
+    saved = load_state()
+    assert saved is not None
+    assert saved.party[0] == "bugbyte"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Party table helper and nickname display tests
+# ---------------------------------------------------------------------------
+
+def test_party_display_uses_nickname(tmp_save_dir):
+    """D-13: Party table shows nickname instead of template name when set."""
+    from devmon.commands.party import app as party_app
+    from devmon.persistence.save import save as save_state
+    from devmon.models.state import PlayerProfile
+
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[
+            OwnedCreature(template_id="bugbyte", level=5, nickname="Sparky"),
+        ],
+        party=["bugbyte"],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    result = runner.invoke(party_app, [])
+
+    assert result.exit_code == 0, result.output
+    assert "Sparky" in result.output
+    # Template name "Bugbyte" should NOT appear (D-13: nickname replaces it)
+    assert "Bugbyte" not in result.output
+
+
+def test_party_table_helper_callable():
+    """_render_party_table is callable from the party module."""
+    from devmon.commands.party import _render_party_table
+    assert callable(_render_party_table)
