@@ -685,9 +685,9 @@ def test_encounter_cmd_flee_clears_queue(tmp_devmon_home):
     assert saved.flee_count == 1
 
 
-# ENCR-05: Battle option redirects to devmon battle (D-06) and preserves encounter
-def test_encounter_cmd_battle_stub(tmp_devmon_home):
-    """Battle option prints redirect to devmon battle and preserves encounter queue (D-06)."""
+# ENCR-05: Battle option launches battle directly from encounter menu
+def test_encounter_cmd_battle_launches(tmp_devmon_home):
+    """Battle option launches battle_cmd directly instead of redirecting."""
     import time
     from typer.testing import CliRunner
     from devmon.commands.encounter import app
@@ -711,13 +711,12 @@ def test_encounter_cmd_battle_stub(tmp_devmon_home):
     save(state)
 
     runner = CliRunner()
-    result = runner.invoke(app, [], input="1\n")
+    # Select "1" (Battle), then "6" (Flee) to exit the battle loop
+    result = runner.invoke(app, [], input="1\n6\n")
     assert result.exit_code == 0
-    # Per D-06: encounter battle option redirects user to devmon battle command
-    assert "devmon battle" in result.output
-    # Encounter preserved — redirect does not clear the queue
+    # Battle was launched — encounter should be cleared after flee
     saved = load()
-    assert saved.encounter_queue is not None
+    assert saved.encounter_queue is None
 
 
 # ENCR-05: Items then flee

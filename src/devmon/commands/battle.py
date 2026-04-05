@@ -166,7 +166,7 @@ def battle_cmd() -> None:
     state = load()
     if state is None or state.encounter_queue is None:
         console.print(
-            "No wild encounter queued. Keep coding \u2014 one will appear soon!"
+            "No wild encounter queued. Keep coding -- one will appear soon!"
         )
         raise typer.Exit()
 
@@ -274,7 +274,7 @@ def battle_cmd() -> None:
                     wild.current_hp = max(0, wild.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
-                        f"{player_template.name} \u2694\ufe0f {dmg} dmg{' ' + suffix if suffix else ''}"
+                        f"{player_template.name} -> {dmg} dmg{' ' + suffix if suffix else ''}"
                     )
                     return wild.current_hp <= 0
 
@@ -289,7 +289,7 @@ def battle_cmd() -> None:
                     player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
-                        f"{wild_template.name} \u2694\ufe0f {dmg} dmg{' ' + suffix if suffix else ''}"
+                        f"{wild_template.name} -> {dmg} dmg{' ' + suffix if suffix else ''}"
                     )
                     return player_owned.current_hp <= 0
 
@@ -421,7 +421,7 @@ def battle_cmd() -> None:
                     player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
-                        f"{wild_template.name} \u2694\ufe0f {dmg} dmg{' ' + suffix if suffix else ''}"
+                        f"{wild_template.name} -> {dmg} dmg{' ' + suffix if suffix else ''}"
                     )
                     return player_owned.current_hp <= 0
 
@@ -541,7 +541,7 @@ def battle_cmd() -> None:
                         player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                         suffix = _type_suffix(effectiveness, crit)
                         last_narration = (
-                            f"Capture failed! {wild_template.name} \u2694\ufe0f {dmg} dmg"
+                            f"Capture failed! {wild_template.name} -> {dmg} dmg"
                             f"{' ' + suffix if suffix else ''}"
                         )
                         turn += 1
@@ -618,7 +618,7 @@ def battle_cmd() -> None:
                     suffix = _type_suffix(effectiveness, crit)
                     last_narration = (
                         f"{player_template.name} switched in! "
-                        f"{wild_template.name} \u2694\ufe0f {dmg} dmg{' ' + suffix if suffix else ''}"
+                        f"{wild_template.name} -> {dmg} dmg{' ' + suffix if suffix else ''}"
                     )
                     turn += 1
 

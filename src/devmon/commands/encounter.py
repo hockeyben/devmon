@@ -61,9 +61,9 @@ def encounter_cmd() -> None:
         choice = input("  Enter choice [1-3]: ").strip()
 
         if choice == "1":
-            # Per D-06: devmon battle is the battle entry point, not the encounter menu.
-            # Encounter menu is for inspection; battle is a separate command.
-            console.print("Run [bold]devmon battle[/bold] to fight this encounter!")
+            # Launch battle directly from encounter menu
+            from devmon.commands.battle import battle_cmd
+            battle_cmd()
             raise typer.Exit()
         elif choice == "2":
             # Flee: clear encounter, save, print confirmation (D-22)

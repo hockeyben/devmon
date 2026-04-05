@@ -282,7 +282,7 @@ def run_capture_animation(
     if success:
         success_text = Text()
         success_text.append(
-            f"  \u2728 CLICK! {creature_name} was captured! \u2728",
+            f"  * CLICK! {creature_name} was captured! *",
             style=f"bold {rarity_color}",
         )
         console.print(success_text)

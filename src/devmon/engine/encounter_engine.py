@@ -231,7 +231,7 @@ def format_encounter_notification(creature_name: str, rarity: str) -> str:
     """
     rarity_color = RARITY_COLORS.get(rarity, "white")
     return (
-        f"\u26a1 A wild [{rarity_color}]{creature_name}[/{rarity_color}] appeared! "
+        f"[bold]>>[/bold] A wild [{rarity_color}]{creature_name}[/{rarity_color}] appeared! "
         f"Use devmon encounter to inspect."
     )
 
