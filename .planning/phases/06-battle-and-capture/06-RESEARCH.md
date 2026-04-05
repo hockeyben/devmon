@@ -652,22 +652,25 @@ def apply_creature_xp(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Do all 25 creature JSON files exist and are they valid?**
+1. **Do all 25 creature JSON files exist and are they valid?** (RESOLVED -- Plan 02 verifies and updates all 25 creature JSON files)
    - What we know: 3 files confirmed in `src/devmon/data/creatures/` via directory listing.
    - What's unclear: Whether the full 25-creature roster from CREA-01 is complete.
    - Recommendation: Wave 0 task must verify creature count and add missing files before battle engine can be tested end-to-end.
+   - **Resolution:** Plan 02 reads all 25 creature JSON files and adds abilities arrays. The verification script asserts exactly 25 files exist.
 
-2. **Do creature JSON files currently have an `abilities` field?**
+2. **Do creature JSON files currently have an `abilities` field?** (RESOLVED -- Plan 01 adds Ability model, Plan 02 populates JSON files)
    - What we know: The existing `bugbyte.json` has no `abilities` field. `CreatureTemplate` model has no `abilities` field.
    - What's unclear: Whether abilities need to be added to both the model and all 25 JSON files in Phase 6.
    - Recommendation: Yes — CREA-06 is a Phase 6 requirement. Wave 0 must add `abilities: list[AbilityTemplate]` to `CreatureTemplate` and populate all creature JSON files.
+   - **Resolution:** Plan 01 Task 1 adds the Ability model and abilities field to CreatureTemplate. Plan 02 Task 1 populates all 25 creature JSON files with 2-3 abilities each.
 
-3. **Should `party` be a separate field in `GameState` or inferred from `creature_collection`?**
+3. **Should `party` be a separate field in `GameState` or inferred from `creature_collection`?** (RESOLVED -- Plan 01 adds party field to GameState)
    - What we know: CONTEXT.md code context says "OwnedCreature list in GameState → party system (new field needed)." Phase 7 adds full party management.
    - What's unclear: Whether Phase 6 needs a `party: list[str]` field (ordered list of `template_id`s for active party) or just uses `creature_collection` order.
    - Recommendation: Add a minimal `party_ids: list[str] = []` to `GameState` in Phase 6. This gives Phase 7 a clean field to build on without reimplementing the bootstrap logic.
+   - **Resolution:** Plan 01 Task 1 adds `party: list[str]` to GameState with schema version 6. Plan 05 Task 1 bootstraps the party lead from creature_collection.
 
 ---
 

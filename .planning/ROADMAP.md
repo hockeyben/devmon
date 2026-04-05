@@ -128,15 +128,16 @@ Plans:
   4. A successful capture adds the creature to the collection with a capture bonus XP notification; a failed capture continues the battle
   5. Defeating a wild creature grants XP and currency to both the player and their active party creature, with visible reward notifications
   6. A party creature that faints is marked as unable to battle until healed; the player can switch to another party member mid-battle
-**Plans**: 5 plans
+**Plans**: 6 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 06-01-PLAN.md — Test scaffold, schema v6 migration, Ability model, creature JSON abilities (Wave 1)
-- [ ] 06-02-PLAN.md — Battle engine pure logic: damage, capture, rewards, creature XP, wild AI (Wave 2)
-- [ ] 06-03-PLAN.md — Battle render: HP bars, panels, capture animation, result screens (Wave 3)
-- [ ] 06-04-PLAN.md — Battle command: CLI wiring, Rich Live loop, party bootstrap, encounter integration (Wave 4)
-- [ ] 06-05-PLAN.md — Human verification: battle visuals, capture flow, HP transitions (Wave 5)
+- [ ] 06-01-PLAN.md — Ability model, schema v6 migration, party field, xfail test scaffold (Wave 1)
+- [ ] 06-02-PLAN.md — Creature JSON abilities data: 25 creatures, 75 unique abilities (Wave 1)
+- [ ] 06-03-PLAN.md — Battle engine pure logic: damage, capture, rewards, creature XP, wild AI (Wave 2)
+- [ ] 06-04-PLAN.md — Battle render: HP bars, panels, capture animation, result screens (Wave 3)
+- [ ] 06-05-PLAN.md — Battle command: CLI wiring, Rich Live loop, party bootstrap, encounter integration (Wave 4)
+- [ ] 06-06-PLAN.md — Human verification: battle visuals, capture flow, HP transitions (Wave 5)
 
 ### Phase 7: Party and Collection
 **Goal**: The player can manage their team and browse every creature they own or have encountered
