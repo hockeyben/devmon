@@ -11,7 +11,7 @@ def test_gamestate_round_trip():
     json_str = state.model_dump_json()
     loaded = GameState.model_validate_json(json_str)
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 6
+    assert loaded.schema_version == 7
 
 
 def test_schema_version_present():
@@ -19,7 +19,7 @@ def test_schema_version_present():
     state = GameState(player=PlayerProfile(name="Ash"))
     data = json.loads(state.model_dump_json())
     assert "schema_version" in data
-    assert data["schema_version"] == 6
+    assert data["schema_version"] == 7
 
 
 def test_profile_persist():
@@ -44,7 +44,7 @@ def test_new_game_defaults():
     assert state.player.level == 1
     assert state.player.xp == 0
     assert state.player.currency == 0
-    assert state.schema_version == 6
+    assert state.schema_version == 7
 
 
 def test_forward_compat_missing_field():
@@ -87,10 +87,10 @@ def test_player_profile_has_session_xp_earned():
     assert p.session_xp_earned == 0
 
 
-def test_schema_version_is_6():
-    """TRACK-01: GameState.schema_version defaults to 6 after Phase 6 bump."""
+def test_schema_version_is_7():
+    """TRACK-01: GameState.schema_version defaults to 7 after Phase 7 bump."""
     state = GameState.new_game("Ash")
-    assert state.schema_version == 6
+    assert state.schema_version == 7
 
 
 def test_last_active_date_round_trips():
@@ -108,3 +108,53 @@ def test_new_game_phase2_defaults():
     assert state.player.last_active_date is None
     assert state.player.streak_grace_used is False
     assert state.player.session_xp_earned == 0
+
+
+# --- Phase 7 migration tests (Schema v7: codex_state) ---
+
+def test_migrate_6_to_7_adds_codex_state():
+    """Schema v7: _migrate_6_to_7 adds codex_state={} to v6 data dict."""
+    from devmon.persistence.migrations import migrate
+    v6_data = {
+        "schema_version": 6,
+        "player": {"name": "Ash"},
+        "creature_collection": [],
+        "party": [],
+    }
+    result = migrate(v6_data)
+    assert "codex_state" in result
+    assert result["codex_state"] == {}
+    assert result["schema_version"] == 7
+
+
+def test_migrate_6_to_7_preserves_existing_codex():
+    """Schema v7: _migrate_6_to_7 preserves existing codex_state (setdefault pattern)."""
+    from devmon.persistence.migrations import migrate
+    v6_data = {
+        "schema_version": 6,
+        "player": {"name": "Ash"},
+        "creature_collection": [],
+        "party": [],
+        "codex_state": {"bugbyte": "encountered"},
+    }
+    result = migrate(v6_data)
+    assert result["codex_state"] == {"bugbyte": "encountered"}
+
+
+def test_CURRENT_VERSION_matches_schema_version_default():
+    """SAVE-03: CURRENT_VERSION in migrations.py must always equal GameState.schema_version default."""
+    from devmon.persistence.migrations import CURRENT_VERSION
+    state = GameState.new_game("Ash")
+    assert CURRENT_VERSION == state.schema_version
+
+
+def test_full_migration_chain_v0_to_v7():
+    """Schema migration: v0 data migrates cleanly to v7 producing valid GameState."""
+    from devmon.persistence.migrations import migrate
+    v0_data = {"player": {"name": "OldTrainer"}}
+    result = migrate(v0_data)
+    assert result["schema_version"] == 7
+    assert "codex_state" in result
+    state = GameState.model_validate(result)
+    assert state.schema_version == 7
+    assert state.codex_state == {}

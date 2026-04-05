@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 6
+CURRENT_VERSION = 7
 
 
 def migrate(data: dict) -> dict:
@@ -33,6 +33,7 @@ def migrate(data: dict) -> dict:
         3: _migrate_3_to_4,
         4: _migrate_4_to_5,
         5: _migrate_5_to_6,
+        6: _migrate_6_to_7,
     }
 
     while version < CURRENT_VERSION:
@@ -116,4 +117,15 @@ def _migrate_5_to_6(data: dict) -> dict:
     """
     data.setdefault("party", [])
     data["schema_version"] = 6
+    return data
+
+
+def _migrate_6_to_7(data: dict) -> dict:
+    """Version 6 -> 7: Phase 7 adds codex_state field to GameState.
+
+    Uses setdefault() so pre-existing codex_state is never overwritten (T-07-01).
+    codex_state maps template_id -> 'encountered' | 'captured'.
+    """
+    data.setdefault("codex_state", {})
+    data["schema_version"] = 7
     return data
