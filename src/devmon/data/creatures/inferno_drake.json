@@ -28,5 +28,10 @@
   "primary_color": "bold red",
   "accent_color": "yellow",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Docker Melt", "damage_multiplier": 1.5, "type": "Fire", "learn_level": 1},
+    {"name": "Container Scorch", "damage_multiplier": 2.0, "type": "Fire", "learn_level": 5},
+    {"name": "Image Incinerate", "damage_multiplier": 2.5, "type": "Fire", "learn_level": 10}
+  ]
 }

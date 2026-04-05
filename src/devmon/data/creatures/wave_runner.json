@@ -27,5 +27,10 @@
   "primary_color": "bold blue",
   "accent_color": "bright_blue",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "HTTP Slam", "damage_multiplier": 1.4, "type": "Water", "learn_level": 1},
+    {"name": "Rate Limit Crash", "damage_multiplier": 1.8, "type": "Water", "learn_level": 5},
+    {"name": "Stream Torrent", "damage_multiplier": 2.2, "type": "Water", "learn_level": 10}
+  ]
 }

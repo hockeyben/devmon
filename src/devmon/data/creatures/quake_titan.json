@@ -27,5 +27,10 @@
   "primary_color": "bold yellow",
   "accent_color": "green",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Merge Quake", "damage_multiplier": 1.5, "type": "Earth", "learn_level": 1},
+    {"name": "Force Push Tremor", "damage_multiplier": 2.0, "type": "Earth", "learn_level": 5},
+    {"name": "Seismic Commit", "damage_multiplier": 2.5, "type": "Earth", "learn_level": 10}
+  ]
 }

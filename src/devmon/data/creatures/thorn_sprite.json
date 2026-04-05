@@ -28,5 +28,9 @@
   "primary_color": "bold green",
   "accent_color": "green",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Circular Prick", "damage_multiplier": 1.2, "type": "Nature", "learn_level": 1},
+    {"name": "Dep Tree Tangle", "damage_multiplier": 1.6, "type": "Nature", "learn_level": 5}
+  ]
 }

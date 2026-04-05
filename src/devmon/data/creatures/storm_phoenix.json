@@ -27,5 +27,10 @@
   "primary_color": "bold yellow",
   "accent_color": "bright_yellow",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Uptime Surge", "damage_multiplier": 1.5, "type": "Electric", "learn_level": 1},
+    {"name": "Reboot Bolt", "damage_multiplier": 2.0, "type": "Electric", "learn_level": 5},
+    {"name": "Phoenix Overclock", "damage_multiplier": 2.5, "type": "Electric", "learn_level": 10}
+  ]
 }

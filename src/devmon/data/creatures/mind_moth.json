@@ -28,5 +28,10 @@
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Trace Flutter", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
+    {"name": "Stack Trace Sting", "damage_multiplier": 1.7, "type": "Psychic", "learn_level": 5},
+    {"name": "Monitor Burn", "damage_multiplier": 2.1, "type": "Psychic", "learn_level": 10}
+  ]
 }

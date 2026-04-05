@@ -29,5 +29,10 @@
   "primary_color": "bold magenta",
   "accent_color": "dim white",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Abyss Gaze", "damage_multiplier": 1.5, "type": "Shadow", "learn_level": 1},
+    {"name": "Feature Creep", "damage_multiplier": 2.0, "type": "Shadow", "learn_level": 5},
+    {"name": "Null Annihilation", "damage_multiplier": 2.5, "type": "Shadow", "learn_level": 10}
+  ]
 }

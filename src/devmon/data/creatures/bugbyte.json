@@ -27,5 +27,10 @@
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Glitch Strike", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
+    {"name": "Memory Leak", "damage_multiplier": 1.8, "type": "Psychic", "learn_level": 5},
+    {"name": "Stack Overflow", "damage_multiplier": 2.2, "type": "Psychic", "learn_level": 10}
+  ]
 }

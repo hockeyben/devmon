@@ -27,5 +27,10 @@
   "primary_color": "bold yellow",
   "accent_color": "bright_yellow",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Race Condition Bite", "damage_multiplier": 1.4, "type": "Electric", "learn_level": 1},
+    {"name": "USB Arc", "damage_multiplier": 1.8, "type": "Electric", "learn_level": 5},
+    {"name": "Thread Frenzy", "damage_multiplier": 2.3, "type": "Electric", "learn_level": 10}
+  ]
 }

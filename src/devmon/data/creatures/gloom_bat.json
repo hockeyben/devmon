@@ -28,5 +28,10 @@
   "primary_color": "bold magenta",
   "accent_color": "dim white",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Dark Pattern Dive", "damage_multiplier": 1.5, "type": "Shadow", "learn_level": 1},
+    {"name": "Rebase Rupture", "damage_multiplier": 1.9, "type": "Shadow", "learn_level": 5},
+    {"name": "Void Swoop", "damage_multiplier": 2.4, "type": "Shadow", "learn_level": 10}
+  ]
 }

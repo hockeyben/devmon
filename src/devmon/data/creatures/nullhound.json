@@ -27,5 +27,10 @@
   "primary_color": "bold magenta",
   "accent_color": "dim white",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Null Pointer Bite", "damage_multiplier": 1.3, "type": "Shadow", "learn_level": 1},
+    {"name": "Exception Hunt", "damage_multiplier": 1.8, "type": "Shadow", "learn_level": 5},
+    {"name": "Void Howl", "damage_multiplier": 2.2, "type": "Shadow", "learn_level": 10}
+  ]
 }
