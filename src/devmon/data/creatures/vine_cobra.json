@@ -27,5 +27,10 @@
   "primary_color": "bold green",
   "accent_color": "green",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Wildcard Hiss", "damage_multiplier": 1.5, "type": "Nature", "learn_level": 1},
+    {"name": "DRY Violation Spit", "damage_multiplier": 1.9, "type": "Nature", "learn_level": 5},
+    {"name": "Graph Constrict", "damage_multiplier": 2.4, "type": "Nature", "learn_level": 10}
+  ]
 }

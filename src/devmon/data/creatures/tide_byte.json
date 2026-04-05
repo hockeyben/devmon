@@ -27,5 +27,9 @@
   "primary_color": "bold blue",
   "accent_color": "bright_blue",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Stdin Splash", "damage_multiplier": 1.2, "type": "Water", "learn_level": 1},
+    {"name": "Buffer Overflow Wave", "damage_multiplier": 1.7, "type": "Water", "learn_level": 5}
+  ]
 }

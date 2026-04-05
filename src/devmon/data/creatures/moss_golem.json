@@ -27,5 +27,9 @@
   "primary_color": "bold yellow",
   "accent_color": "green",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Gradle Grind", "damage_multiplier": 1.2, "type": "Earth", "learn_level": 1},
+    {"name": "Monorepo Smash", "damage_multiplier": 1.6, "type": "Earth", "learn_level": 5}
+  ]
 }

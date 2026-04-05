@@ -27,5 +27,10 @@
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Cipher Stare", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
+    {"name": "Obfuscation Wave", "damage_multiplier": 1.8, "type": "Psychic", "learn_level": 5},
+    {"name": "Decode Rupture", "damage_multiplier": 2.3, "type": "Psychic", "learn_level": 10}
+  ]
 }

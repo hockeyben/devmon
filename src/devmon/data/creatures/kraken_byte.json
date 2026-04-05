@@ -28,5 +28,10 @@
   "primary_color": "bold blue",
   "accent_color": "bright_blue",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Microservice Crush", "damage_multiplier": 1.5, "type": "Water", "learn_level": 1},
+    {"name": "API Flood", "damage_multiplier": 2.0, "type": "Water", "learn_level": 5},
+    {"name": "Deep Packet Surge", "damage_multiplier": 2.5, "type": "Water", "learn_level": 10}
+  ]
 }

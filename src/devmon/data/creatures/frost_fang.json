@@ -27,5 +27,9 @@
   "primary_color": "bold white",
   "accent_color": "bright_blue",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Cache Bite", "damage_multiplier": 1.3, "type": "Ice", "learn_level": 1},
+    {"name": "Pipeline Freeze", "damage_multiplier": 1.7, "type": "Ice", "learn_level": 5}
+  ]
 }

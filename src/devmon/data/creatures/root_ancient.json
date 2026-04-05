@@ -29,5 +29,10 @@
   "primary_color": "bold green",
   "accent_color": "green",
   "evolves_from": null,
-  "evolves_to": null
+  "evolves_to": null,
+  "abilities": [
+    {"name": "Ancient Branch", "damage_multiplier": 1.5, "type": "Nature", "learn_level": 1},
+    {"name": "Tab Entangle", "damage_multiplier": 2.0, "type": "Nature", "learn_level": 5},
+    {"name": "Version Zero Strike", "damage_multiplier": 2.5, "type": "Nature", "learn_level": 10}
+  ]
 }
