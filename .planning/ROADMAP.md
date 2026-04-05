@@ -112,10 +112,10 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 05-01-PLAN.md — Data models: EncounterEntry, allowed_rarities, GameState v5, migration, test scaffold (Wave 1)
-- [ ] 05-02-PLAN.md — Encounter engine: rarity selection, level formula, timer/probability, expiry (Wave 2)
-- [ ] 05-03-PLAN.md — CLI wiring: encounter command, render extension, PS1 indicator, main.py integration, AI detection (Wave 3)
-- [ ] 05-04-PLAN.md — Human verification: encounter visuals and CLI flow (Wave 4)
+- [x] 05-01-PLAN.md — Data models: EncounterEntry, allowed_rarities, GameState v5, migration, test scaffold (Wave 1)
+- [x] 05-02-PLAN.md — Encounter engine: rarity selection, level formula, timer/probability, expiry (Wave 2)
+- [x] 05-03-PLAN.md — CLI wiring: encounter command, render extension, PS1 indicator, main.py integration, AI detection (Wave 3)
+- [x] 05-04-PLAN.md — Human verification: encounter visuals and CLI flow (Wave 4)
 
 ### Phase 6: Battle and Capture
 **Goal**: The player can engage a queued encounter in a full turn-based battle, choose to defeat or capture the creature, and earn rewards
