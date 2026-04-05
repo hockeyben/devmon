@@ -312,3 +312,127 @@ def test_creature_abilities_gated_by_level():
     # Level 10: all abilities
     available_at_10 = get_available_abilities(abilities, creature_level=10)
     assert len(available_at_10) == 3
+
+
+# ---------------------------------------------------------------------------
+# UI-03: Battle result screens render without error
+# ---------------------------------------------------------------------------
+
+def test_render_victory_screen_produces_output():
+    """UI-03: render_victory_screen outputs content to a recorded console."""
+    from rich.console import Console
+    from devmon.render.battle import render_victory_screen
+
+    console = Console(record=True)
+    rewards = {"player_xp": 50, "creature_xp": 30, "currency": 10}
+
+    # Patch input() so the test does not block waiting for Enter
+    import builtins
+    original_input = builtins.input
+    builtins.input = lambda _="": ""
+    try:
+        render_victory_screen(
+            console=console,
+            player_creature_name="EmberFox",
+            wild_name="Mossvine",
+            rewards=rewards,
+        )
+    finally:
+        builtins.input = original_input
+
+    output = console.export_text()
+    assert "Victory" in output
+    assert "EmberFox" in output
+    assert "Mossvine" in output
+    assert "+50" in output
+
+
+def test_render_capture_screen_produces_output():
+    """UI-03: render_capture_screen outputs content and never shows capture rate."""
+    from rich.console import Console
+    from devmon.render.battle import render_capture_screen
+
+    console = Console(record=True)
+    rewards = {"player_xp": 40, "currency": 8}
+
+    import builtins
+    original_input = builtins.input
+    builtins.input = lambda _="": ""
+    try:
+        render_capture_screen(
+            console=console,
+            creature_name="Glitchling",
+            rarity="rare",
+            rewards=rewards,
+        )
+    finally:
+        builtins.input = original_input
+
+    output = console.export_text()
+    assert "Captured" in output
+    assert "Glitchling" in output
+    # Capture rate must never appear in output (T-06-06, D-15)
+    assert "capture_rate" not in output
+    assert "capture rate" not in output.lower()
+
+
+def test_render_defeat_screen_produces_output():
+    """UI-03: render_defeat_screen outputs defeat panel content."""
+    from rich.console import Console
+    from devmon.render.battle import render_defeat_screen
+
+    console = Console(record=True)
+
+    import builtins
+    original_input = builtins.input
+    builtins.input = lambda _="": ""
+    try:
+        render_defeat_screen(console=console)
+    finally:
+        builtins.input = original_input
+
+    output = console.export_text()
+    assert "Defeated" in output
+    assert "wiped out" in output
+
+
+def test_render_flee_message_produces_output():
+    """UI-03: render_flee_message prints single line with wild_name styled."""
+    from rich.console import Console
+    from devmon.render.battle import render_flee_message
+
+    console = Console(record=True)
+    render_flee_message(console=console, wild_name="Bugbyte", rarity="common")
+
+    output = console.export_text()
+    assert "fled" in output
+    assert "Bugbyte" in output
+    assert "Encounter lost" in output
+
+
+def test_run_capture_animation_prints_shakes(monkeypatch):
+    """UI-03: run_capture_animation prints all 3 shake lines and outcome."""
+    from rich.console import Console
+    from devmon.render.battle import run_capture_animation
+
+    # Monkeypatch time.sleep so test runs instantly
+    import devmon.render.battle as battle_module
+    monkeypatch.setattr(battle_module.time, "sleep", lambda _: None)
+
+    console = Console(record=True)
+    run_capture_animation(
+        console=console,
+        item_name="Basic Capsule",
+        creature_name="EmberFox",
+        rarity="uncommon",
+        success=True,
+    )
+
+    output = console.export_text()
+    assert "wobbles" in output
+    assert "shakes again" in output
+    assert "One more shake" in output
+    assert "CLICK" in output
+    assert "EmberFox" in output
+    # Capture rate must NEVER appear in animation output (T-06-06)
+    assert "capture_rate" not in output
