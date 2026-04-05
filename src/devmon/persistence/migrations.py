@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 5
+CURRENT_VERSION = 6
 
 
 def migrate(data: dict) -> dict:
@@ -32,6 +32,7 @@ def migrate(data: dict) -> dict:
         2: _migrate_2_to_3,
         3: _migrate_3_to_4,
         4: _migrate_4_to_5,
+        5: _migrate_5_to_6,
     }
 
     while version < CURRENT_VERSION:
@@ -105,4 +106,14 @@ def _migrate_4_to_5(data: dict) -> dict:
     data.setdefault("expired_count", 0)
     data.setdefault("total_encounters_seen", 0)
     data["schema_version"] = 5
+    return data
+
+
+def _migrate_5_to_6(data: dict) -> dict:
+    """Version 5 -> 6: Phase 6 adds party field to GameState (battle system).
+
+    Uses setdefault() so pre-existing party data is never overwritten (T-06-02).
+    """
+    data.setdefault("party", [])
+    data["schema_version"] = 6
     return data

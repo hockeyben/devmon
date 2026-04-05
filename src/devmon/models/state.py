@@ -53,9 +53,13 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=5, description="Save file schema version for migration support")
+    schema_version: int = Field(default=6, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
+
+    # Phase 6 party field (PRTY-01)
+    party: list[str] = Field(default_factory=list)
+    """Template IDs of active party creatures (max 3). Bootstrap: first owned creature."""
 
     # Phase 5 encounter fields (D-23)
     encounter_queue: Optional[EncounterEntry] = None

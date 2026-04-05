@@ -28,6 +28,26 @@ CreatureRarity = Literal["common", "uncommon", "rare", "epic", "legendary"]
 
 
 # ---------------------------------------------------------------------------
+# Ability: creature ability learned at a specific level (CREA-06, D-10)
+# ---------------------------------------------------------------------------
+
+class Ability(BaseModel):
+    """A creature ability learned at a specific level (CREA-06, D-10)."""
+
+    name: str
+    """Display name of the ability, e.g. 'Ember Burst'."""
+
+    damage_multiplier: float = Field(gt=0.0)
+    """Damage multiplier applied on top of base attack (must be > 0)."""
+
+    type: CreatureType
+    """Elemental type of this ability — determines type-effectiveness."""
+
+    learn_level: int = Field(ge=1)
+    """Minimum creature level required to use this ability (must be >= 1)."""
+
+
+# ---------------------------------------------------------------------------
 # CreatureTemplate: static species definition loaded from JSON
 # ---------------------------------------------------------------------------
 
@@ -94,6 +114,9 @@ class CreatureTemplate(BaseModel):
 
     accent_color: str
     """Rich style string for accent details, e.g. 'yellow' (D-08)."""
+
+    abilities: list[Ability] = Field(default_factory=list)
+    """Abilities this creature can learn, gated by level threshold (CREA-06)."""
 
     evolves_from: Optional[str] = None
     """Creature id of the pre-evolution, or None (D-05 stub — logic in Phase 10)."""
