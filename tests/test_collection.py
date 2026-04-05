@@ -158,10 +158,10 @@ def test_codex_progress_line(saved_collection_state, tmp_save_dir):
 # ---------------------------------------------------------------------------
 
 def test_collection_detail_renders_panel(saved_collection_state, tmp_save_dir):
-    """COLL-02: devmon collection Bugbyte renders creature detail panel."""
+    """COLL-02: devmon collection show Bugbyte renders creature detail panel."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
-    result = runner.invoke(collection_app, ["Bugbyte"])
+    result = runner.invoke(collection_app, ["show", "Bugbyte"])
     assert result.exit_code == 0
     # Panel should contain creature stats
     assert "HP" in result.output or "ATK" in result.output or "DEF" in result.output
@@ -171,7 +171,7 @@ def test_collection_detail_not_found(saved_collection_state, tmp_save_dir):
     """Error message when creature not in collection."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
-    result = runner.invoke(collection_app, ["NonExistent"])
+    result = runner.invoke(collection_app, ["show", "NonExistent"])
     assert result.exit_code == 0
     assert "No creature named" in result.output
 
