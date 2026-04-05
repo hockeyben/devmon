@@ -191,6 +191,20 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 11: Terminal Status Indicator
+**Goal**: A persistent, continuously animated status indicator on the right side of the terminal that shows game state at a glance — searching animation while looking for creatures, alert when encounter found, hidden during battle, reappears after
+**Depends on**: Phase 10
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. A small animated indicator runs persistently on the far right of the command line, visible while the user types and runs commands
+  2. The indicator shows a walking/searching animation when no encounter is queued, cycling frames continuously (not just on command execution)
+  3. When an encounter is found, the indicator switches to an alert state
+  4. During battle (devmon battle), the indicator disappears to avoid conflicting with Rich Live
+  5. After battle completes, the searching animation resumes automatically
+  6. The indicator never blocks, delays, or interferes with normal terminal input/output
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 **Execution Order:**
@@ -208,6 +222,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Economy and Shop | 0/TBD | Not started | - |
 | 9. Quests and Achievements | 0/TBD | Not started | - |
 | 10. Evolution and Polish | 0/TBD | Not started | - |
+| 11. Terminal Status Indicator | 0/TBD | Not started | - |
 
 ## Backlog
 
