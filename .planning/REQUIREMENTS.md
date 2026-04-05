@@ -64,7 +64,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **BATL-02**: Battle is turn-based with actions: attack, special ability, defend, use item, switch creature, attempt capture, flee
 - [x] **BATL-03**: Turn order determined by creature speed stat
 - [x] **BATL-04**: Damage calculation uses RPG formula with attack, defense, type effectiveness, and randomness
-- [ ] **BATL-05**: Battle displays Rich-rendered health bars, creature art, and action menu
+- [x] **BATL-05**: Battle displays Rich-rendered health bars, creature art, and action menu
 - [x] **BATL-06**: Winning a battle grants player XP, creature XP, and currency
 - [x] **BATL-07**: Losing a battle causes active creature to faint — no capture opportunity, encounter ends
 - [ ] **BATL-08**: User can switch active creature mid-battle (costs a turn)
@@ -121,7 +121,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **UI-01**: Game prompt shows player level, party status, and XP progress
 - [ ] **UI-02**: Encounter notifications are colorful and dramatic (Rich panels/banners)
-- [ ] **UI-03**: Battle screen shows creature art, health bars, and action menu with Rich rendering
+- [x] **UI-03**: Battle screen shows creature art, health bars, and action menu with Rich rendering
 - [ ] **UI-04**: Level-up, evolution, and achievement events display animated Rich notifications
 - [ ] **UI-05**: Collection viewer displays creature art, stats, and rarity with color coding
 - [ ] **UI-06**: All UI respects terminal width and degrades gracefully in narrow terminals
@@ -214,7 +214,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BATL-02 | Phase 6 | Pending |
 | BATL-03 | Phase 6 | Complete |
 | BATL-04 | Phase 6 | Complete |
-| BATL-05 | Phase 6 | Pending |
+| BATL-05 | Phase 6 | Complete |
 | BATL-06 | Phase 6 | Complete |
 | BATL-07 | Phase 6 | Complete |
 | BATL-08 | Phase 6 | Pending |
@@ -228,7 +228,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CREA-05 | Phase 6 | Complete |
 | CREA-06 | Phase 6 | Pending |
 | CLI-02 | Phase 6 | Pending |
-| UI-03 | Phase 6 | Pending |
+| UI-03 | Phase 6 | Complete |
 | PRTY-01 | Phase 7 | Pending |
 | PRTY-02 | Phase 7 | Pending |
 | PRTY-03 | Phase 7 | Pending |
