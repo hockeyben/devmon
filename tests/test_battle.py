@@ -476,6 +476,32 @@ def test_render_flee_message_produces_output():
     assert "Encounter lost" in output
 
 
+def test_check_player_level_up_triggers():
+    """Player level-up fires when XP exceeds threshold."""
+    from devmon.engine.progression import check_player_level_up, xp_for_level
+    from devmon.models.state import PlayerProfile
+    from devmon.config.defaults import DEFAULT_CONFIG
+    profile = PlayerProfile(name="test", level=1, xp=0)
+    # Give enough XP to pass level 2 threshold
+    profile.xp = xp_for_level(2, DEFAULT_CONFIG) + 1
+    result = check_player_level_up(profile, DEFAULT_CONFIG)
+    assert result is True
+    assert profile.level >= 2
+    assert profile.level_up_pending is True
+
+
+def test_check_player_level_up_no_trigger():
+    """Player level-up does not fire when XP is below threshold."""
+    from devmon.engine.progression import check_player_level_up, xp_for_level
+    from devmon.models.state import PlayerProfile
+    from devmon.config.defaults import DEFAULT_CONFIG
+    profile = PlayerProfile(name="test", level=1, xp=0)
+    profile.xp = 5  # Well below any threshold
+    result = check_player_level_up(profile, DEFAULT_CONFIG)
+    assert result is False
+    assert profile.level == 1
+
+
 def test_run_capture_animation_prints_shakes(monkeypatch):
     """UI-03: run_capture_animation prints all 3 shake lines and outcome."""
     from rich.console import Console

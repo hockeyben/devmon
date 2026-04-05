@@ -69,6 +69,7 @@ def _bootstrap_starter(state) -> object:
 
     owned = OwnedCreature(template_id="bugbyte", level=5)
     state.creature_collection.append(owned)
+    state.codex_state["bugbyte"] = "captured"
     if "bugbyte" not in state.party:
         state.party.append("bugbyte")
     return owned
@@ -146,6 +147,8 @@ def battle_cmd() -> None:
         roll_crit,
     )
     from devmon.engine.creature_loader import get_creature
+    from devmon.engine.progression import check_player_level_up
+    from devmon.config.loader import load_config
     from devmon.persistence.save import load, save
     from devmon.render.battle import (
         build_battle_renderable,
@@ -172,6 +175,10 @@ def battle_cmd() -> None:
 
     entry = state.encounter_queue
 
+    # Update codex: mark as encountered (if not already captured)
+    if state.codex_state.get(entry.template_id) != "captured":
+        state.codex_state[entry.template_id] = "encountered"
+
     # --- Step 2: Resolve party lead (bootstrap if needed) ---
     if not state.creature_collection:
         player_owned = _bootstrap_starter(state)
@@ -182,6 +189,9 @@ def battle_cmd() -> None:
                 "All your creatures are fainted! They need rest before battle."
             )
             raise typer.Exit()
+
+    # Track which creatures participated in this battle for shared XP distribution
+    participated: set[str] = {player_owned.template_id}
 
     # Look up template for active creature
     player_template = get_creature(player_owned.template_id)
@@ -234,6 +244,8 @@ def battle_cmd() -> None:
                 player_owned.level,
                 "YOUR",
                 player_template.rarity,
+                xp=player_owned.xp,
+                xp_threshold=player_owned.level * 50,
             )
 
             abilities = get_available_abilities(player_template.abilities, player_owned.level)
@@ -314,16 +326,28 @@ def battle_cmd() -> None:
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
-                    leveled = apply_creature_xp(player_owned, player_template, rewards["creature_xp"])
+                    config = load_config()
+                    player_leveled = check_player_level_up(state.player, config)
+                    # Distribute XP to all creatures that participated
+                    leveled_creatures: list[tuple[str, int]] = []
+                    for owned_c in state.creature_collection:
+                        if owned_c.template_id in participated and not owned_c.is_fainted:
+                            t = get_creature(owned_c.template_id)
+                            if apply_creature_xp(owned_c, t, rewards["creature_xp"]):
+                                leveled_creatures.append((t.name, owned_c.level))
                     state.encounter_queue = None
                     # Save BEFORE rendering (Pitfall 4 / T-06-09)
                     save(state)
                     live.stop()
                     render_faint_message(console, wild_template.name, is_player=False)
                     render_victory_screen(console, player_template.name, wild_template.name, rewards)
-                    if leveled:
+                    for name, new_level in leveled_creatures:
                         console.print(
-                            f"  [bold yellow]{player_template.name} leveled up to level {player_owned.level}![/bold yellow]"
+                            f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
+                        )
+                    if player_leveled:
+                        console.print(
+                            f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
                         )
                     # Auto-heal after battle
                     _auto_heal(state)
@@ -346,6 +370,7 @@ def battle_cmd() -> None:
                     next_creature = _resolve_party_lead(state)
                     if next_creature is not None:
                         player_owned = next_creature
+                        participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
                         player_max_hp = compute_max_hp(player_template, player_owned.level)
                         if player_owned.current_hp is None:
@@ -445,16 +470,28 @@ def battle_cmd() -> None:
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
-                    leveled = apply_creature_xp(player_owned, player_template, rewards["creature_xp"])
+                    config = load_config()
+                    player_leveled = check_player_level_up(state.player, config)
+                    # Distribute XP to all creatures that participated
+                    leveled_creatures = []
+                    for owned_c in state.creature_collection:
+                        if owned_c.template_id in participated and not owned_c.is_fainted:
+                            t = get_creature(owned_c.template_id)
+                            if apply_creature_xp(owned_c, t, rewards["creature_xp"]):
+                                leveled_creatures.append((t.name, owned_c.level))
                     state.encounter_queue = None
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     live.stop()
                     render_faint_message(console, wild_template.name, is_player=False)
                     render_victory_screen(console, player_template.name, wild_template.name, rewards)
-                    if leveled:
+                    for name, new_level in leveled_creatures:
                         console.print(
-                            f"  [bold yellow]{player_template.name} leveled up to level {player_owned.level}![/bold yellow]"
+                            f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
+                        )
+                    if player_leveled:
+                        console.print(
+                            f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
                         )
                     _auto_heal(state)
                     save(state)
@@ -467,6 +504,7 @@ def battle_cmd() -> None:
                     next_creature = _resolve_party_lead(state)
                     if next_creature is not None:
                         player_owned = next_creature
+                        participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
                         player_max_hp = compute_max_hp(player_template, player_owned.level)
                         if player_owned.current_hp is None:
@@ -508,14 +546,21 @@ def battle_cmd() -> None:
                         current_hp=wild.current_hp,
                     )
                     state.creature_collection.append(captured)
+                    state.codex_state[wild.template_id] = "captured"
                     state.player.total_creatures_captured += 1
                     rewards = compute_capture_rewards(wild.level, wild.rarity)
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
+                    config = load_config()
+                    player_leveled = check_player_level_up(state.player, config)
                     state.encounter_queue = None
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     render_capture_screen(console, wild_template.name, wild.rarity, rewards)
+                    if player_leveled:
+                        console.print(
+                            f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
+                        )
                     _auto_heal(state)
                     save(state)
                     battle_active = False
@@ -552,6 +597,7 @@ def battle_cmd() -> None:
                             next_creature = _resolve_party_lead(state)
                             if next_creature is not None:
                                 player_owned = next_creature
+                                participated.add(player_owned.template_id)
                                 player_template = get_creature(player_owned.template_id)
                                 player_max_hp = compute_max_hp(player_template, player_owned.level)
                                 if player_owned.current_hp is None:
@@ -602,6 +648,7 @@ def battle_cmd() -> None:
 
                 if 1 <= idx <= len(switchable):
                     player_owned = switchable[idx - 1]
+                    participated.add(player_owned.template_id)
                     player_template = get_creature(player_owned.template_id)
                     player_max_hp = compute_max_hp(player_template, player_owned.level)
                     if player_owned.current_hp is None:
@@ -629,6 +676,7 @@ def battle_cmd() -> None:
                         next_creature = _resolve_party_lead(state)
                         if next_creature is not None:
                             player_owned = next_creature
+                            participated.add(player_owned.template_id)
                             player_template = get_creature(player_owned.template_id)
                             player_max_hp = compute_max_hp(player_template, player_owned.level)
                             if player_owned.current_hp is None:
