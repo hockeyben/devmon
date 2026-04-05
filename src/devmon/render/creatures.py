@@ -23,6 +23,7 @@ def render_creature_panel(
     theme: dict[str, str] | None = None,
     encounter_level: int | None = None,
     encounter_type: str | None = None,
+    encounter_rarity: str | None = None,
 ) -> None:
     """Render a creature in a rarity-colored Rich Panel.
 
@@ -36,11 +37,14 @@ def render_creature_panel(
         encounter_level: When provided, inserts a LVL row as the first stat row.
         encounter_type: When provided and not "normal", appends encounter tier
             indicator to the panel subtitle.
+        encounter_rarity: When provided, overrides template rarity for border
+            color and subtitle display (encounter rarity may differ from base).
     """
     if theme is None:
         theme = get_theme("neon")
 
-    border_color = RARITY_COLORS.get(template.rarity, "white")
+    display_rarity = encounter_rarity or template.rarity
+    border_color = RARITY_COLORS.get(display_rarity, "white")
 
     # Build ASCII art text block — plain content, color applied via style=
     art = Text()
@@ -74,8 +78,6 @@ def render_creature_panel(
 
     stats.append("DEF ", style=theme["stat_key"])
     stats.append(f"{template.base_defense:<6}", style=theme["stat_value"])
-    stats.append("  Capture ", style=theme["stat_key"])
-    stats.append(f"{template.capture_rate:.0%}", style=theme["stat_value"])
 
     # Build flavor text block
     flavor = Text(template.flavor_text, style="dim white")
@@ -89,7 +91,7 @@ def render_creature_panel(
     body.append_text(flavor)
 
     # Build subtitle with optional encounter type indicator (UI-SPEC)
-    subtitle = f"[dim]{template.rarity.title()} - {template.type}[/dim]"
+    subtitle = f"[dim]{display_rarity.title()} - {template.type}[/dim]"
     if encounter_type and encounter_type != "normal":
         if encounter_type == "rare":
             subtitle += " - [dim]Rare Encounter[/dim]"

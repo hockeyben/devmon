@@ -45,6 +45,7 @@ def encounter_cmd() -> None:
         theme,
         encounter_level=entry.encounter_level,
         encounter_type=entry.encounter_type,
+        encounter_rarity=entry.rarity,
     )
 
     # Action menu loop — T-05-08: validate input is exactly "1", "2", or "3"
