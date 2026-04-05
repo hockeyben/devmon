@@ -128,8 +128,15 @@ Plans:
   4. A successful capture adds the creature to the collection with a capture bonus XP notification; a failed capture continues the battle
   5. Defeating a wild creature grants XP and currency to both the player and their active party creature, with visible reward notifications
   6. A party creature that faints is marked as unable to battle until healed; the player can switch to another party member mid-battle
-**Plans**: TBD
+**Plans**: 5 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 06-01-PLAN.md — Test scaffold, schema v6 migration, Ability model, creature JSON abilities (Wave 1)
+- [ ] 06-02-PLAN.md — Battle engine pure logic: damage, capture, rewards, creature XP, wild AI (Wave 2)
+- [ ] 06-03-PLAN.md — Battle render: HP bars, panels, capture animation, result screens (Wave 3)
+- [ ] 06-04-PLAN.md — Battle command: CLI wiring, Rich Live loop, party bootstrap, encounter integration (Wave 4)
+- [ ] 06-05-PLAN.md — Human verification: battle visuals, capture flow, HP transitions (Wave 5)
 
 ### Phase 7: Party and Collection
 **Goal**: The player can manage their team and browse every creature they own or have encountered
@@ -186,7 +193,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 �� 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -195,7 +202,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Player Profile | 4/5 | In Progress|  |
 | 4. Creature Roster | 0/3 | Not started | - |
 | 5. Encounter System | 0/4 | Not started | - |
-| 6. Battle and Capture | 0/TBD | Not started | - |
+| 6. Battle and Capture | 0/5 | Not started | - |
 | 7. Party and Collection | 0/TBD | Not started | - |
 | 8. Economy and Shop | 0/TBD | Not started | - |
 | 9. Quests and Achievements | 0/TBD | Not started | - |
