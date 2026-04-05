@@ -50,8 +50,8 @@ def test_prompt_no_save_returns_default(runner, tmp_devmon_home):
     assert len(result.output.strip()) > 0
 
 
-def test_prompt_paw_indicator_when_encounter_queued(runner, tmp_devmon_home):
-    """D-06/UI-SPEC Surface 3: paw indicator appears when encounter is queued."""
+def test_prompt_alert_indicator_when_encounter_queued(runner, tmp_devmon_home):
+    """D-06/UI-SPEC Surface 3: alert indicator appears when encounter is queued."""
     import time
     from devmon.main import app
     from devmon.engine.creature_loader import load_all_creatures
@@ -75,11 +75,11 @@ def test_prompt_paw_indicator_when_encounter_queued(runner, tmp_devmon_home):
 
     result = runner.invoke(app, ["prompt"])
     assert result.exit_code == 0
-    assert "🐾" in result.output
+    assert "(!) " in result.output
 
 
-def test_prompt_no_paw_indicator_without_encounter(runner, tmp_devmon_home):
-    """D-06: paw indicator does NOT appear when no encounter is queued."""
+def test_prompt_search_animation_without_encounter(runner, tmp_devmon_home):
+    """D-06: search animation (dots) appears when no encounter is queued."""
     from devmon.main import app
     from devmon.models.state import GameState
     from devmon.persistence.save import save
@@ -90,4 +90,7 @@ def test_prompt_no_paw_indicator_without_encounter(runner, tmp_devmon_home):
 
     result = runner.invoke(app, ["prompt"])
     assert result.exit_code == 0
-    assert "🐾" not in result.output
+    assert "(!) " not in result.output
+    # Should start with one of the search frames: ".", "..", "..."
+    stripped = result.output.strip()
+    assert stripped.startswith("."), f"Expected search frame, got: {stripped}"
