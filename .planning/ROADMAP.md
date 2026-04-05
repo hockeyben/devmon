@@ -168,8 +168,15 @@ Plans:
   3. Running `devmon items` displays current inventory counts for all item types (capsules, potions, revives, XP boosters)
   4. Using an enhanced or ultra capsule in battle produces a visibly higher capture success rate than a basic capsule, consistent with item capture bonus values
   5. A revive item restores a fainted creature to battle-ready status and the change persists
-**Plans**: TBD
+**Plans**: 5 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 08-01-PLAN.md — ItemDefinition model, GameState v8, migration 7->8, item engine, test scaffold (Wave 1)
+- [ ] 08-02-PLAN.md — Item JSON data files (8 items), item_loader module (Wave 1, parallel with 08-01)
+- [ ] 08-03-PLAN.md — Shop command, items command, shop render module, main.py wiring (Wave 2)
+- [ ] 08-04-PLAN.md — Battle integration: capsule sub-menu, items sub-menu, status Bits, XP booster (Wave 3)
+- [ ] 08-05-PLAN.md — Human verification: shop, items, battle integration, status display (Wave 4)
 
 ### Phase 9: Quests and Achievements
 **Goal**: The player has a persistent set of goals that reward consistent coding and creature-collection activity
@@ -225,7 +232,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Encounter System | 0/4 | Not started | - |
 | 6. Battle and Capture | 5/6 | In Progress|  |
 | 7. Party and Collection | 0/4 | Not started | - |
-| 8. Economy and Shop | 0/TBD | Not started | - |
+| 8. Economy and Shop | 0/5 | Not started | - |
 | 9. Quests and Achievements | 0/TBD | Not started | - |
 | 10. Evolution and Polish | 0/TBD | Not started | - |
 | 11. Terminal Status Indicator | 0/TBD | Not started | - |
