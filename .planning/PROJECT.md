@@ -123,4 +123,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-04 after Phase 5 completion — encounter system live with rarity-weighted spawning, encounter queue, CLI command, PS1 indicator*
+*Last updated: 2026-04-05 after Phase 7 completion — party management (display, swap), collection viewer (list, detail, codex, rename), schema v7 with codex_state tracking*
