@@ -208,3 +208,14 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Economy and Shop | 0/TBD | Not started | - |
 | 9. Quests and Achievements | 0/TBD | Not started | - |
 | 10. Evolution and Polish | 0/TBD | Not started | - |
+
+## Backlog
+
+### Phase 999.1: Improve ASCII art for all 25 creatures (BACKLOG)
+
+**Goal:** Upgrade creature ASCII art from minimal/functional to detailed, recognizable terminal art. Current art is basic geometric shapes — upgrade to more expressive designs while staying within 80-col and 3-20 line constraints.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
