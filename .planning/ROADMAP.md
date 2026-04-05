@@ -149,8 +149,14 @@ Plans:
   3. Running `devmon collection` lists all captured creatures with rarity color coding, sortable by rarity, level, or name
   4. The codex shows every creature with its discovery state (unseen, seen, battled, defeated, captured, evolved) — creatures the player haven't encountered appear as unknown entries
   5. The player can rename any captured creature, and the new name persists in the save file and displays everywhere
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 07-01-PLAN.md — Schema v7 migration (codex_state), party display command, test scaffold (Wave 1)
+- [ ] 07-02-PLAN.md — Party swap command (interactive + direct), display_name helper, nickname integration (Wave 2)
+- [ ] 07-03-PLAN.md — Collection viewer, detail view, codex subcommand, rename command (Wave 2, parallel with 07-02)
+- [ ] 07-04-PLAN.md — Human verification: party, collection, codex, rename end-to-end (Wave 3)
 
 ### Phase 8: Economy and Shop
 **Goal**: The player earns currency through gameplay and can spend it on items that meaningfully affect battle and capture outcomes
@@ -208,7 +214,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 �� 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -218,7 +224,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Creature Roster | 0/3 | Not started | - |
 | 5. Encounter System | 0/4 | Not started | - |
 | 6. Battle and Capture | 5/6 | In Progress|  |
-| 7. Party and Collection | 0/TBD | Not started | - |
+| 7. Party and Collection | 0/4 | Not started | - |
 | 8. Economy and Shop | 0/TBD | Not started | - |
 | 9. Quests and Achievements | 0/TBD | Not started | - |
 | 10. Evolution and Polish | 0/TBD | Not started | - |
