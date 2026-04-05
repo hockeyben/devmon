@@ -449,17 +449,13 @@ def _resolve_party_slot(state, slot: int):
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should codex "encountered" state be written by Phase 6's battle.py or computed dynamically?**
-   - What we know: Phase 6 updates `total_creatures_seen` on encounter spawn (Phase 5 engine). The actual `codex_state` dict doesn't exist yet.
-   - What's unclear: Whether the planner should modify Phase 6's battle.py (cross-phase edit) or treat codex as Phase 7-only derived state.
-   - Recommendation: Derive "captured" from `creature_collection` at render time. Write "encountered" in `codex_state` only for creatures seen-but-not-captured. Phase 7 adds the write path to the encounter/battle code; it's a small addition to two existing save calls.
+   - RESOLVED: Compute dynamically from creature_collection at render time (Plan 03 Task 2). "Captured" derived from creature_collection, "encountered" stored in codex_state dict for seen-but-not-captured creatures. Avoids cross-phase edits to battle.py.
 
 2. **Should party.py use `devmon party swap` or `devmon party`?**
-   - What we know: CONTEXT.md D-02 says both interactive (`devmon party swap <slot>`) and direct command are supported. `swap` is a subcommand.
-   - What's unclear: Whether the interactive picker triggers on `devmon party` alone (no subcommand) or requires `devmon party swap`.
-   - Recommendation: Keep `devmon party` as read-only table; require `devmon party swap <slot>` to modify. This is cleaner and matches the UI-SPEC screens.
+   - RESOLVED: `devmon party` is read-only display; `devmon party swap <slot>` modifies party (Plan 01/02). Interactive picker triggers on `devmon party swap` without a slot argument. Matches UI-SPEC screens.
 
 ---
 
