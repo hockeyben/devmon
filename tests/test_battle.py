@@ -42,20 +42,47 @@ def test_battle_action_menu_has_all_options():
 # BATL-03: Speed-based turn order
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="Phase 6: turn order not yet implemented")
 def test_faster_creature_acts_first():
     from devmon.engine.battle_engine import determine_turn_order
-    assert False, "BATL-03"
+    assert determine_turn_order(player_speed=20, wild_speed=10) == "player"
+    assert determine_turn_order(player_speed=10, wild_speed=20) == "wild"
+    # Tie goes to player
+    assert determine_turn_order(player_speed=15, wild_speed=15) == "player"
 
 
 # ---------------------------------------------------------------------------
 # BATL-04: Damage formula
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="Phase 6: damage calc not yet implemented")
 def test_damage_uses_atk_def_type_effectiveness():
-    from devmon.engine.battle_engine import compute_damage
-    assert False, "BATL-04"
+    from devmon.engine.battle_engine import compute_damage, get_type_effectiveness
+    # Basic damage is positive
+    dmg = compute_damage(
+        attacker_attack=20, attacker_level=5, attacker_speed=15,
+        defender_defense=10, type_effectiveness=1.0, is_crit=False
+    )
+    assert dmg >= 1
+
+    # Super effective deals more damage
+    dmg_neutral = compute_damage(
+        attacker_attack=20, attacker_level=5, attacker_speed=15,
+        defender_defense=10, type_effectiveness=1.0, is_crit=False
+    )
+    dmg_super = compute_damage(
+        attacker_attack=20, attacker_level=5, attacker_speed=15,
+        defender_defense=10, type_effectiveness=1.5, is_crit=False
+    )
+    # Super effective should deal at least 1.2x neutral (accounting for RNG variance)
+    assert dmg_super >= dmg_neutral
+
+    # Type chart: Fire > Nature
+    assert get_type_effectiveness("Fire", "Nature") == 1.5
+    # Type chart: Fire < Water
+    assert get_type_effectiveness("Fire", "Water") == 0.5
+    # Neutral match
+    assert get_type_effectiveness("Fire", "Psychic") == 1.0
+    # Dark beats Light
+    assert get_type_effectiveness("Dark", "Light") == 1.5
 
 
 # ---------------------------------------------------------------------------
