@@ -60,24 +60,24 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Battle
 
-- [ ] **BATL-01**: User initiates battle via `devmon battle` using their active party creature
-- [ ] **BATL-02**: Battle is turn-based with actions: attack, special ability, defend, use item, switch creature, attempt capture, flee
+- [x] **BATL-01**: User initiates battle via `devmon battle` using their active party creature
+- [x] **BATL-02**: Battle is turn-based with actions: attack, special ability, defend, use item, switch creature, attempt capture, flee
 - [x] **BATL-03**: Turn order determined by creature speed stat
 - [x] **BATL-04**: Damage calculation uses RPG formula with attack, defense, type effectiveness, and randomness
 - [x] **BATL-05**: Battle displays Rich-rendered health bars, creature art, and action menu
 - [x] **BATL-06**: Winning a battle grants player XP, creature XP, and currency
 - [x] **BATL-07**: Losing a battle causes active creature to faint — no capture opportunity, encounter ends
-- [ ] **BATL-08**: User can switch active creature mid-battle (costs a turn)
+- [x] **BATL-08**: User can switch active creature mid-battle (costs a turn)
 
 ### Capture
 
-- [ ] **CAPT-01**: User can attempt capture during battle instead of attacking
+- [x] **CAPT-01**: User can attempt capture during battle instead of attacking
 - [x] **CAPT-02**: Capture chance depends on creature rarity, current HP percentage, and capture item used
 - [x] **CAPT-03**: Weakened creatures (lower HP) are significantly easier to capture
 - [x] **CAPT-04**: Different capture items provide different success bonuses (basic capsule, enhanced, ultra, etc.)
-- [ ] **CAPT-05**: Successful capture adds creature to collection and grants capture bonus XP
+- [x] **CAPT-05**: Successful capture adds creature to collection and grants capture bonus XP
 - [x] **CAPT-06**: Failed capture continues the battle — creature may become harder to catch
-- [ ] **CAPT-07**: User chooses between defeating for guaranteed XP/loot or attempting capture for collection value
+- [x] **CAPT-07**: User chooses between defeating for guaranteed XP/loot or attempting capture for collection value
 
 ### Party
 
@@ -129,7 +129,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### CLI Commands
 
 - [x] **CLI-01**: `devmon status` — player profile summary
-- [ ] **CLI-02**: `devmon battle` — engage queued encounter
+- [x] **CLI-02**: `devmon battle` — engage queued encounter
 - [ ] **CLI-03**: `devmon party` — manage active party
 - [ ] **CLI-04**: `devmon collection` — view creature collection and codex
 - [ ] **CLI-05**: `devmon shop` — browse and buy items
@@ -210,24 +210,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENCR-06 | Phase 5 | Pending |
 | CLI-09 | Phase 5 | Pending |
 | UI-02 | Phase 5 | Pending |
-| BATL-01 | Phase 6 | Pending |
-| BATL-02 | Phase 6 | Pending |
+| BATL-01 | Phase 6 | Complete |
+| BATL-02 | Phase 6 | Complete |
 | BATL-03 | Phase 6 | Complete |
 | BATL-04 | Phase 6 | Complete |
 | BATL-05 | Phase 6 | Complete |
 | BATL-06 | Phase 6 | Complete |
 | BATL-07 | Phase 6 | Complete |
-| BATL-08 | Phase 6 | Pending |
-| CAPT-01 | Phase 6 | Pending |
+| BATL-08 | Phase 6 | Complete |
+| CAPT-01 | Phase 6 | Complete |
 | CAPT-02 | Phase 6 | Complete |
 | CAPT-03 | Phase 6 | Complete |
 | CAPT-04 | Phase 6 | Complete |
-| CAPT-05 | Phase 6 | Pending |
+| CAPT-05 | Phase 6 | Complete |
 | CAPT-06 | Phase 6 | Complete |
-| CAPT-07 | Phase 6 | Pending |
+| CAPT-07 | Phase 6 | Complete |
 | CREA-05 | Phase 6 | Complete |
 | CREA-06 | Phase 6 | Pending |
-| CLI-02 | Phase 6 | Pending |
+| CLI-02 | Phase 6 | Complete |
 | UI-03 | Phase 6 | Complete |
 | PRTY-01 | Phase 7 | Pending |
 | PRTY-02 | Phase 7 | Pending |

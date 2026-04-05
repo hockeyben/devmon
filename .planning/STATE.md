@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-04-PLAN.md
-last_updated: "2026-04-05T06:38:32.008Z"
+stopped_at: Completed 06-05-PLAN.md
+last_updated: "2026-04-05T06:47:03.098Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 29
-  completed_plans: 27
-  percent: 93
+  completed_plans: 28
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 06 (battle-and-capture) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-04-05
 
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-player-profile P04 | 5 | 2 tasks | 5 files |
 | Phase 06-battle-and-capture P03 | 15 | 2 tasks | 2 files |
 | Phase 06-battle-and-capture P04 | 194 | 2 tasks | 2 files |
+| Phase 06-battle-and-capture P05 | 293 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,10 @@ Recent decisions affecting current work:
 - [Phase 06-battle-and-capture]: Creature level-up threshold is level*50 XP — simple predictable linear curve (Claude's discretion)
 - [Phase 06-battle-and-capture]: render_battle_creature_panel accepts rarity as string parameter so callers control encounter rarity independently of template base rarity
 - [Phase 06-battle-and-capture]: All battle result screens accept console parameter for testability via Console(record=True)
+- [Phase 06-battle-and-capture]: battle_cmd registered as top-level 'battle' subcommand in main.py (CLI-02)
+- [Phase 06-battle-and-capture]: WildBattleState dataclass holds transient battle HP -- not persisted between sessions
+- [Phase 06-battle-and-capture]: Auto-heal after every battle outcome resets all creatures to full HP (current_hp=None, is_fainted=False)
+- [Phase 06-battle-and-capture]: Live context exited before capture animation and party switch list (Rich Live cannot be active during interactive sub-prompts)
 
 ### Pending Todos
 
@@ -130,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T06:38:32.004Z
-Stopped at: Completed 06-04-PLAN.md
+Last session: 2026-04-05T06:47:03.094Z
+Stopped at: Completed 06-05-PLAN.md
 Resume file: None
