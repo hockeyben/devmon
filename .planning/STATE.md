@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 Phase: 11
 Plan: Not started
 Status: Executing Phase 07
-Last activity: 2026-04-05
+Last activity: 2026-04-05 - Completed quick task 260405-5qa: Battle XP indicator, shared creature XP, player level-up fix
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -134,6 +134,12 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 6 depends partially on Phase 7 (party lead creature must exist). Phase 7 is listed after Phase 6 in execution order. Resolution: Phase 6 implementation will bootstrap a default party lead creature from the creature roster so battles can function; full party management (Phase 7) refines this.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260405-5qa | Battle XP indicator, shared creature XP, player level-up fix | 2026-04-05 | 4764d44 | [260405-5qa-battle-xp-indicator-shared-creature-xp-p](./quick/260405-5qa-battle-xp-indicator-shared-creature-xp-p/) |
 
 ## Session Continuity
 
