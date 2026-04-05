@@ -26,19 +26,20 @@ Coding should feel rewarding — every terminal session fuels progression in a c
 - ✓ Creature stat blocks (HP, ATK, DEF, SPD, type, capture rate, evolution stubs, flavor text) — Phase 4
 - ✓ ASCII art per creature rendering in 80-col terminal via Rich panels — Phase 4
 - ✓ User-tweakable creature JSON files with DEVMON_HOME override — Phase 4
+- ✓ Wild creature encounter system triggered by coding activity — Phase 5
+- ✓ Queued encounter model — notifications appear, user battles when ready — Phase 5
+- ✓ Turn-based battle system with attack, special ability, capture, switch, flee — Phase 6
+- ✓ Defeat creatures for XP/loot OR capture them for collection — meaningful player choice — Phase 6
+- ✓ Capture system with rarity-based odds, weakening bonuses, and capture items — Phase 6
+- ✓ Creature progression — level up through battles, stat growth, ability unlocks — Phase 6
+- ✓ Active party system with auto-bootstrap and faint/switch mechanics — Phase 6
+- ✓ Colorful battle UI with Rich — HP bars, creature panels, capture animation, result screens — Phase 6
 
 ### Active
 
-- [ ] Explicit CLI commands for all game actions (battle, collection, quests, etc.)
-- [ ] Wild creature encounter system triggered by coding activity
-- [ ] Queued encounter model — notifications appear, user battles when ready
-- [ ] Turn-based battle system with attack, special, defend, item, switch, capture, flee
-- [ ] Defeat creatures for XP/loot OR capture them for collection — meaningful player choice
-- [ ] Capture system with rarity-based odds, weakening bonuses, and capture items
+- [ ] Explicit CLI commands for all game actions (collection, quests, etc.)
 - [ ] Creature roster with stats, rarity, types, levels, ASCII art (generated base, user-tweakable)
-- [ ] Creature progression — level up through battles, stat growth, ability unlocks
 - [ ] Evolution system with level thresholds and special conditions
-- [ ] Active party system (3 creatures for MVP)
 - [ ] Creature collection viewer with codex tracking
 - [ ] Themed regions with unique creature pools and rarity tables
 - [ ] Quest system with coding-linked and game-linked objectives
