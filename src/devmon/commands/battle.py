@@ -585,11 +585,12 @@ def battle_cmd() -> None:
                 console.print("  [bold white]Switch to which creature?[/bold white]")
                 console.print()
                 for i, c in enumerate(switchable, 1):
+                    from devmon.render.party import display_name as _display_name
                     t = get_creature(c.template_id)
                     c_max_hp = compute_max_hp(t, c.level)
                     c_hp = c.current_hp if c.current_hp is not None else c_max_hp
                     console.print(
-                        f"  [{i}] {t.name}  LVL {c.level}  HP {c_hp}/{c_max_hp}"
+                        f"  [{i}] {_display_name(c, t)}  LVL {c.level}  HP {c_hp}/{c_max_hp}"
                     )
                 console.print()
 
