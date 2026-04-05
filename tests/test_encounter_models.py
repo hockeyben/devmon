@@ -117,11 +117,11 @@ def test_creature_template_allowed_rarities_invalid():
 # Test 4 & 5: GameState v5 fields
 # ---------------------------------------------------------------------------
 
-def test_gamestate_schema_version_default_is_6():
-    """Test 4a: GameState schema_version default is 6 (Phase 6 bump)."""
+def test_gamestate_schema_version_default_is_7():
+    """Test 4a: GameState schema_version default is 7 (Phase 7 bump)."""
     from devmon.models.state import GameState, PlayerProfile
     state = GameState(player=PlayerProfile(name="Ash"))
-    assert state.schema_version == 6
+    assert state.schema_version == 7
 
 
 def test_gamestate_encounter_queue_none():
@@ -207,8 +207,8 @@ def test_migrate_4_to_5_preserves_existing_fields():
 # Test 8: Full migration chain 0 -> 5
 # ---------------------------------------------------------------------------
 
-def test_full_migration_chain_0_to_6():
-    """Test 8: Full migration chain 0->6 produces valid data."""
+def test_full_migration_chain_0_to_7():
+    """Test 8: Full migration chain 0->7 produces valid data."""
     from devmon.persistence.migrations import migrate
     from devmon.models.state import GameState
     data = {
@@ -216,11 +216,11 @@ def test_full_migration_chain_0_to_6():
         "player": {"name": "Veteran"},
     }
     result = migrate(data)
-    assert result["schema_version"] == 6
+    assert result["schema_version"] == 7
     # Should be loadable into GameState
     state = GameState.model_validate(result)
     assert state.player.name == "Veteran"
-    assert state.schema_version == 6
+    assert state.schema_version == 7
 
 
 # ---------------------------------------------------------------------------
@@ -228,10 +228,10 @@ def test_full_migration_chain_0_to_6():
 # ---------------------------------------------------------------------------
 
 def test_current_version_invariant():
-    """Test 9: CURRENT_VERSION == 6 == GameState().schema_version (invariant from Phase 1)."""
+    """Test 9: CURRENT_VERSION == 7 == GameState().schema_version (invariant from Phase 1)."""
     from devmon.persistence.migrations import CURRENT_VERSION
     from devmon.models.state import GameState, PlayerProfile
-    assert CURRENT_VERSION == 6
+    assert CURRENT_VERSION == 7
     state = GameState(player=PlayerProfile(name="Ash"))
     assert state.schema_version == CURRENT_VERSION
 

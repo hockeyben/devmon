@@ -17,6 +17,7 @@ import typer
 
 from devmon import __version__
 from devmon.commands import battle as battle_cmd
+from devmon.commands import party as party_cmd_mod
 from devmon.commands import encounter as encounter_cmd
 from devmon.commands import hook as hook_cmd
 from devmon.commands import prompt as prompt_cmd
@@ -44,6 +45,7 @@ app.add_typer(prompt_cmd.app, name="prompt")
 app.add_typer(settings_cmd.app, name="settings")
 app.add_typer(encounter_cmd.app, name="encounter")
 app.add_typer(battle_cmd.app, name="battle")
+app.add_typer(party_cmd_mod.app, name="party")
 
 
 def _version_callback(value: bool) -> None:
