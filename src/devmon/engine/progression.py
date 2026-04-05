@@ -138,6 +138,29 @@ def xp_within_level(profile: "PlayerProfile", config: dict) -> tuple[int, int]:
     return earned, needed
 
 
+def check_player_level_up(profile: "PlayerProfile", config: dict) -> bool:
+    """Check if player XP exceeds next level threshold and level up.
+
+    Extracted so battle rewards and event processing share the same logic.
+    Sets level_up_pending and pending_level_value on level-up.
+
+    Args:
+        profile: PlayerProfile instance to mutate.
+        config: DevMon config dict.
+
+    Returns:
+        True if at least one level-up occurred.
+    """
+    old_level = profile.level
+    while profile.xp >= xp_for_level(profile.level + 1, config):
+        profile.level += 1
+    if profile.level > old_level:
+        profile.level_up_pending = True
+        profile.pending_level_value = profile.level
+        return True
+    return False
+
+
 def update_streak(
     profile: "PlayerProfile",
     today: date,
@@ -243,12 +266,7 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     profile.xp += final_xp
 
     # Level-up detection (Phase 3, PROF-03)
-    old_level = profile.level
-    while profile.xp >= xp_for_level(profile.level + 1, config):
-        profile.level += 1
-    if profile.level > old_level:
-        profile.level_up_pending = True
-        profile.pending_level_value = profile.level
+    check_player_level_up(profile, config)
 
     profile.session_xp_earned += session_xp_this_run
     profile.total_sessions += session_count

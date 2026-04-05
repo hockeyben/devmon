@@ -72,10 +72,12 @@ def render_battle_creature_panel(
     level: int,
     prefix: str,
     rarity: str,
+    xp: int | None = None,
+    xp_threshold: int | None = None,
 ) -> Panel:
     """Render a compact creature panel for the battle screen.
 
-    Shows: ASCII art, HP bar, LVL/Type stat row.
+    Shows: ASCII art, HP bar, LVL/Type stat row, and optionally XP progress.
     Does NOT show flavor text, capture rate, or full stat block.
     Capture rate is never displayed (T-06-06 mitigation, D-15).
 
@@ -86,6 +88,8 @@ def render_battle_creature_panel(
         level: Current level to display.
         prefix: Panel label prefix — "WILD" or "YOUR".
         rarity: Rarity string key for RARITY_COLORS lookup.
+        xp: Current XP of the creature (optional, shown only on player panel).
+        xp_threshold: XP needed to reach next level (optional, shown with xp).
 
     Returns:
         Rich Panel ready to be rendered.
@@ -116,6 +120,13 @@ def render_battle_creature_panel(
     body.append_text(hp_bar)
     body.append("\n")
     body.append_text(stat_row)
+
+    if xp is not None and xp_threshold is not None:
+        body.append("\n")
+        xp_row = Text()
+        xp_row.append("XP  ", style="dim cyan")
+        xp_row.append(f"{xp}/{xp_threshold}", style="white")
+        body.append_text(xp_row)
 
     return Panel(
         body,
