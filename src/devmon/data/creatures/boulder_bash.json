@@ -3,13 +3,20 @@
   "name": "BoulderBash",
   "species": "Rock Smasher",
   "rarity": "uncommon",
+  "allowed_rarities": [
+    "common",
+    "uncommon"
+  ],
   "type": "Earth",
-  "level_range": [3, 8],
+  "level_range": [
+    3,
+    8
+  ],
   "base_hp": 52,
   "base_attack": 19,
   "base_defense": 16,
   "base_speed": 12,
-  "capture_rate": 0.50,
+  "capture_rate": 0.5,
   "flavor_text": "Formed from compressed tech debt. The longer you ignore it, the harder it hits.",
   "ascii_art": [
     "  _______  ",

@@ -3,8 +3,14 @@
   "name": "DriftYeti",
   "species": "Frost Giant",
   "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
   "type": "Ice",
-  "level_range": [5, 12],
+  "level_range": [
+    5,
+    12
+  ],
   "base_hp": 68,
   "base_attack": 22,
   "base_defense": 24,

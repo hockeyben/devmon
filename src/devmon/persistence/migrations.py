@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 4
+CURRENT_VERSION = 5
 
 
 def migrate(data: dict) -> dict:
@@ -31,6 +31,7 @@ def migrate(data: dict) -> dict:
         1: _migrate_1_to_2,
         2: _migrate_2_to_3,
         3: _migrate_3_to_4,
+        4: _migrate_4_to_5,
     }
 
     while version < CURRENT_VERSION:
@@ -85,4 +86,23 @@ def _migrate_3_to_4(data: dict) -> dict:
     """Version 3 -> 4: Phase 4 adds creature_collection to GameState."""
     data.setdefault("creature_collection", [])
     data["schema_version"] = 4
+    return data
+
+
+def _migrate_4_to_5(data: dict) -> dict:
+    """Version 4 -> 5: Phase 5 adds encounter system fields to GameState (D-23).
+
+    All new fields use setdefault() so pre-existing values are never overwritten.
+    This allows partial saves (e.g. from testing) to migrate safely.
+    """
+    data.setdefault("encounter_queue", None)
+    data.setdefault("encounter_cooldown_until", 0.0)
+    data.setdefault("encounter_roll_count", 0)
+    data.setdefault("last_encounter_time", 0.0)
+    data.setdefault("ai_session_active", False)
+    data.setdefault("encounter_history", [])
+    data.setdefault("flee_count", 0)
+    data.setdefault("expired_count", 0)
+    data.setdefault("total_encounters_seen", 0)
+    data["schema_version"] = 5
     return data

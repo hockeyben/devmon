@@ -3,13 +3,19 @@
   "name": "StormPhoenix",
   "species": "Thunder Rebirth",
   "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
   "type": "Electric",
-  "level_range": [8, 16],
+  "level_range": [
+    8,
+    16
+  ],
   "base_hp": 72,
   "base_attack": 38,
   "base_defense": 20,
   "base_speed": 40,
-  "capture_rate": 0.10,
+  "capture_rate": 0.1,
   "flavor_text": "Rises from a crashed build server, fully charged. It restores uptime with a single wing beat.",
   "ascii_art": [
     "  ~*  *~  ",

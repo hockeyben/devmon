@@ -50,6 +50,14 @@ class CreatureTemplate(BaseModel):
     rarity: CreatureRarity
     """Rarity tier: common / uncommon / rare / epic / legendary."""
 
+    allowed_rarities: list[CreatureRarity] = Field(default_factory=list)
+    """Rarity tiers this creature can appear as in encounters (D-14).
+
+    Empty list means encounter system should fall back to template.rarity.
+    Multiple rarities allow cross-tier spawning (e.g. an uncommon creature
+    occasionally spawning as common in early game zones).
+    """
+
     type: CreatureType
     """Single elemental type per creature (D-01)."""
 

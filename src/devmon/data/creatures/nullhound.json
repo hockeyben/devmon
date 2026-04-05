@@ -3,8 +3,14 @@
   "name": "Nullhound",
   "species": "Void Tracker",
   "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
   "type": "Shadow",
-  "level_range": [3, 8],
+  "level_range": [
+    3,
+    8
+  ],
   "base_hp": 42,
   "base_attack": 16,
   "base_defense": 12,

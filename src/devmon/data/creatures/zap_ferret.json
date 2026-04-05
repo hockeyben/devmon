@@ -3,8 +3,14 @@
   "name": "ZapFerret",
   "species": "Lightning Weasel",
   "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
   "type": "Electric",
-  "level_range": [3, 8],
+  "level_range": [
+    3,
+    8
+  ],
   "base_hp": 35,
   "base_attack": 20,
   "base_defense": 10,

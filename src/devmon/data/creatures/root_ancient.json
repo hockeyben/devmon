@@ -3,8 +3,14 @@
   "name": "RootAncient",
   "species": "Primordial Trunk",
   "rarity": "legendary",
+  "allowed_rarities": [
+    "legendary"
+  ],
   "type": "Nature",
-  "level_range": [12, 20],
+  "level_range": [
+    12,
+    20
+  ],
   "base_hp": 118,
   "base_attack": 42,
   "base_defense": 48,

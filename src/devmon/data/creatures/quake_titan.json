@@ -3,8 +3,14 @@
   "name": "QuakeTitan",
   "species": "Seismic Colossus",
   "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
   "type": "Earth",
-  "level_range": [8, 16],
+  "level_range": [
+    8,
+    16
+  ],
   "base_hp": 88,
   "base_attack": 36,
   "base_defense": 34,

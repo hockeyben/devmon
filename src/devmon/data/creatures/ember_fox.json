@@ -3,8 +3,14 @@
   "name": "EmberFox",
   "species": "Flame Kit",
   "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
   "type": "Fire",
-  "level_range": [1, 5],
+  "level_range": [
+    1,
+    5
+  ],
   "base_hp": 28,
   "base_attack": 12,
   "base_defense": 7,

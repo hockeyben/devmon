@@ -3,8 +3,15 @@
   "name": "GloomBat",
   "species": "Twilight Swooper",
   "rarity": "rare",
+  "allowed_rarities": [
+    "uncommon",
+    "rare"
+  ],
   "type": "Shadow",
-  "level_range": [5, 12],
+  "level_range": [
+    5,
+    12
+  ],
   "base_hp": 54,
   "base_attack": 24,
   "base_defense": 17,

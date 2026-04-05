@@ -3,13 +3,19 @@
   "name": "VineCobra",
   "species": "Root Serpent",
   "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
   "type": "Nature",
-  "level_range": [5, 12],
+  "level_range": [
+    5,
+    12
+  ],
   "base_hp": 58,
   "base_attack": 25,
   "base_defense": 20,
   "base_speed": 22,
-  "capture_rate": 0.30,
+  "capture_rate": 0.3,
   "flavor_text": "Coils through tangled dependency graphs. It hisses at `import *` and spits when you violate DRY.",
   "ascii_art": [
     "  @@@@@  ",

@@ -3,8 +3,14 @@
   "name": "WaveRunner",
   "species": "Current Dolphin",
   "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
   "type": "Water",
-  "level_range": [3, 8],
+  "level_range": [
+    3,
+    8
+  ],
   "base_hp": 44,
   "base_attack": 15,
   "base_defense": 13,

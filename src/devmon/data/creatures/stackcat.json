@@ -3,8 +3,14 @@
   "name": "Stackcat",
   "species": "Memory Feline",
   "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
   "type": "Psychic",
-  "level_range": [3, 8],
+  "level_range": [
+    3,
+    8
+  ],
   "base_hp": 36,
   "base_attack": 18,
   "base_defense": 10,

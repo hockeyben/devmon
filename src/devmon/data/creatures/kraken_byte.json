@@ -3,8 +3,15 @@
   "name": "KrakenByte",
   "species": "Deep Data Leviathan",
   "rarity": "epic",
+  "allowed_rarities": [
+    "rare",
+    "epic"
+  ],
   "type": "Water",
-  "level_range": [8, 16],
+  "level_range": [
+    8,
+    16
+  ],
   "base_hp": 78,
   "base_attack": 34,
   "base_defense": 28,

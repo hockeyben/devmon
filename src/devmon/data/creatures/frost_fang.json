@@ -3,8 +3,14 @@
   "name": "FrostFang",
   "species": "Ice Pup",
   "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
   "type": "Ice",
-  "level_range": [1, 5],
+  "level_range": [
+    1,
+    5
+  ],
   "base_hp": 26,
   "base_attack": 10,
   "base_defense": 10,

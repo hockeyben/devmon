@@ -11,7 +11,7 @@ def test_gamestate_round_trip():
     json_str = state.model_dump_json()
     loaded = GameState.model_validate_json(json_str)
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 4
+    assert loaded.schema_version == 5
 
 
 def test_schema_version_present():
@@ -19,7 +19,7 @@ def test_schema_version_present():
     state = GameState(player=PlayerProfile(name="Ash"))
     data = json.loads(state.model_dump_json())
     assert "schema_version" in data
-    assert data["schema_version"] == 4
+    assert data["schema_version"] == 5
 
 
 def test_profile_persist():
@@ -44,7 +44,7 @@ def test_new_game_defaults():
     assert state.player.level == 1
     assert state.player.xp == 0
     assert state.player.currency == 0
-    assert state.schema_version == 4
+    assert state.schema_version == 5
 
 
 def test_forward_compat_missing_field():
@@ -87,10 +87,10 @@ def test_player_profile_has_session_xp_earned():
     assert p.session_xp_earned == 0
 
 
-def test_schema_version_is_4():
-    """TRACK-01: GameState.schema_version defaults to 4 after Phase 4 bump."""
+def test_schema_version_is_5():
+    """TRACK-01: GameState.schema_version defaults to 5 after Phase 5 bump."""
     state = GameState.new_game("Ash")
-    assert state.schema_version == 4
+    assert state.schema_version == 5
 
 
 def test_last_active_date_round_trips():

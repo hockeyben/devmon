@@ -3,8 +3,14 @@
   "name": "VoidLeviathan",
   "species": "Null Abyss Entity",
   "rarity": "legendary",
+  "allowed_rarities": [
+    "legendary"
+  ],
   "type": "Shadow",
-  "level_range": [12, 20],
+  "level_range": [
+    12,
+    20
+  ],
   "base_hp": 110,
   "base_attack": 50,
   "base_defense": 44,

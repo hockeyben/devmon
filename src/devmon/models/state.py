@@ -16,6 +16,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from devmon.models.creature import OwnedCreature
+from devmon.models.encounter import EncounterEntry
 
 
 class PlayerProfile(BaseModel):
@@ -52,9 +53,20 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=4, description="Save file schema version for migration support")
+    schema_version: int = Field(default=5, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
+
+    # Phase 5 encounter fields (D-23)
+    encounter_queue: Optional[EncounterEntry] = None
+    encounter_cooldown_until: float = 0.0
+    encounter_roll_count: int = 0
+    last_encounter_time: float = 0.0
+    ai_session_active: bool = False
+    encounter_history: list[EncounterEntry] = Field(default_factory=list)
+    flee_count: int = 0
+    expired_count: int = 0
+    total_encounters_seen: int = 0
 
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":

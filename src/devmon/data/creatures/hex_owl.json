@@ -3,8 +3,14 @@
   "name": "HexOwl",
   "species": "Cipher Raptor",
   "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
   "type": "Psychic",
-  "level_range": [5, 12],
+  "level_range": [
+    5,
+    12
+  ],
   "base_hp": 50,
   "base_attack": 26,
   "base_defense": 18,
