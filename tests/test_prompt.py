@@ -48,3 +48,46 @@ def test_prompt_no_save_returns_default(runner, tmp_devmon_home):
     result = runner.invoke(app, ["prompt"])
     assert result.exit_code == 0
     assert len(result.output.strip()) > 0
+
+
+def test_prompt_paw_indicator_when_encounter_queued(runner, tmp_devmon_home):
+    """D-06/UI-SPEC Surface 3: paw indicator appears when encounter is queued."""
+    import time
+    from devmon.main import app
+    from devmon.engine.creature_loader import load_all_creatures
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    registry = load_all_creatures()
+    first_id = next(iter(registry))
+
+    state = GameState.new_game("TestPlayer")
+    state.encounter_queue = EncounterEntry(
+        template_id=first_id,
+        encounter_level=5,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=time.time(),
+        notified=True,
+    )
+    save(state)
+
+    result = runner.invoke(app, ["prompt"])
+    assert result.exit_code == 0
+    assert "🐾" in result.output
+
+
+def test_prompt_no_paw_indicator_without_encounter(runner, tmp_devmon_home):
+    """D-06: paw indicator does NOT appear when no encounter is queued."""
+    from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    state = GameState.new_game("TestPlayer")
+    # No encounter_queue — default is None
+    save(state)
+
+    result = runner.invoke(app, ["prompt"])
+    assert result.exit_code == 0
+    assert "🐾" not in result.output

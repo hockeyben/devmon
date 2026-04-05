@@ -751,3 +751,44 @@ def test_encounter_cmd_items_then_flee(tmp_devmon_home):
     # After items re-prompt, flee clears queue
     saved = load()
     assert saved.encounter_queue is None
+
+
+# ---------------------------------------------------------------------------
+# Plan 03: Shell hook AI detection tests
+# ---------------------------------------------------------------------------
+
+def test_bash_hook_contains_ai_start_event():
+    """D-04: BASH_ZSH_HOOK_SNIPPET writes ai_start event for AI CLI tools."""
+    from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+    assert "ai_start" in BASH_ZSH_HOOK_SNIPPET
+
+
+def test_bash_hook_contains_ai_tool_names():
+    """D-04: BASH_ZSH_HOOK_SNIPPET detects claude, aider, cursor, copilot."""
+    from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+    assert "claude" in BASH_ZSH_HOOK_SNIPPET
+    assert "aider" in BASH_ZSH_HOOK_SNIPPET
+    assert "cursor" in BASH_ZSH_HOOK_SNIPPET
+    assert "copilot" in BASH_ZSH_HOOK_SNIPPET
+
+
+def test_process_ai_events_sets_flag():
+    """D-04: process_ai_events sets ai_session_active when ai_start event present."""
+    from devmon.engine.encounter_engine import process_ai_events
+    state = _make_state()
+    state.ai_session_active = False
+
+    events = [{"ts": 1234, "type": "ai_start", "exit": 0, "dur": 0, "cwd": "/"}]
+    process_ai_events(state, events)
+    assert state.ai_session_active is True
+
+
+def test_process_ai_events_clears_flag_when_no_events():
+    """D-04: process_ai_events clears ai_session_active when no ai_start events."""
+    from devmon.engine.encounter_engine import process_ai_events
+    state = _make_state()
+    state.ai_session_active = True
+
+    events = [{"ts": 1234, "type": "cmd", "exit": 0, "dur": 100, "cwd": "/"}]
+    process_ai_events(state, events)
+    assert state.ai_session_active is False

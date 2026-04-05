@@ -16,6 +16,15 @@ D-03: Pure shell append (printf >> file) for zero latency.
 BASH_ZSH_HOOK_SNIPPET = """\
 _devmon_preexec() {
   _DEVMON_CMD_START=$(date +%s%3N)
+  # AI detection (D-04): check if command starts with known AI CLI names
+  local _cmd="${1%% *}"
+  case "$_cmd" in
+    claude|aider|cursor|copilot)
+      local _log="${DEVMON_EVENT_LOG:-$HOME/.local/share/devmon/devmon/events.log}"
+      printf '{"ts":%s,"exit":0,"dur":0,"cwd":"%s","type":"ai_start"}\\n' \
+        "$(date +%s%3N)" "$PWD" >> "$_log" 2>/dev/null
+      ;;
+  esac
 }
 _devmon_precmd() {
   local _exit=$?
@@ -49,6 +58,12 @@ function _DevmonPrePrompt {
     $cwd = $PWD.Path -replace '\\\\', '/'
     $entry = "{`"ts`":$now,`"exit`":$exit,`"dur`":$dur,`"cwd`":`"$cwd`",`"type`":`"cmd`"}`n"
     try { Add-Content -Path $log -Value $entry -NoNewline -ErrorAction SilentlyContinue } catch {}
+    # AI detection (D-04)
+    $lastCmd = (Get-History -Count 1).CommandLine -split ' ' | Select-Object -First 1
+    if ($lastCmd -in @('claude','aider','cursor','copilot')) {
+        $aiEntry = "{`"ts`":$now,`"exit`":0,`"dur`":0,`"cwd`":`"$cwd`",`"type`":`"ai_start`"}`n"
+        try { Add-Content -Path $log -Value $aiEntry -NoNewline -ErrorAction SilentlyContinue } catch {}
+    }
 }
 $ExecutionContext.InvokeCommand.PostCommandLookupAction = {
     param($cmd, $cmdInfo, $inputObj, $outputObj)

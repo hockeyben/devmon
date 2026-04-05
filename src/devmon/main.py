@@ -16,6 +16,7 @@ from typing import Optional
 import typer
 
 from devmon import __version__
+from devmon.commands import encounter as encounter_cmd
 from devmon.commands import hook as hook_cmd
 from devmon.commands import prompt as prompt_cmd
 from devmon.commands import settings as settings_cmd
@@ -40,6 +41,7 @@ app.add_typer(hook_cmd.app, name="hook")
 app.add_typer(track_app, name="track")
 app.add_typer(prompt_cmd.app, name="prompt")
 app.add_typer(settings_cmd.app, name="settings")
+app.add_typer(encounter_cmd.app, name="encounter")
 
 
 def _version_callback(value: bool) -> None:
@@ -84,7 +86,28 @@ def _process_event_log_on_startup() -> None:
             state = GameState.new_game("Player")
 
         process_events(state, events, config)
+
+        # Encounter system wiring (Plan 03)
+        from devmon.engine.encounter_engine import check_expiry, process_ai_events, tick_encounter
+
+        # Process AI detection events (D-04)
+        process_ai_events(state, events)
+
+        # Check encounter expiry first (D-09) — clear stale encounters before ticking
+        expiry_msg = check_expiry(state)
+
+        # Tick encounter timer (D-01, D-02, D-03) — may spawn new encounter
+        notification_msg = tick_encounter(state, config)
+
         save_state(state)
+
+        # Print after save so state changes persist even if rendering fails
+        from rich.console import Console
+        console = Console()
+        if expiry_msg:
+            console.print(expiry_msg)
+        if notification_msg:
+            console.print(notification_msg)
     except Exception:
         pass  # Never block the user's terminal workflow
 

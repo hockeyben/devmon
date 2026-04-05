@@ -28,7 +28,10 @@ def prompt() -> None:
         p = state.player
         config = load_config()
         earned, needed = xp_within_level(p, config)
-        output = f"⚡ Lv.{p.level} | XP: {earned}/{needed} >"
+        if state.encounter_queue is not None:
+            output = f"⚡ Lv.{p.level} | XP: {earned}/{needed} | 🐾 >"
+        else:
+            output = f"⚡ Lv.{p.level} | XP: {earned}/{needed} >"
 
     # Write UTF-8 to stdout.buffer for encoding robustness (Pitfall 5)
     # No Rich, no ANSI — PS1-safe by construction (D-07)
