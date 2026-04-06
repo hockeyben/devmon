@@ -54,7 +54,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=9, description="Save file schema version for migration support")
+    schema_version: int = Field(default=10, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
@@ -89,6 +89,14 @@ class GameState(BaseModel):
 
     pending_achievement_unlocks: list[AchievementUnlock] = Field(default_factory=list)
     """Achievement tier unlocks awaiting notification display (ACHV-02)."""
+
+    # Phase 10 evolution fields (CREA-07, CREA-08)
+    pending_evolution_notifications: list[dict] = Field(default_factory=list)
+    """Deferred evolution notifications awaiting display on next invocation (Phase 10).
+
+    Each dict has keys: "old_name" (str), "new_name" (str),
+    "old_template_id" (str), "new_template_id" (str).
+    """
 
     daily_bonus_pending: bool = False
     """True if all 5 quests completed today and daily bonus not yet displayed (D-07)."""

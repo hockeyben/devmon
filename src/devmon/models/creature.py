@@ -124,6 +124,14 @@ class CreatureTemplate(BaseModel):
     evolves_to: Optional[str] = None
     """Creature id of the next evolution, or None (D-05 stub — logic in Phase 10)."""
 
+    evolution_level_threshold: Optional[int] = None
+    """Minimum level required to trigger level-based evolution, or None (Phase 10)."""
+
+    evolution_condition: Optional[dict] = None
+    """Condition spec for conditional evolution, e.g. {"type": "battles_won", "count": 10}.
+    None means no condition required — level threshold alone triggers evolution (Phase 10).
+    """
+
     @model_validator(mode="after")
     def _validate_ascii_art(self) -> "CreatureTemplate":
         """Enforce ASCII art constraints for safe rendering in 80-col terminals.
@@ -175,3 +183,11 @@ class OwnedCreature(BaseModel):
 
     is_fainted: bool = False
     """Battle-eligibility flag (PRTY-04 stub — battle logic in Phase 6)."""
+
+    battles_won_with: int = 0
+    """Count of battles won while this creature was the active party lead (Phase 10)."""
+
+    evolution_declined: bool = False
+    """True if the player declined evolution at the last level threshold (Phase 10).
+    Reset to False on the next level-up so the prompt fires again (D-02, Pitfall 1).
+    """

@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 9
+CURRENT_VERSION = 10
 
 
 def migrate(data: dict) -> dict:
@@ -36,6 +36,7 @@ def migrate(data: dict) -> dict:
         6: _migrate_6_to_7,
         7: _migrate_7_to_8,
         8: _migrate_8_to_9,
+        9: _migrate_9_to_10,
     }
 
     while version < CURRENT_VERSION:
@@ -160,4 +161,15 @@ def _migrate_8_to_9(data: dict) -> dict:
     data.setdefault("pending_achievement_unlocks", [])
     data.setdefault("daily_bonus_pending", False)
     data["schema_version"] = 9
+    return data
+
+
+def _migrate_9_to_10(data: dict) -> dict:
+    """Version 9 -> 10: Phase 10 adds pending_evolution_notifications to GameState.
+
+    Uses setdefault() so pre-existing values are never overwritten (T-10-01).
+    Existing players start with no pending evolution notifications.
+    """
+    data.setdefault("pending_evolution_notifications", [])
+    data["schema_version"] = 10
     return data

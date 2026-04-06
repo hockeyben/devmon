@@ -15,7 +15,7 @@ def test_save_persist(tmp_save_dir):
     loaded = load()
     assert loaded is not None
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 9
+    assert loaded.schema_version == 10
 
 
 def test_atomic_write(tmp_save_dir):
@@ -37,7 +37,7 @@ def test_schema_version(tmp_save_dir):
     state = GameState.new_game("Ash")
     save(state)
     data = json_mod.loads((tmp_save_dir / "save.json").read_text(encoding="utf-8"))
-    assert data["schema_version"] == 9
+    assert data["schema_version"] == 10
 
 
 def test_data_dir(tmp_save_dir):
@@ -90,10 +90,10 @@ def test_no_save_returns_none(tmp_save_dir):
 
 
 def test_migration_runner_noop():
-    """SAVE-03: Migration runner handles current version (v9 -> v9) cleanly — no-op."""
+    """SAVE-03: Migration runner handles current version (v10 -> v10) cleanly — no-op."""
     from devmon.persistence.migrations import migrate
     data = {
-        "schema_version": 9,
+        "schema_version": 10,
         "player": {
             "name": "Ash",
             "last_active_date": None,
@@ -122,18 +122,19 @@ def test_migration_runner_noop():
         "achievement_state": {},
         "pending_achievement_unlocks": [],
         "daily_bonus_pending": False,
+        "pending_evolution_notifications": [],
     }
     result = migrate(data)
-    assert result["schema_version"] == 9
+    assert result["schema_version"] == 10
     assert result["player"]["name"] == "Ash"
 
 
 def test_migration_from_v0():
-    """SAVE-03: Save without schema_version (v0) is migrated to current version (v9)."""
+    """SAVE-03: Save without schema_version (v0) is migrated to current version (v10)."""
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 9
+    assert result["schema_version"] == 10
 
 
 def test_migration_unknown_version():
@@ -146,22 +147,22 @@ def test_migration_unknown_version():
 # --- Phase 2 migration and config tests (TRACK-01, TRACK-05, TRACK-06, TRACK-07) ---
 
 def test_migration_v1_to_v2_adds_phase2_fields():
-    """TRACK-01: v1 save dicts gain Phase 2 player fields on migration through v2 to v9."""
+    """TRACK-01: v1 save dicts gain Phase 2 player fields on migration through v2 to v10."""
     from devmon.persistence.migrations import migrate
     data = {"schema_version": 1, "player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 9
+    assert result["schema_version"] == 10
     assert result["player"]["last_active_date"] is None
     assert result["player"]["streak_grace_used"] is False
     assert result["player"]["session_xp_earned"] == 0
 
 
-def test_migration_v0_to_v7_full_path():
-    """TRACK-01: v0 save migrates all the way to v9 via chained migrations."""
+def test_migration_v0_to_v10_full_path():
+    """TRACK-01: v0 save migrates all the way to v10 via chained migrations."""
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 9
+    assert result["schema_version"] == 10
     assert "last_active_date" in result["player"]
     assert "level_up_pending" in result["player"]
     assert "creature_collection" in result
@@ -170,10 +171,11 @@ def test_migration_v0_to_v7_full_path():
     assert "codex_state" in result
     assert "inventory" in result
     assert "xp_booster_active_until" in result
+    assert "pending_evolution_notifications" in result
 
 
-def test_migration_v2_to_v8_via_chain():
-    """TRACK-01: v2 save dict is migrated to v9 with Phase 3+4+5+6+7+8+9 fields added."""
+def test_migration_v2_to_v10_via_chain():
+    """TRACK-01: v2 save dict is migrated to v10 with Phase 3+4+5+6+7+8+9+10 fields added."""
     from devmon.persistence.migrations import migrate
     data = {
         "schema_version": 2,
@@ -185,19 +187,20 @@ def test_migration_v2_to_v8_via_chain():
         }
     }
     result = migrate(data)
-    assert result["schema_version"] == 9
+    assert result["schema_version"] == 10
     assert result.get("creature_collection") == []
     assert result.get("encounter_queue") is None
     assert result.get("party") == []
     assert result.get("codex_state") == {}
     assert result.get("inventory") == {}
     assert result.get("xp_booster_active_until") == 0.0
+    assert result.get("pending_evolution_notifications") == []
 
 
-def test_current_version_is_9():
-    """TRACK-01: migrations.CURRENT_VERSION equals 9 after Phase 9 bump."""
+def test_current_version_is_10():
+    """TRACK-01: migrations.CURRENT_VERSION equals 10 after Phase 10 bump."""
     from devmon.persistence.migrations import CURRENT_VERSION
-    assert CURRENT_VERSION == 9
+    assert CURRENT_VERSION == 10
 
 
 def test_migrate_v2_to_v3():
