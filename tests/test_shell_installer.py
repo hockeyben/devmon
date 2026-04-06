@@ -40,19 +40,21 @@ def test_uninstall_preserves_other_content(tmp_rc_file):
 
 
 def test_hook_snippet_contains_no_python_spawn(tmp_rc_file):
-    """SHELL-03: The hook snippet written to rc file must not contain 'python' or 'devmon'
-    as a command invocation (no Python spawn — only printf to file)."""
+    """SHELL-03: The hook snippet written to rc file must not spawn Python directly.
+    Event logging uses only shell builtins (printf). The daemon auto-start via
+    'devmon indicator start & disown' is allowed — it runs backgrounded and
+    non-blocking (Phase 11 D-02). Direct python invocations are still forbidden."""
     from devmon.shell.installer import install_hook
     install_hook(tmp_rc_file, shell="bash")
     content = tmp_rc_file.read_text(encoding="utf-8")
-    # The hook must use printf, not spawn python
+    # The hook must use printf for zero-latency event logging
     assert "printf" in content
-    # Must not call python or devmon as a subprocess command in the hook
-    # (devmon may appear in path strings like devmon/devmon/events.log — that is fine)
+    # Must not call python directly in the hook
     import re
-    # Check for command invocations: python/devmon at start of line or after $()
     assert not re.search(r'(?:^|\$\()\s*python\b', content, re.MULTILINE)
-    assert not re.search(r'(?:^|\$\()\s*devmon\b', content, re.MULTILINE)
+    # devmon indicator start is allowed — it runs backgrounded (& disown)
+    assert "devmon indicator start" in content
+    assert "disown" in content
 
 
 def test_event_log_var_in_hook_snippet(tmp_rc_file):

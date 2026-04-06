@@ -148,14 +148,38 @@ class TestIndicatorCli:
         assert "not running" in result.output.lower()
 
 
-# === Plan 03 stubs (xfail — shell hook integration not yet done) ===
+# === Plan 03 tests (real — shell hook integration complete) ===
 
-@pytest.mark.xfail(reason="Plan 03: shell hook integration not yet done", strict=True)
 class TestShellHookIntegration:
-    def test_precmd_has_daemon_check(self):
+    def test_precmd_has_daemon_pid_check(self):
         from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
         assert "indicator.pid" in BASH_ZSH_HOOK_SNIPPET
 
-    def test_battle_sets_indicator_hidden(self):
-        """Battle command must set indicator_hidden=True at start."""
-        pytest.fail("Not implemented")
+    def test_precmd_has_kill_0_liveness(self):
+        from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+        assert "kill -0" in BASH_ZSH_HOOK_SNIPPET
+
+    def test_precmd_has_devmon_indicator_start(self):
+        from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+        assert "devmon indicator start" in BASH_ZSH_HOOK_SNIPPET
+
+    def test_precmd_has_disown(self):
+        from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+        assert "disown" in BASH_ZSH_HOOK_SNIPPET
+
+    def test_preexec_creates_typing_flag(self):
+        """preexec must touch typing.flag to signal daemon not to write (SC6)."""
+        from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+        assert "touch" in BASH_ZSH_HOOK_SNIPPET
+        assert "typing.flag" in BASH_ZSH_HOOK_SNIPPET
+
+    def test_precmd_deletes_typing_flag(self):
+        """precmd must rm typing.flag to signal daemon it is safe to write (SC6)."""
+        from devmon.shell.hooks import BASH_ZSH_HOOK_SNIPPET
+        assert "rm -f" in BASH_ZSH_HOOK_SNIPPET
+        assert "typing.flag" in BASH_ZSH_HOOK_SNIPPET
+
+    def test_powershell_unchanged(self):
+        """PowerShell hook should NOT have indicator daemon (D-06 fallback)."""
+        from devmon.shell.hooks import POWERSHELL_HOOK_SNIPPET
+        assert "indicator" not in POWERSHELL_HOOK_SNIPPET

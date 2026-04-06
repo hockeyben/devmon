@@ -25,15 +25,25 @@ _devmon_preexec() {
         "$(date +%s%3N)" "$PWD" >> "$_log" 2>/dev/null
       ;;
   esac
+  # SC6: Signal daemon that readline/command is active — do not write to terminal
+  touch "${DEVMON_HOME:-$HOME/.local/share/devmon/devmon}/typing.flag" 2>/dev/null
 }
 _devmon_precmd() {
   local _exit=$?
+  # SC6: Signal daemon that prompt is drawing — safe to write to terminal
+  rm -f "${DEVMON_HOME:-$HOME/.local/share/devmon/devmon}/typing.flag" 2>/dev/null
   local _now
   _now=$(date +%s%3N)
   local _dur=$(( _now - ${_DEVMON_CMD_START:-$_now} ))
   local _log="${DEVMON_EVENT_LOG:-$HOME/.local/share/devmon/devmon/events.log}"
   printf '{"ts":%s,"exit":%d,"dur":%d,"cwd":"%s","type":"cmd"}\\n' \\
     "$_now" "$_exit" "$_dur" "$PWD" >> "$_log" 2>/dev/null
+  # Indicator daemon auto-start (Phase 11, D-02)
+  local _pid_file="${DEVMON_HOME:-$HOME/.local/share/devmon/devmon}/indicator.pid"
+  if [[ ! -f "$_pid_file" ]] || ! kill -0 "$(cat "$_pid_file" 2>/dev/null)" 2>/dev/null; then
+    devmon indicator start >/dev/null 2>&1 &
+    disown
+  fi
   _DEVMON_CMD_START=
 }
 preexec_functions+=(_devmon_preexec)
