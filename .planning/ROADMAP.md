@@ -188,8 +188,15 @@ Plans:
   3. Running `devmon achievements` shows all achievements categorized by combat, collection, coding, and exploration — with unlock status and progress for locked ones
   4. Unlocking an achievement triggers a Rich notification on the next `devmon` invocation
   5. New quests are generated from templates when old ones complete — the player is never left with zero active quests
-**Plans**: TBD
+**Plans**: 5 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 09-01-PLAN.md — Quest/achievement Pydantic models, schema v9 migration, xfail test scaffolds (Wave 1)
+- [ ] 09-02-PLAN.md — Quest engine: templates, progress tracking, rewards, daily refresh (Wave 2)
+- [ ] 09-03-PLAN.md — Achievement engine: 20-achievement catalog, tier checking, unlock detection (Wave 2, parallel with 09-02)
+- [ ] 09-04-PLAN.md — Wiring into progression/battle, render surfaces, CLI commands (Wave 3)
+- [ ] 09-05-PLAN.md — Human verification: quest/achievement visuals, notifications, progress (Wave 4)
 
 ### Phase 10: Evolution and Polish
 **Goal**: Creatures can evolve into stronger forms, and the game runs reliably across all supported terminal environments
@@ -233,7 +240,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Battle and Capture | 5/6 | In Progress|  |
 | 7. Party and Collection | 0/4 | Not started | - |
 | 8. Economy and Shop | 0/5 | Not started | - |
-| 9. Quests and Achievements | 0/TBD | Not started | - |
+| 9. Quests and Achievements | 0/5 | Not started | - |
 | 10. Evolution and Polish | 0/TBD | Not started | - |
 | 11. Terminal Status Indicator | 0/TBD | Not started | - |
 
