@@ -1,0 +1,9 @@
+{
+  "id": "full_potion",
+  "name": "Full Potion",
+  "category": "potion",
+  "price": 20,
+  "sold_in_shop": true,
+  "effect_description": "Restores 100% HP",
+  "hp_restore_percent": 1.0
+}

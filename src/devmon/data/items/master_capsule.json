@@ -1,0 +1,9 @@
+{
+  "id": "master_capsule",
+  "name": "Master Capsule",
+  "category": "capsule",
+  "price": 0,
+  "sold_in_shop": false,
+  "effect_description": "Guaranteed capture",
+  "capture_multiplier": 100.0
+}
