@@ -208,8 +208,14 @@ Plans:
   3. Level-up, evolution, and achievement events display a Rich notification that is visually distinct and dramatic without blocking subsequent commands
   4. All UI elements display correctly in terminals as narrow as 40 columns — health bars compress, ASCII art falls back gracefully, no truncation errors
   5. Running `devmon` in a tmux pane, over SSH, and in VS Code's integrated terminal all produce correct output with no rendering artifacts
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 10-01-PLAN.md — Evolution data model, schema v10 migration, evolution engine pure logic, test scaffold (Wave 1)
+- [ ] 10-02-PLAN.md — Creature JSON evolution chains, cyber_beetle.json, render/evolution.py, battle + main.py wiring (Wave 2)
+- [ ] 10-03-PLAN.md — Narrow terminal adaptation: render modules + call site wiring (Wave 2, parallel with 10-02)
+- [ ] 10-04-PLAN.md — Human verification: evolution flow, narrow terminal, notification stack (Wave 3)
 
 ### Phase 11: Terminal Status Indicator
 **Goal**: A persistent, continuously animated status indicator on the right side of the terminal that shows game state at a glance — searching animation while looking for creatures, alert when encounter found, hidden during battle, reappears after
@@ -241,7 +247,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Party and Collection | 0/4 | Not started | - |
 | 8. Economy and Shop | 0/5 | Not started | - |
 | 9. Quests and Achievements | 0/5 | Not started | - |
-| 10. Evolution and Polish | 0/TBD | Not started | - |
+| 10. Evolution and Polish | 0/4 | Not started | - |
 | 11. Terminal Status Indicator | 0/TBD | Not started | - |
 
 ## Backlog
