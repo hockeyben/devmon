@@ -237,8 +237,8 @@ def render_action_menu(
     else:
         menu.append("  [4] Switch Creature  (no other party members)\n", style="dim white")
 
-    # [5] Items (always dim)
-    menu.append("  [5] Items  (coming soon)\n", style="dim white")
+    # [5] Items
+    menu.append("  [5] Items\n", style="white")
 
     # [6] Flee
     menu.append("  [6] Flee\n", style="white")
@@ -345,7 +345,7 @@ def render_victory_screen(
     result.append(f"+{rewards.get('creature_xp', 0)} XP\n", style="bold white")
 
     result.append("    Currency:    ", style="dim white")
-    result.append(f"+{rewards.get('currency', 0)} bits\n", style="bold white")
+    result.append(f"+{rewards.get('currency', 0)} Bits\n", style="bold white")
 
     console.print(result)
     input("  Press Enter to continue.")
@@ -390,7 +390,7 @@ def render_capture_screen(
     result.append(f"+{rewards.get('player_xp', 0)}\n", style="bold white")
 
     result.append("    Currency:         ", style="dim white")
-    result.append(f"+{rewards.get('currency', 0)} bits\n", style="bold white")
+    result.append(f"+{rewards.get('currency', 0)} Bits\n", style="bold white")
 
     console.print(result)
     input("  Press Enter to continue.")

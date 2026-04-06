@@ -147,6 +147,13 @@ def battle_cmd() -> None:
         roll_crit,
     )
     from devmon.engine.creature_loader import get_creature
+    from devmon.engine.item_engine import (
+        activate_booster,
+        consume_item,
+        is_booster_active,
+        use_potion_on_creature,
+    )
+    from devmon.engine.item_loader import load_all_items
     from devmon.engine.progression import check_player_level_up
     from devmon.config.loader import load_config
     from devmon.persistence.save import load, save
@@ -164,6 +171,9 @@ def battle_cmd() -> None:
     )
 
     console = Console()
+
+    # Load items catalog once — used by capsule sub-menu and items sub-menu
+    items_catalog = load_all_items()
 
     # --- Step 1: Load state and validate encounter queue ---
     state = load()
@@ -323,6 +333,9 @@ def battle_cmd() -> None:
                 if wild_fainted:
                     # --- Victory ---
                     rewards = compute_battle_rewards(wild.level, wild.encounter_type)
+                    # XP booster multiplier (D-08)
+                    if is_booster_active(state):
+                        rewards["player_xp"] = int(rewards["player_xp"] * 1.5)
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
@@ -467,6 +480,9 @@ def battle_cmd() -> None:
 
                 if wild_fainted:
                     rewards = compute_battle_rewards(wild.level, wild.encounter_type)
+                    # XP booster multiplier (D-08)
+                    if is_booster_active(state):
+                        rewards["player_xp"] = int(rewards["player_xp"] * 1.5)
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
@@ -525,17 +541,65 @@ def battle_cmd() -> None:
             # [3] Capture (CAPT-01, CAPT-07)
             # ================================================================
             elif choice == "3":
-                # Exit Live context before capture animation (critical — UI-SPEC)
+                # Exit Live context before sub-menu (critical — UI-SPEC Pitfall 1)
                 live.stop()
+
+                # Build list of owned capsules (filter to those with qty > 0)
+                capsule_ids = [
+                    "basic_capsule", "great_capsule", "ultra_capsule", "master_capsule"
+                ]
+                owned_capsules = [
+                    (cid, state.inventory.get(cid, 0))
+                    for cid in capsule_ids
+                    if state.inventory.get(cid, 0) > 0
+                ]
+
+                if not owned_capsules:
+                    console.print(
+                        "  You have no capsules. Buy some at the shop.",
+                        style="dim white",
+                    )
+                    with Live(auto_refresh=False, console=console) as live:
+                        continue
+
+                # Show capsule sub-menu
+                console.print("\n  [bold white]Throw which capsule?[/bold white]\n")
+                for i, (cid, qty) in enumerate(owned_capsules, 1):
+                    item = items_catalog[cid]
+                    console.print(f"  [{i}] {item.name}    x{qty}")
+                console.print("  [b] Back\n")
+
+                capsule_choice = input("  Choose: ").strip()
+
+                if capsule_choice.lower() == "b":
+                    with Live(auto_refresh=False, console=console) as live:
+                        continue
+
+                try:
+                    capsule_idx = int(capsule_choice)
+                except ValueError:
+                    capsule_idx = -1
+
+                if not (1 <= capsule_idx <= len(owned_capsules)):
+                    last_narration = "Invalid capsule choice."
+                    with Live(auto_refresh=False, console=console) as live:
+                        continue
+
+                selected_capsule_id, _ = owned_capsules[capsule_idx - 1]
+                selected_capsule = items_catalog[selected_capsule_id]
+                consume_item(state.inventory, selected_capsule_id)
+                save(state)
 
                 hp_percent = wild.current_hp / wild.max_hp if wild.max_hp > 0 else 0.01
                 # Compute capture chance — capture_rate NEVER shown to player (T-06-06, D-15)
                 capture_chance = compute_capture_chance(
-                    wild_template.capture_rate, hp_percent, 1.0
+                    wild_template.capture_rate, hp_percent, selected_capsule.capture_multiplier
                 )
                 success = attempt_capture(capture_chance)
 
-                run_capture_animation(console, "Basic Capsule", wild_template.name, wild.rarity, success)
+                run_capture_animation(
+                    console, selected_capsule.name, wild_template.name, wild.rarity, success
+                )
 
                 if success:
                     # Create owned creature from wild and add to collection (CAPT-05)
@@ -549,6 +613,9 @@ def battle_cmd() -> None:
                     state.codex_state[wild.template_id] = "captured"
                     state.player.total_creatures_captured += 1
                     rewards = compute_capture_rewards(wild.level, wild.rarity)
+                    # XP booster multiplier (D-08)
+                    if is_booster_active(state):
+                        rewards["player_xp"] = int(rewards["player_xp"] * 1.5)
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     config = load_config()
@@ -699,11 +766,137 @@ def battle_cmd() -> None:
                     continue
 
             # ================================================================
-            # [5] Items (not available yet)
+            # [5] Items
             # ================================================================
             elif choice == "5":
-                last_narration = "Items not available yet. Coming in a future update."
-                continue
+                # Exit Live context before sub-menu (Pitfall 1)
+                live.stop()
+
+                # Build usable items list from inventory
+                usable_items: list[tuple[str, object, int]] = []
+                for item_id, qty in state.inventory.items():
+                    if qty <= 0 or item_id not in items_catalog:
+                        continue
+                    item_def = items_catalog[item_id]
+                    if item_def.category == "capsule":
+                        continue  # capsules used via choice [3]
+                    if item_def.category == "booster":
+                        usable_items.append((item_id, item_def, qty))
+                    elif item_def.restores_fainted:
+                        # Revive: only show if any party creature is fainted
+                        has_fainted = any(c.is_fainted for c in state.creature_collection)
+                        if has_fainted:
+                            usable_items.append((item_id, item_def, qty))
+                    else:
+                        # Regular potion: only show if active creature is alive and not at full HP
+                        if not player_owned.is_fainted and (
+                            player_owned.current_hp is None
+                            or player_owned.current_hp < player_max_hp
+                        ):
+                            usable_items.append((item_id, item_def, qty))
+
+                if not usable_items:
+                    console.print("  No usable items.", style="dim white")
+                    with Live(auto_refresh=False, console=console) as live:
+                        continue
+
+                # Show items sub-menu
+                console.print("\n  [bold white]Use which item?[/bold white]\n")
+                for i, (item_id, item_def, qty) in enumerate(usable_items, 1):
+                    effect = f"({item_def.effect_description})"
+                    console.print(f"  [{i}] {item_def.name} {effect}   x{qty}")
+                console.print("  [b] Back\n")
+
+                item_choice = input("  Choose: ").strip()
+
+                if item_choice.lower() == "b":
+                    with Live(auto_refresh=False, console=console) as live:
+                        continue
+
+                try:
+                    item_idx = int(item_choice)
+                except ValueError:
+                    item_idx = -1
+
+                if not (1 <= item_idx <= len(usable_items)):
+                    last_narration = "Invalid item choice."
+                    with Live(auto_refresh=False, console=console) as live:
+                        continue
+
+                selected_id, selected_def, _ = usable_items[item_idx - 1]
+                consume_item(state.inventory, selected_id)
+
+                item_narration = ""
+
+                if selected_def.category == "booster":
+                    activate_booster(state)
+                    item_narration = f"{selected_def.name} activated! XP x1.5 for 30 min."
+                elif selected_def.restores_fainted:
+                    # Revive — pick a fainted creature
+                    fainted = [c for c in state.creature_collection if c.is_fainted]
+                    if len(fainted) == 1:
+                        target = fainted[0]
+                    else:
+                        console.print("\n  [bold white]Revive which creature?[/bold white]\n")
+                        for i, c in enumerate(fainted, 1):
+                            t = get_creature(c.template_id)
+                            console.print(f"  [{i}] {t.name}")
+                        console.print()
+                        rev_choice = input("  Choose: ").strip()
+                        try:
+                            rev_idx = int(rev_choice)
+                        except ValueError:
+                            rev_idx = 1
+                        rev_idx = max(1, min(rev_idx, len(fainted)))
+                        target = fainted[rev_idx - 1]
+                    t_template = get_creature(target.template_id)
+                    t_max_hp = compute_max_hp(t_template, target.level)
+                    item_narration = use_potion_on_creature(target, selected_def, t_max_hp)
+                else:
+                    # Regular potion on active creature
+                    item_narration = use_potion_on_creature(
+                        player_owned, selected_def, player_max_hp
+                    )
+
+                save(state)
+
+                # Wild gets a free attack (item use costs a turn)
+                w_atk = compute_stat(wild_template.base_attack, wild.level)
+                p_def = compute_stat(player_template.base_defense, player_owned.level)
+                w_spd = compute_stat(wild_template.base_speed, wild.level)
+                effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
+                crit = roll_crit(w_spd)
+                dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                player_owned.current_hp = max(0, (player_owned.current_hp or player_max_hp) - dmg)
+                suffix = _type_suffix(effectiveness, crit)
+                last_narration = (
+                    f"{item_narration} | "
+                    f"{wild_template.name} -> {dmg} dmg{' ' + suffix if suffix else ''}"
+                )
+                turn += 1
+
+                if player_owned.current_hp <= 0:
+                    apply_faint(player_owned)
+                    next_creature = _resolve_party_lead(state)
+                    if next_creature is not None:
+                        player_owned = next_creature
+                        participated.add(player_owned.template_id)
+                        player_template = get_creature(player_owned.template_id)
+                        player_max_hp = compute_max_hp(player_template, player_owned.level)
+                        if player_owned.current_hp is None:
+                            player_owned.current_hp = player_max_hp
+                    else:
+                        state.encounter_queue = None
+                        save(state)
+                        render_defeat_screen(console)
+                        _auto_heal(state)
+                        save(state)
+                        battle_active = False
+                        with Live(auto_refresh=False, console=console) as live:
+                            break
+
+                with Live(auto_refresh=False, console=console) as live:
+                    continue
 
             # ================================================================
             # [6] Flee (D-03)
