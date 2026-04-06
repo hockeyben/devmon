@@ -192,10 +192,10 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 09-01-PLAN.md — Quest/achievement Pydantic models, schema v9 migration, xfail test scaffolds (Wave 1)
-- [ ] 09-02-PLAN.md — Quest engine: templates, progress tracking, rewards, daily refresh (Wave 2)
-- [ ] 09-03-PLAN.md — Achievement engine: 20-achievement catalog, tier checking, unlock detection (Wave 2, parallel with 09-02)
-- [ ] 09-04-PLAN.md — Wiring into progression/battle, render surfaces, CLI commands (Wave 3)
+- [x] 09-01-PLAN.md — Quest/achievement Pydantic models, schema v9 migration, xfail test scaffolds (Wave 1)
+- [x] 09-02-PLAN.md — Quest engine: templates, progress tracking, rewards, daily refresh (Wave 2)
+- [x] 09-03-PLAN.md — Achievement engine: 20-achievement catalog, tier checking, unlock detection (Wave 2, parallel with 09-02)
+- [x] 09-04-PLAN.md — Wiring into progression/battle, render surfaces, CLI commands (Wave 3)
 - [ ] 09-05-PLAN.md — Human verification: quest/achievement visuals, notifications, progress (Wave 4)
 
 ### Phase 10: Evolution and Polish
