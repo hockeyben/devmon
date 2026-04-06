@@ -220,7 +220,7 @@ Plans:
 ### Phase 11: Terminal Status Indicator
 **Goal**: A persistent, continuously animated status indicator on the right side of the terminal that shows game state at a glance — searching animation while looking for creatures, alert when encounter found, hidden during battle, reappears after
 **Depends on**: Phase 10
-**Requirements**: TBD
+**Requirements**: SC1, SC2, SC3, SC4, SC5, SC6
 **Success Criteria** (what must be TRUE):
   1. A small animated indicator runs persistently on the far right of the command line, visible while the user types and runs commands
   2. The indicator shows a walking/searching animation when no encounter is queued, cycling frames continuously (not just on command execution)
@@ -228,13 +228,18 @@ Plans:
   4. During battle (devmon battle), the indicator disappears to avoid conflicting with Rich Live
   5. After battle completes, the searching animation resumes automatically
   6. The indicator never blocks, delays, or interferes with normal terminal input/output
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 11-01-PLAN.md — Daemon package foundation: PID helpers, ANSI helpers, schema v11 migration, test scaffold (Wave 1)
+- [ ] 11-02-PLAN.md — Daemon animation loop, frame definitions, emoji detection, CLI subcommand, battle wiring (Wave 2)
+- [ ] 11-03-PLAN.md — Shell hook auto-start integration, final tests, human verification (Wave 3)
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -248,7 +253,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Economy and Shop | 0/5 | Not started | - |
 | 9. Quests and Achievements | 0/5 | Not started | - |
 | 10. Evolution and Polish | 3/4 | Complete    | 2026-04-06 |
-| 11. Terminal Status Indicator | 0/TBD | Not started | - |
+| 11. Terminal Status Indicator | 0/3 | Not started | - |
 
 ## Backlog
 
