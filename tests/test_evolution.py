@@ -431,3 +431,76 @@ def test_battles_won_with_increment():
     assert owned.battles_won_with == 1
     owned.battles_won_with += 1
     assert owned.battles_won_with == 2
+
+
+# ---------------------------------------------------------------------------
+# Task 1 (Plan 03): Narrow terminal rendering tests — UI-06
+# ---------------------------------------------------------------------------
+
+def _make_template(id_="ember_fox", name="EmberFox"):
+    """Helper: create a minimal CreatureTemplate for render tests."""
+    from devmon.models.creature import CreatureTemplate
+
+    return CreatureTemplate(
+        id=id_, name=name, species="Flame Fox",
+        rarity="common", type="Fire", level_range=(1, 10),
+        base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+        capture_rate=0.7, flavor_text="Prefers hot keys over keyboards.",
+        ascii_art=["  ^ ^  ", " (o o) ", "  ---  "],
+        primary_color="bold red", accent_color="yellow",
+    )
+
+
+def test_narrow_mode_hides_art():
+    """render_creature_panel with narrow=True produces no ASCII art lines in output."""
+    from rich.console import Console
+    from devmon.render.creatures import render_creature_panel
+
+    template = _make_template()
+    console = Console(record=True, width=35)
+    render_creature_panel(template, console, narrow=True)
+    output = console.export_text()
+
+    # ASCII art lines should NOT appear in narrow mode
+    for art_line in template.ascii_art:
+        assert art_line.strip() not in output, (
+            f"ASCII art line {art_line!r} should be hidden in narrow mode"
+        )
+
+
+def test_narrow_hp_bar_width():
+    """render_hp_bar with width=10 produces a bar of approximately 10 block characters."""
+    from devmon.render.battle import render_hp_bar
+
+    bar = render_hp_bar(current=30, max_hp=30, width=10)
+    bar_text = bar.plain
+    # Count filled (█) + empty (░) characters — should equal 10
+    filled = bar_text.count("\u2588")
+    empty = bar_text.count("\u2591")
+    assert filled + empty == 10, (
+        f"Expected 10 bar chars, got {filled + empty} (filled={filled}, empty={empty})"
+    )
+
+
+def test_narrow_battle_panel():
+    """render_battle_creature_panel with narrow=True produces no ASCII art in output."""
+    from rich.console import Console
+    from rich.panel import Panel
+    from devmon.render.battle import render_battle_creature_panel
+
+    template = _make_template()
+    panel = render_battle_creature_panel(
+        template, current_hp=25, max_hp=30, level=5,
+        prefix="WILD", rarity="common", narrow=True,
+    )
+    assert isinstance(panel, Panel)
+
+    # Render the panel to a recording console and check no ASCII art present
+    console = Console(record=True, width=35)
+    console.print(panel)
+    output = console.export_text()
+
+    for art_line in template.ascii_art:
+        assert art_line.strip() not in output, (
+            f"ASCII art line {art_line!r} should be hidden in narrow battle panel"
+        )

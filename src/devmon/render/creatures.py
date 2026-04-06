@@ -24,6 +24,7 @@ def render_creature_panel(
     encounter_level: int | None = None,
     encounter_type: str | None = None,
     encounter_rarity: str | None = None,
+    narrow: bool = False,
 ) -> None:
     """Render a creature in a rarity-colored Rich Panel.
 
@@ -39,6 +40,8 @@ def render_creature_panel(
             indicator to the panel subtitle.
         encounter_rarity: When provided, overrides template rarity for border
             color and subtitle display (encounter rarity may differ from base).
+        narrow: When True (terminal width < 40), skips ASCII art, uses
+            single-column stats, and truncates title to 30 chars. (UI-06)
     """
     if theme is None:
         theme = get_theme("neon")
@@ -46,49 +49,79 @@ def render_creature_panel(
     display_rarity = encounter_rarity or template.rarity
     border_color = RARITY_COLORS.get(display_rarity, "white")
 
-    # Build ASCII art text block — plain content, color applied via style=
-    art = Text()
-    for i, line in enumerate(template.ascii_art):
-        if i > 0:
-            art.append("\n")
-        art.append(line, style=template.primary_color)
-
-    # Build two-column stat block
+    # Build stat block — two-column when wide, single-column when narrow
     stats = Text()
 
-    # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
-    if encounter_level is not None:
-        stats.append("LVL ", style=theme["stat_key"])
-        stats.append(f"{encounter_level:<6}", style=theme["stat_value"])
-        stats.append("  Type    ", style=theme["stat_key"])
-        stats.append(f"{template.type}\n", style=theme["stat_value"])
+    if not narrow:
+        # Build ASCII art text block — plain content, color applied via style=
+        art = Text()
+        for i, line in enumerate(template.ascii_art):
+            if i > 0:
+                art.append("\n")
+            art.append(line, style=template.primary_color)
 
-    stats.append("HP  ", style=theme["stat_key"])
-    stats.append(f"{template.base_hp:<6}", style=theme["stat_value"])
-    if encounter_level is None:
-        stats.append("  Type    ", style=theme["stat_key"])
-        stats.append(f"{template.type}\n", style=theme["stat_value"])
+        # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
+        if encounter_level is not None:
+            stats.append("LVL ", style=theme["stat_key"])
+            stats.append(f"{encounter_level:<6}", style=theme["stat_value"])
+            stats.append("  Type    ", style=theme["stat_key"])
+            stats.append(f"{template.type}\n", style=theme["stat_value"])
+
+        stats.append("HP  ", style=theme["stat_key"])
+        stats.append(f"{template.base_hp:<6}", style=theme["stat_value"])
+        if encounter_level is None:
+            stats.append("  Type    ", style=theme["stat_key"])
+            stats.append(f"{template.type}\n", style=theme["stat_value"])
+        else:
+            stats.append("\n")
+
+        stats.append("ATK ", style=theme["stat_key"])
+        stats.append(f"{template.base_attack:<6}", style=theme["stat_value"])
+        stats.append("  SPD     ", style=theme["stat_key"])
+        stats.append(f"{template.base_speed}\n", style=theme["stat_value"])
+
+        stats.append("DEF ", style=theme["stat_key"])
+        stats.append(f"{template.base_defense:<6}", style=theme["stat_value"])
+
+        # Build flavor text block
+        flavor = Text(template.flavor_text, style="dim white")
+
+        # Combine all sections into one Text
+        body = Text()
+        body.append_text(art)
+        body.append("\n\n")
+        body.append_text(stats)
+        body.append("\n\n")
+        body.append_text(flavor)
     else:
-        stats.append("\n")
+        # Narrow mode: skip ASCII art, single-column stats
+        if encounter_level is not None:
+            stats.append("LVL ", style=theme["stat_key"])
+            stats.append(f"{encounter_level}\n", style=theme["stat_value"])
 
-    stats.append("ATK ", style=theme["stat_key"])
-    stats.append(f"{template.base_attack:<6}", style=theme["stat_value"])
-    stats.append("  SPD     ", style=theme["stat_key"])
-    stats.append(f"{template.base_speed}\n", style=theme["stat_value"])
+        stats.append("HP  ", style=theme["stat_key"])
+        stats.append(f"{template.base_hp}\n", style=theme["stat_value"])
 
-    stats.append("DEF ", style=theme["stat_key"])
-    stats.append(f"{template.base_defense:<6}", style=theme["stat_value"])
+        stats.append("Type", style=theme["stat_key"])
+        stats.append(f" {template.type}\n", style=theme["stat_value"])
 
-    # Build flavor text block
-    flavor = Text(template.flavor_text, style="dim white")
+        stats.append("ATK ", style=theme["stat_key"])
+        stats.append(f"{template.base_attack}\n", style=theme["stat_value"])
 
-    # Combine all sections into one Text
-    body = Text()
-    body.append_text(art)
-    body.append("\n\n")
-    body.append_text(stats)
-    body.append("\n\n")
-    body.append_text(flavor)
+        stats.append("DEF ", style=theme["stat_key"])
+        stats.append(f"{template.base_defense}\n", style=theme["stat_value"])
+
+        stats.append("SPD ", style=theme["stat_key"])
+        stats.append(f"{template.base_speed}", style=theme["stat_value"])
+
+        # Build flavor text block
+        flavor = Text(template.flavor_text, style="dim white")
+
+        # Combine sections (no art)
+        body = Text()
+        body.append_text(stats)
+        body.append("\n\n")
+        body.append_text(flavor)
 
     # Build subtitle with optional encounter type indicator (UI-SPEC)
     subtitle = f"[dim]{display_rarity.title()} - {template.type}[/dim]"
@@ -100,9 +133,14 @@ def render_creature_panel(
         elif encounter_type == "boss":
             subtitle += " - [bold red]BOSS ENCOUNTER[/bold red]"
 
+    # Truncate title to 30 chars in narrow mode
+    title_name = template.name
+    if narrow and len(title_name) > 30:
+        title_name = title_name[:27] + "..."
+
     panel = Panel(
         body,
-        title=f"[{border_color}]{template.name}[/{border_color}]",
+        title=f"[{border_color}]{title_name}[/{border_color}]",
         subtitle=subtitle,
         border_style=border_color,
         box=box.ROUNDED,

@@ -74,6 +74,7 @@ def render_battle_creature_panel(
     rarity: str,
     xp: int | None = None,
     xp_threshold: int | None = None,
+    narrow: bool = False,
 ) -> Panel:
     """Render a compact creature panel for the battle screen.
 
@@ -90,21 +91,16 @@ def render_battle_creature_panel(
         rarity: Rarity string key for RARITY_COLORS lookup.
         xp: Current XP of the creature (optional, shown only on player panel).
         xp_threshold: XP needed to reach next level (optional, shown with xp).
+        narrow: When True (terminal width < 40), skips ASCII art, compresses
+            HP bar to width=10, and renders stats single-column. (UI-06)
 
     Returns:
         Rich Panel ready to be rendered.
     """
     rarity_color = RARITY_COLORS.get(rarity, "white")
 
-    # ASCII art block
-    art = Text()
-    for i, line in enumerate(template.ascii_art):
-        if i > 0:
-            art.append("\n")
-        art.append(line, style=template.primary_color)
-
-    # HP bar
-    hp_bar = render_hp_bar(current_hp, max_hp)
+    # HP bar — compressed to width=10 in narrow mode
+    hp_bar = render_hp_bar(current_hp, max_hp, width=10 if narrow else 20)
 
     # LVL/Type stat row
     stat_row = Text()
@@ -115,8 +111,17 @@ def render_battle_creature_panel(
 
     # Combine into panel body
     body = Text()
-    body.append_text(art)
-    body.append("\n\n")
+
+    if not narrow:
+        # ASCII art block (only in wide mode)
+        art = Text()
+        for i, line in enumerate(template.ascii_art):
+            if i > 0:
+                art.append("\n")
+            art.append(line, style=template.primary_color)
+        body.append_text(art)
+        body.append("\n\n")
+
     body.append_text(hp_bar)
     body.append("\n")
     body.append_text(stat_row)
@@ -128,9 +133,15 @@ def render_battle_creature_panel(
         xp_row.append(f"{xp}/{xp_threshold}", style="white")
         body.append_text(xp_row)
 
+    # Truncate title to 30 chars in narrow mode
+    display_name = template.name
+    if narrow and len(f"{prefix}: {display_name}") > 30:
+        max_name_len = 30 - len(prefix) - 2  # subtract "PREFIX: "
+        display_name = display_name[:max(0, max_name_len - 3)] + "..."
+
     return Panel(
         body,
-        title=f"[bold {rarity_color}]{prefix}: {template.name}[/bold {rarity_color}]",
+        title=f"[bold {rarity_color}]{prefix}: {display_name}[/bold {rarity_color}]",
         border_style=rarity_color,
         box=box.ROUNDED,
         expand=False,
