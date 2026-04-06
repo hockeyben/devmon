@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Party and Collection** - Active party management, collection viewer, codex tracking, and creature renaming
 - [ ] **Phase 8: Economy and Shop** - Currency system, item inventory, shop command, capture and healing items
 - [ ] **Phase 9: Quests and Achievements** - Coding-linked and game-linked quests, achievement system, and streak multipliers with grace periods
-- [ ] **Phase 10: Evolution and Polish** - Evolution system, level-based and condition-based evolutions, UI hardening, and cross-terminal validation
+- [x] **Phase 10: Evolution and Polish** - Evolution system, level-based and condition-based evolutions, UI hardening, and cross-terminal validation (completed 2026-04-06)
 
 ## Phase Details
 
@@ -213,9 +213,9 @@ Plans:
 
 Plans:
 - [ ] 10-01-PLAN.md — Evolution data model, schema v10 migration, evolution engine pure logic, test scaffold (Wave 1)
-- [ ] 10-02-PLAN.md — Creature JSON evolution chains, cyber_beetle.json, render/evolution.py, battle + main.py wiring (Wave 2)
-- [ ] 10-03-PLAN.md — Narrow terminal adaptation: render modules + call site wiring (Wave 2, parallel with 10-02)
-- [ ] 10-04-PLAN.md — Human verification: evolution flow, narrow terminal, notification stack (Wave 3)
+- [x] 10-02-PLAN.md — Creature JSON evolution chains, cyber_beetle.json, render/evolution.py, battle + main.py wiring (Wave 2)
+- [x] 10-03-PLAN.md — Narrow terminal adaptation: render modules + call site wiring (Wave 2, parallel with 10-02)
+- [x] 10-04-PLAN.md — Human verification: evolution flow, narrow terminal, notification stack (Wave 3)
 
 ### Phase 11: Terminal Status Indicator
 **Goal**: A persistent, continuously animated status indicator on the right side of the terminal that shows game state at a glance — searching animation while looking for creatures, alert when encounter found, hidden during battle, reappears after
@@ -247,7 +247,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Party and Collection | 0/4 | Not started | - |
 | 8. Economy and Shop | 0/5 | Not started | - |
 | 9. Quests and Achievements | 0/5 | Not started | - |
-| 10. Evolution and Polish | 0/4 | Not started | - |
+| 10. Evolution and Polish | 3/4 | Complete    | 2026-04-06 |
 | 11. Terminal Status Indicator | 0/TBD | Not started | - |
 
 ## Backlog
@@ -256,7 +256,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 **Goal:** Upgrade creature ASCII art from minimal/functional to detailed, recognizable terminal art. Current art is basic geometric shapes — upgrade to more expressive designs while staying within 80-col and 3-20 line constraints.
 **Requirements:** TBD
-**Plans:** 0 plans
+**Plans:** 3/4 plans complete
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
