@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 7
+CURRENT_VERSION = 8
 
 
 def migrate(data: dict) -> dict:
@@ -34,6 +34,7 @@ def migrate(data: dict) -> dict:
         4: _migrate_4_to_5,
         5: _migrate_5_to_6,
         6: _migrate_6_to_7,
+        7: _migrate_7_to_8,
     }
 
     while version < CURRENT_VERSION:
@@ -128,4 +129,17 @@ def _migrate_6_to_7(data: dict) -> dict:
     """
     data.setdefault("codex_state", {})
     data["schema_version"] = 7
+    return data
+
+
+def _migrate_7_to_8(data: dict) -> dict:
+    """Version 7 -> 8: Phase 8 adds inventory and XP booster fields to GameState.
+
+    Uses setdefault() so pre-existing values are never overwritten.
+    Starter kit (basic_capsule x5, small_potion x3) only granted by new_game(),
+    not migration — existing players get empty inventory.
+    """
+    data.setdefault("inventory", {})
+    data.setdefault("xp_booster_active_until", 0.0)
+    data["schema_version"] = 8
     return data

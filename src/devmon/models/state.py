@@ -53,7 +53,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=7, description="Save file schema version for migration support")
+    schema_version: int = Field(default=8, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
@@ -64,6 +64,13 @@ class GameState(BaseModel):
     # Phase 7 codex tracking (COLL-01)
     codex_state: dict[str, str] = Field(default_factory=dict)
     """Discovery state per template_id. Values: 'encountered' | 'captured'. Absence means 'unknown'."""
+
+    # Phase 8 economy fields (ECON-01)
+    inventory: dict[str, int] = Field(default_factory=dict)
+    """Item inventory: {item_id: quantity}. D-16 no stack limits."""
+
+    xp_booster_active_until: float = 0.0
+    """Unix timestamp when XP booster expires. 0.0 = inactive. D-08."""
 
     # Phase 5 encounter fields (D-23)
     encounter_queue: Optional[EncounterEntry] = None
@@ -79,4 +86,8 @@ class GameState(BaseModel):
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":
         """Bootstrap a fresh game state for a new player (SAVE-01 fresh install)."""
-        return cls(player=PlayerProfile(name=player_name))
+        state = cls(player=PlayerProfile(name=player_name))
+        # Starter kit per D-20: new players get basic capture and healing items
+        state.inventory["basic_capsule"] = 5
+        state.inventory["small_potion"] = 3
+        return state
