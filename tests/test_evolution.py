@@ -1,7 +1,7 @@
 """Tests for Phase 10 evolution system.
 
 Task 1: Model/migration tests (passing).
-Task 2: Engine tests (xfail until evolution_engine.py implemented).
+Task 2: Evolution engine tests (all passing after evolution_engine.py implemented).
 """
 import pytest
 
@@ -164,10 +164,9 @@ def test_migrate_v9_save_to_v10():
 
 
 # ---------------------------------------------------------------------------
-# Task 2: Evolution engine tests (xfail until evolution_engine.py exists)
+# Task 2: Evolution engine tests
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_evolution_threshold():
     """check_evolution_ready returns True when level >= threshold and not declined."""
     from devmon.engine.evolution_engine import check_evolution_ready
@@ -185,7 +184,6 @@ def test_evolution_threshold():
     assert check_evolution_ready(owned, template) is True
 
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_evolution_declined_flag():
     """check_evolution_ready returns False when evolution_declined is True."""
     from devmon.engine.evolution_engine import check_evolution_ready
@@ -203,7 +201,6 @@ def test_evolution_declined_flag():
     assert check_evolution_ready(owned, template) is False
 
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_evolution_declined_clears():
     """clear_evolution_declined_on_level_up sets evolution_declined to False."""
     from devmon.engine.evolution_engine import clear_evolution_declined_on_level_up
@@ -214,7 +211,6 @@ def test_evolution_declined_clears():
     assert owned.evolution_declined is False
 
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_condition_evolution():
     """check_condition_evolution returns True when battles_won_with >= required count."""
     from devmon.engine.evolution_engine import check_condition_evolution
@@ -233,7 +229,6 @@ def test_condition_evolution():
     assert check_condition_evolution(owned, template) is True
 
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_apply_evolution():
     """apply_evolution changes template_id and resets evolution state."""
     from devmon.engine.evolution_engine import apply_evolution
@@ -252,7 +247,6 @@ def test_apply_evolution():
     assert owned.current_hp is None
 
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_evolved_template_loads():
     """check_evolution_ready returns False when template.evolves_to is None."""
     from devmon.engine.evolution_engine import check_evolution_ready
@@ -270,7 +264,6 @@ def test_evolved_template_loads():
     assert check_evolution_ready(owned, template) is False
 
 
-@pytest.mark.xfail(strict=True, reason="evolution_engine.py not yet implemented")
 def test_evolution_persists():
     """apply_evolution resets battles_won_with to 0."""
     from devmon.engine.evolution_engine import apply_evolution
@@ -279,3 +272,78 @@ def test_evolution_persists():
     owned = OwnedCreature(template_id="ember_fox", battles_won_with=15)
     apply_evolution(owned, "inferno_wolf")
     assert owned.battles_won_with == 0
+
+
+# ---------------------------------------------------------------------------
+# Additional edge case tests (beyond the xfail stubs)
+# ---------------------------------------------------------------------------
+
+def test_check_evolution_ready_below_threshold():
+    """check_evolution_ready returns False when level < threshold."""
+    from devmon.engine.evolution_engine import check_evolution_ready
+    from devmon.models.creature import OwnedCreature, CreatureTemplate
+
+    owned = OwnedCreature(template_id="ember_fox", level=9)
+    template = CreatureTemplate(
+        id="ember_fox", name="EmberFox", species="Flame Fox",
+        rarity="common", type="Fire", level_range=(1, 10),
+        base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+        capture_rate=0.7, flavor_text="Fast fingers.", primary_color="red",
+        accent_color="yellow", ascii_art=["  ^  ", " (o) ", "  -  "],
+        evolves_to="inferno_wolf", evolution_level_threshold=10,
+    )
+    assert check_evolution_ready(owned, template) is False
+
+
+def test_check_condition_evolution_below_count():
+    """check_condition_evolution returns False when battles_won_with < count."""
+    from devmon.engine.evolution_engine import check_condition_evolution
+    from devmon.models.creature import OwnedCreature, CreatureTemplate
+
+    owned = OwnedCreature(template_id="ember_fox", battles_won_with=5)
+    template = CreatureTemplate(
+        id="ember_fox", name="EmberFox", species="Flame Fox",
+        rarity="common", type="Fire", level_range=(1, 10),
+        base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+        capture_rate=0.7, flavor_text="Fast fingers.", primary_color="red",
+        accent_color="yellow", ascii_art=["  ^  ", " (o) ", "  -  "],
+        evolves_to="inferno_wolf",
+        evolution_condition={"type": "battles_won", "count": 10},
+    )
+    assert check_condition_evolution(owned, template) is False
+
+
+def test_check_condition_evolution_no_condition():
+    """check_condition_evolution returns False when evolution_condition is None."""
+    from devmon.engine.evolution_engine import check_condition_evolution
+    from devmon.models.creature import OwnedCreature, CreatureTemplate
+
+    owned = OwnedCreature(template_id="ember_fox", battles_won_with=100)
+    template = CreatureTemplate(
+        id="ember_fox", name="EmberFox", species="Flame Fox",
+        rarity="common", type="Fire", level_range=(1, 10),
+        base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+        capture_rate=0.7, flavor_text="Fast fingers.", primary_color="red",
+        accent_color="yellow", ascii_art=["  ^  ", " (o) ", "  -  "],
+        evolves_to="inferno_wolf",
+        evolution_condition=None,
+    )
+    assert check_condition_evolution(owned, template) is False
+
+
+def test_check_condition_evolution_unknown_type():
+    """check_condition_evolution returns False for unknown condition types (T-10-02)."""
+    from devmon.engine.evolution_engine import check_condition_evolution
+    from devmon.models.creature import OwnedCreature, CreatureTemplate
+
+    owned = OwnedCreature(template_id="ember_fox", battles_won_with=100)
+    template = CreatureTemplate(
+        id="ember_fox", name="EmberFox", species="Flame Fox",
+        rarity="common", type="Fire", level_range=(1, 10),
+        base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+        capture_rate=0.7, flavor_text="Fast fingers.", primary_color="red",
+        accent_color="yellow", ascii_art=["  ^  ", " (o) ", "  -  "],
+        evolves_to="inferno_wolf",
+        evolution_condition={"type": "totally_unknown_condition", "count": 1},
+    )
+    assert check_condition_evolution(owned, template) is False
