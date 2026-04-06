@@ -200,7 +200,7 @@ def render_action_menu(
       [2] Special Ability (name)  — dim white if no ability
       [3] Capture                 — always active
       [4] Switch Creature         — dim if can_switch is False
-      [5] Items (coming soon)     — always dim white
+      [5] Items                   — always active
       [6] Flee                    — always active
 
     Args:
