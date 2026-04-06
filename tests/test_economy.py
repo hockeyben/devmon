@@ -426,16 +426,27 @@ def test_capsule_multiplier_effectiveness():
 # xfail stubs — implemented in Plan 03
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: battle awards bits not yet implemented")
 def test_battle_awards_bits():
-    """ECON-02: Battle awarding bits (currency) — Plan 03."""
-    raise AssertionError("Not implemented")
+    """ECON-02: compute_battle_rewards returns positive currency (Bits)."""
+    from devmon.engine.battle_engine import compute_battle_rewards
+
+    rewards = compute_battle_rewards(wild_level=5, encounter_type="wild")
+    assert "currency" in rewards
+    assert rewards["currency"] > 0
 
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: bits persistence not yet implemented")
-def test_bits_persist_save_load():
-    """ECON-02: Bits persist through save/load cycle — Plan 03."""
-    raise AssertionError("Not implemented")
+def test_bits_persist_save_load(tmp_save_dir):
+    """ECON-02: Bits (currency) persists through save/load cycle."""
+    from devmon.models.state import GameState, PlayerProfile
+    from devmon.persistence.save import load, save
+
+    state = GameState(player=PlayerProfile(name="BitsTester"))
+    state.player.currency = 100
+    save(state)
+
+    loaded = load()
+    assert loaded is not None
+    assert loaded.player.currency == 100
 
 
 def test_shop_purchase(tmp_save_dir):

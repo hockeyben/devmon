@@ -68,7 +68,14 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
     identity.append("Level ", style=theme["stat_key"])
     identity.append(f"{p.level}\n", style=theme["level"])
     identity.append("Currency ", style=theme["stat_key"])
-    identity.append(f"{p.currency} G", style=theme["stat_value"])
+    identity.append(f"{p.currency} Bits", style=theme["stat_value"])
+
+    from devmon.engine.item_engine import is_booster_active, booster_remaining_minutes
+    if is_booster_active(state):
+        remaining = booster_remaining_minutes(state)
+        identity.append("\n")
+        identity.append("XP Boost  ", style=theme["stat_key"])
+        identity.append(f"ACTIVE ({remaining} min)", style="bold magenta")
 
     identity_panel = Panel(
         identity,

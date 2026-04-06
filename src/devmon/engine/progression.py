@@ -263,6 +263,11 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     multiplier = streak_multiplier(profile.streak_count, config)
     final_xp = int(total_event_xp * multiplier)
 
+    # XP booster multiplier (D-08)
+    from devmon.engine.item_engine import is_booster_active
+    if is_booster_active(state):
+        final_xp = int(final_xp * 1.5)
+
     profile.xp += final_xp
 
     # Level-up detection (Phase 3, PROF-03)
