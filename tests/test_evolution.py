@@ -347,3 +347,87 @@ def test_check_condition_evolution_unknown_type():
         evolution_condition={"type": "totally_unknown_condition", "count": 1},
     )
     assert check_condition_evolution(owned, template) is False
+
+
+# ---------------------------------------------------------------------------
+# Task 1 (Plan 02): Render module tests
+# ---------------------------------------------------------------------------
+
+def test_render_evolution_prompt():
+    """render_evolution_prompt returns a Panel with 'wants to evolve' in title."""
+    from rich.panel import Panel
+    from devmon.render.evolution import render_evolution_prompt
+
+    panel = render_evolution_prompt("EmberFox", "InfernoDrake", 12)
+    assert isinstance(panel, Panel)
+    # Title contains the creature name and 'wants to evolve'
+    title_str = str(panel.title)
+    assert "wants to evolve" in title_str
+    assert "EmberFox" in title_str
+
+
+def test_render_evolution_before_after():
+    """render_evolution_before_after prints both creature names to console."""
+    from rich.console import Console
+    from devmon.models.creature import CreatureTemplate
+    from devmon.render.evolution import render_evolution_before_after
+
+    def make_template(id_, name):
+        return CreatureTemplate(
+            id=id_, name=name, species="Test Species",
+            rarity="common", type="Fire", level_range=(1, 10),
+            base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+            capture_rate=0.7, flavor_text="Test flavor.", primary_color="bold red",
+            accent_color="yellow", ascii_art=["  ^ ^  ", " (o o) ", "  ---  "],
+        )
+
+    old_t = make_template("ember_fox", "EmberFox")
+    new_t = make_template("inferno_drake", "InfernoDrake")
+
+    console = Console(record=True)
+    render_evolution_before_after(old_t, new_t, console)
+    output = console.export_text()
+
+    assert "EmberFox" in output
+    assert "InfernoDrake" in output
+
+
+def test_render_evolution_notification():
+    """render_evolution_notification returns a Panel with DOUBLE box and 'evolved into'."""
+    from rich import box
+    from rich.panel import Panel
+    from devmon.render.evolution import render_evolution_notification
+
+    panel = render_evolution_notification("EmberFox", "InfernoDrake")
+    assert isinstance(panel, Panel)
+    assert panel.box is box.DOUBLE
+    # Body contains "evolved into"
+    body_str = str(panel.renderable)
+    assert "evolved into" in body_str
+
+
+# ---------------------------------------------------------------------------
+# Task 2 (Plan 02): Integration tests for evolution persistence
+# ---------------------------------------------------------------------------
+
+def test_evolution_persists():
+    """apply_evolution changes template_id and resets current_hp to None."""
+    from devmon.engine.evolution_engine import apply_evolution
+    from devmon.models.creature import OwnedCreature
+
+    owned = OwnedCreature(template_id="bugbyte", level=10, current_hp=15)
+    apply_evolution(owned, "cyber_beetle")
+    assert owned.template_id == "cyber_beetle"
+    assert owned.current_hp is None
+
+
+def test_battles_won_with_increment():
+    """battles_won_with increments correctly when set directly."""
+    from devmon.models.creature import OwnedCreature
+
+    owned = OwnedCreature(template_id="ember_fox")
+    assert owned.battles_won_with == 0
+    owned.battles_won_with += 1
+    assert owned.battles_won_with == 1
+    owned.battles_won_with += 1
+    assert owned.battles_won_with == 2

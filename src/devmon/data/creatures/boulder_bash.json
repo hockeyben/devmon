@@ -28,7 +28,9 @@
   "primary_color": "bold yellow",
   "accent_color": "green",
   "evolves_from": null,
-  "evolves_to": null,
+  "evolves_to": "moss_golem",
+  "evolution_level_threshold": 14,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Debt Slam", "damage_multiplier": 1.4, "type": "Earth", "learn_level": 1},
     {"name": "Legacy Crush", "damage_multiplier": 1.9, "type": "Earth", "learn_level": 5},

@@ -1,0 +1,37 @@
+{
+  "id": "cyber_beetle",
+  "name": "CyberBeetle",
+  "species": "Digital Scarab",
+  "rarity": "uncommon",
+  "allowed_rarities": [],
+  "type": "Psychic",
+  "level_range": [
+    10,
+    30
+  ],
+  "base_hp": 55,
+  "base_attack": 48,
+  "base_defense": 42,
+  "base_speed": 52,
+  "capture_rate": 0.35,
+  "flavor_text": "The evolved form of Bugbyte. Its shell is made of compressed stack traces.",
+  "ascii_art": [
+    "  _______  ",
+    " / 0 1 0 \\ ",
+    "|  *___*  |",
+    "| /@@ @@\\ |",
+    " \\__[=]__/ ",
+    "  /|   |\\ "
+  ],
+  "primary_color": "bold cyan",
+  "accent_color": "bright_blue",
+  "evolves_from": "bugbyte",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {"name": "Stack Trace Slash", "damage_multiplier": 1.5, "type": "Psychic", "learn_level": 1},
+    {"name": "Compiled Strike", "damage_multiplier": 2.0, "type": "Psychic", "learn_level": 10},
+    {"name": "Binary Barrage", "damage_multiplier": 2.5, "type": "Psychic", "learn_level": 15}
+  ]
+}

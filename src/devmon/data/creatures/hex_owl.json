@@ -27,7 +27,9 @@
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
   "evolves_from": null,
-  "evolves_to": null,
+  "evolves_to": "mind_moth",
+  "evolution_level_threshold": 14,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Cipher Stare", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
     {"name": "Obfuscation Wave", "damage_multiplier": 1.8, "type": "Psychic", "learn_level": 5},

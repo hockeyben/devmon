@@ -27,7 +27,9 @@
   "primary_color": "bold magenta",
   "accent_color": "dim white",
   "evolves_from": null,
-  "evolves_to": null,
+  "evolves_to": "gloom_bat",
+  "evolution_level_threshold": 10,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Blame Wisp", "damage_multiplier": 1.2, "type": "Shadow", "learn_level": 1},
     {"name": "Dead Code Drain", "damage_multiplier": 1.6, "type": "Shadow", "learn_level": 5}

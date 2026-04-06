@@ -27,8 +27,10 @@
   ],
   "primary_color": "bold magenta",
   "accent_color": "dim white",
-  "evolves_from": null,
-  "evolves_to": null,
+  "evolves_from": "shade_wisp",
+  "evolves_to": "nullhound",
+  "evolution_level_threshold": 18,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Dark Pattern Dive", "damage_multiplier": 1.5, "type": "Shadow", "learn_level": 1},
     {"name": "Rebase Rupture", "damage_multiplier": 1.9, "type": "Shadow", "learn_level": 5},

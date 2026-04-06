@@ -27,8 +27,10 @@
   ],
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
-  "evolves_from": null,
+  "evolves_from": "hex_owl",
   "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Trace Flutter", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
     {"name": "Stack Trace Sting", "damage_multiplier": 1.7, "type": "Psychic", "learn_level": 5},

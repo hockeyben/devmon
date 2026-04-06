@@ -27,7 +27,9 @@
   "primary_color": "bold yellow",
   "accent_color": "bright_yellow",
   "evolves_from": null,
-  "evolves_to": null,
+  "evolves_to": "volt_whisker",
+  "evolution_level_threshold": 10,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Race Condition Bite", "damage_multiplier": 1.4, "type": "Electric", "learn_level": 1},
     {"name": "USB Arc", "damage_multiplier": 1.8, "type": "Electric", "learn_level": 5},

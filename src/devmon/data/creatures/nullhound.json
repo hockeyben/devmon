@@ -26,8 +26,10 @@
   ],
   "primary_color": "bold magenta",
   "accent_color": "dim white",
-  "evolves_from": null,
+  "evolves_from": "gloom_bat",
   "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Null Pointer Bite", "damage_multiplier": 1.3, "type": "Shadow", "learn_level": 1},
     {"name": "Exception Hunt", "damage_multiplier": 1.8, "type": "Shadow", "learn_level": 5},

@@ -26,8 +26,10 @@
   ],
   "primary_color": "bold green",
   "accent_color": "green",
-  "evolves_from": null,
-  "evolves_to": null,
+  "evolves_from": "thorn_sprite",
+  "evolves_to": "root_ancient",
+  "evolution_level_threshold": 22,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Wildcard Hiss", "damage_multiplier": 1.5, "type": "Nature", "learn_level": 1},
     {"name": "DRY Violation Spit", "damage_multiplier": 1.9, "type": "Nature", "learn_level": 5},

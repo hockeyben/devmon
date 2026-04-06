@@ -27,7 +27,9 @@
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
   "evolves_from": null,
-  "evolves_to": null,
+  "evolves_to": "cyber_beetle",
+  "evolution_level_threshold": 10,
+  "evolution_condition": null,
   "abilities": [
     {"name": "Glitch Strike", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
     {"name": "Memory Leak", "damage_multiplier": 1.8, "type": "Psychic", "learn_level": 5},
