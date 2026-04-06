@@ -120,6 +120,79 @@ def _type_suffix(effectiveness: float, is_crit: bool) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Phase 10: Evolution check helper
+# ---------------------------------------------------------------------------
+
+def _run_evolution_checks(state, participated: set, prev_levels: dict, console) -> None:
+    """Check and handle evolution for all participated creatures after a battle win.
+
+    - Clears evolution_declined for creatures that leveled up this battle (D-02, Pitfall 1).
+    - Increments battles_won_with for all participated, non-fainted creatures (D-03).
+    - Checks level-based and condition-based evolution readiness.
+    - Prompts player to accept or decline evolution.
+    - On accept: renders before/after panels and applies evolution.
+    - On decline: sets evolution_declined = True.
+    - Wraps get_creature() calls in try/except for missing template protection (T-10-04).
+
+    Args:
+        state: GameState instance (mutated in-place).
+        participated: Set of template_ids that participated in the battle.
+        prev_levels: Dict of template_id -> level captured before XP distribution.
+        console: Rich Console instance for output.
+    """
+    from devmon.engine.creature_loader import get_creature
+    from devmon.engine.evolution_engine import (
+        check_evolution_ready,
+        check_condition_evolution,
+        apply_evolution,
+        clear_evolution_declined_on_level_up,
+    )
+    from devmon.render.evolution import render_evolution_prompt, render_evolution_before_after
+
+    # Clear evolution_declined for creatures that leveled up this battle (D-02, Pitfall 1)
+    for owned_c in state.creature_collection:
+        if owned_c.template_id in participated and not owned_c.is_fainted:
+            if owned_c.level > prev_levels.get(owned_c.template_id, 0):
+                clear_evolution_declined_on_level_up(owned_c)
+
+    # Increment battles_won_with for all participated, non-fainted creatures (D-03)
+    for owned_c in state.creature_collection:
+        if owned_c.template_id in participated and not owned_c.is_fainted:
+            owned_c.battles_won_with += 1
+
+    # Check evolution readiness for participated creatures
+    for owned_c in state.creature_collection:
+        if owned_c.template_id in participated and not owned_c.is_fainted:
+            try:
+                t = get_creature(owned_c.template_id)
+            except (KeyError, Exception):
+                continue
+            should_evolve = check_evolution_ready(owned_c, t) or check_condition_evolution(owned_c, t)
+            if should_evolve and t.evolves_to:
+                try:
+                    evolved_template = get_creature(t.evolves_to)
+                except (KeyError, Exception):
+                    # Missing evolved template — skip gracefully (T-10-04)
+                    console.print(
+                        f"  [dim white]{owned_c.nickname or t.name} tried to evolve, "
+                        f"but its evolved form could not be found.[/dim white]"
+                    )
+                    continue
+                display_name = owned_c.nickname or t.name
+                console.print(render_evolution_prompt(display_name, evolved_template.name, owned_c.level))
+                answer = input("  ").strip().lower()
+                if answer == "y":
+                    old_template = t
+                    apply_evolution(owned_c, t.evolves_to)
+                    render_evolution_before_after(old_template, evolved_template, console)
+                else:
+                    owned_c.evolution_declined = True
+                    console.print(
+                        f"  [dim white]{display_name} held back. Maybe next time.[/dim white]"
+                    )
+
+
+# ---------------------------------------------------------------------------
 # Main battle command
 # ---------------------------------------------------------------------------
 
@@ -202,6 +275,11 @@ def battle_cmd() -> None:
 
     # Track which creatures participated in this battle for shared XP distribution
     participated: set[str] = {player_owned.template_id}
+
+    # Capture pre-battle levels for evolution declined-flag reset (D-02, Pitfall 1)
+    prev_levels: dict[str, int] = {
+        owned_c.template_id: owned_c.level for owned_c in state.creature_collection
+    }
 
     # Look up template for active creature
     player_template = get_creature(player_owned.template_id)
@@ -373,6 +451,8 @@ def battle_cmd() -> None:
                         console.print(
                             f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
                         )
+                    # Phase 10: Evolution check after victory
+                    _run_evolution_checks(state, participated, prev_levels, console)
                     # Auto-heal after battle
                     _auto_heal(state)
                     save(state)
@@ -531,6 +611,8 @@ def battle_cmd() -> None:
                         console.print(
                             f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
                         )
+                    # Phase 10: Evolution check after victory (special ability path)
+                    _run_evolution_checks(state, participated, prev_levels, console)
                     _auto_heal(state)
                     save(state)
                     battle_active = False

@@ -241,11 +241,11 @@ def test_current_version_invariant():
 # ---------------------------------------------------------------------------
 
 def test_all_creature_jsons_load_with_allowed_rarities():
-    """Test 10: All 25 creature JSON files load successfully with allowed_rarities field present."""
+    """Test 10: All 26 creature JSON files load successfully with allowed_rarities field present (26 after Phase 10 cyber_beetle)."""
     from devmon.engine.creature_loader import load_all_creatures
     # load_all_creatures returns dict[str, CreatureTemplate]
     creatures_dict = load_all_creatures()
-    assert len(creatures_dict) == 25, f"Expected 25 creatures, got {len(creatures_dict)}"
+    assert len(creatures_dict) == 26, f"Expected 26 creatures, got {len(creatures_dict)}"
     valid_rarities = {"common", "uncommon", "rare", "epic", "legendary"}
     for creature_id, creature in creatures_dict.items():
         assert hasattr(creature, "allowed_rarities"), (

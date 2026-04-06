@@ -144,13 +144,13 @@ def test_collection_empty_state(tmp_save_dir):
 
 
 def test_codex_progress_line(saved_collection_state, tmp_save_dir):
-    """D-10: Collection list shows 'Codex:' progress line with '/25'."""
+    """D-10: Collection list shows 'Codex:' progress line with '/26' (26 creatures after Phase 10 cyber_beetle)."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
     result = runner.invoke(collection_app, [])
     assert result.exit_code == 0
     assert "Codex:" in result.output
-    assert "/25" in result.output
+    assert "/26" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -238,13 +238,13 @@ def test_rename_too_long_rejected(tmp_save_dir):
 # ---------------------------------------------------------------------------
 
 def test_codex_lists_all_creatures(saved_collection_state, tmp_save_dir):
-    """COLL-03: codex lists all 25 creatures."""
+    """COLL-03: codex lists all 26 creatures (26 after Phase 10 cyber_beetle added)."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
     result = runner.invoke(collection_app, ["codex"])
     assert result.exit_code == 0
     assert "Creature Codex" in result.output
-    assert "/25" in result.output
+    assert "/26" in result.output
 
 
 def test_codex_unknown_shows_question_marks(tmp_save_dir):

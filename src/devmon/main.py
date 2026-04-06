@@ -123,6 +123,20 @@ def _process_event_log_on_startup() -> None:
         if notification_msg:
             console.print(notification_msg)
 
+        # Phase 10: Deferred evolution notifications (D-10 — between level-up and quest)
+        if state.pending_evolution_notifications:
+            try:
+                from devmon.render.evolution import render_evolution_notification
+                for evo in state.pending_evolution_notifications:
+                    console.print(render_evolution_notification(
+                        evo.get("old_name", "???"),
+                        evo.get("new_name", "???"),
+                    ))
+                state.pending_evolution_notifications = []
+                save_state(state)
+            except Exception:
+                pass
+
         # Phase 9: Deferred quest/achievement notifications (D-05)
         try:
             from devmon.render.quests import (
