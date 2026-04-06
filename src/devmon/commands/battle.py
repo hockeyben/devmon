@@ -349,6 +349,17 @@ def battle_cmd() -> None:
                             if apply_creature_xp(owned_c, t, rewards["creature_xp"]):
                                 leveled_creatures.append((t.name, owned_c.level))
                     state.encounter_queue = None
+                    # Phase 9: Quest and achievement progress after battle win
+                    from devmon.engine.quest_engine import update_game_quest_progress, check_quest_completions
+                    from devmon.engine.achievement_engine import check_achievements
+                    from devmon.config.defaults import DEFAULT_CONFIG
+                    try:
+                        _battle_config = load_config()
+                    except Exception:
+                        _battle_config = DEFAULT_CONFIG
+                    update_game_quest_progress(state, "battle_win")
+                    check_quest_completions(state, _battle_config)
+                    check_achievements(state)
                     # Save BEFORE rendering (Pitfall 4 / T-06-09)
                     save(state)
                     live.stop()
@@ -496,6 +507,17 @@ def battle_cmd() -> None:
                             if apply_creature_xp(owned_c, t, rewards["creature_xp"]):
                                 leveled_creatures.append((t.name, owned_c.level))
                     state.encounter_queue = None
+                    # Phase 9: Quest and achievement progress after battle win (special ability)
+                    from devmon.engine.quest_engine import update_game_quest_progress, check_quest_completions
+                    from devmon.engine.achievement_engine import check_achievements
+                    from devmon.config.defaults import DEFAULT_CONFIG
+                    try:
+                        _battle_config = load_config()
+                    except Exception:
+                        _battle_config = DEFAULT_CONFIG
+                    update_game_quest_progress(state, "battle_win")
+                    check_quest_completions(state, _battle_config)
+                    check_achievements(state)
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     live.stop()
@@ -621,6 +643,19 @@ def battle_cmd() -> None:
                     config = load_config()
                     player_leveled = check_player_level_up(state.player, config)
                     state.encounter_queue = None
+                    # Phase 9: Quest and achievement progress after capture
+                    from devmon.engine.quest_engine import update_game_quest_progress, check_quest_completions
+                    from devmon.engine.achievement_engine import check_achievements
+                    from devmon.config.defaults import DEFAULT_CONFIG
+                    try:
+                        _capture_config = load_config()
+                    except Exception:
+                        _capture_config = DEFAULT_CONFIG
+                    update_game_quest_progress(state, "creature_captured")
+                    if wild.rarity in ("rare", "epic", "legendary"):
+                        update_game_quest_progress(state, "rare_capture")
+                    check_quest_completions(state, _capture_config)
+                    check_achievements(state)
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     render_capture_screen(console, wild_template.name, wild.rarity, rewards)

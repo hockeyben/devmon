@@ -452,28 +452,35 @@ def test_quest_templates_count():
 
 
 # ---------------------------------------------------------------------------
-# xfail stubs — CLI-only behavior not yet implemented
+# QUST-05, CLI-07: devmon quests CLI command
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="QUST-05/CLI-07: devmon quests command not yet created")
-def test_quests_command_renders():
+def test_quests_command_renders(tmp_devmon_home):
     """QUST-05, CLI-07: `devmon quests` renders active quests panel to terminal."""
     from typer.testing import CliRunner
     from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    # Create a save file so the command has state to display
+    state = GameState.new_game("Tester")
+    save(state)
+
     runner = CliRunner()
     result = runner.invoke(app, ["quests"])
-    # Command must exist and render quest content — not yet implemented
     assert "Active Quests" in result.output
-    raise NotImplementedError("quests command not yet implemented")
 
 
-@pytest.mark.xfail(strict=True, reason="CLI-07: devmon quests command not yet created")
-def test_quests_cli_exit_code():
+def test_quests_cli_exit_code(tmp_devmon_home):
     """CLI-07: `devmon quests` exits with code 0 on success."""
     from typer.testing import CliRunner
     from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    state = GameState.new_game("Tester")
+    save(state)
+
     runner = CliRunner()
     result = runner.invoke(app, ["quests"])
-    # Exit code 0 requires command to exist — not yet implemented
     assert result.exit_code == 0
-    raise NotImplementedError("quests command not yet implemented")

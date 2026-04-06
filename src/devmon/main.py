@@ -26,6 +26,8 @@ from devmon.commands import prompt as prompt_cmd
 from devmon.commands import settings as settings_cmd
 from devmon.commands import shop as shop_cmd
 from devmon.commands import status as status_cmd
+from devmon.commands import quests as quests_cmd
+from devmon.commands import achievements as achievements_cmd
 from devmon.commands.hook import track_app
 from devmon.config.defaults import DEFAULT_CONFIG
 from devmon.config.loader import load_config
@@ -52,6 +54,8 @@ app.add_typer(party_cmd_mod.app, name="party")
 app.add_typer(collection_cmd_mod.app, name="collection")
 app.add_typer(shop_cmd.app, name="shop")
 app.add_typer(items_cmd.app, name="items")
+app.add_typer(quests_cmd.app, name="quests")
+app.add_typer(achievements_cmd.app, name="achievements")
 
 
 def _version_callback(value: bool) -> None:
@@ -118,6 +122,38 @@ def _process_event_log_on_startup() -> None:
             console.print(expiry_msg)
         if notification_msg:
             console.print(notification_msg)
+
+        # Phase 9: Deferred quest/achievement notifications (D-05)
+        try:
+            from devmon.render.quests import (
+                render_quest_completion_panel,
+                render_achievement_unlock_panel,
+                render_daily_bonus_panel,
+            )
+            from devmon.render.themes import get_theme
+
+            if state.pending_quest_completions or state.daily_bonus_pending or state.pending_achievement_unlocks:
+                theme = get_theme(config.get("ui", {}).get("theme", "neon"))
+
+                # Quest completions first (UI-SPEC notification ordering)
+                for completion in state.pending_quest_completions:
+                    console.print(render_quest_completion_panel(completion, theme))
+                state.pending_quest_completions = []
+
+                # Daily bonus (D-07)
+                if state.daily_bonus_pending:
+                    console.print(render_daily_bonus_panel(theme))
+                    state.daily_bonus_pending = False
+
+                # Achievement unlocks last (UI-SPEC notification ordering)
+                for unlock in state.pending_achievement_unlocks:
+                    console.print(render_achievement_unlock_panel(unlock, theme))
+                state.pending_achievement_unlocks = []
+
+                # Re-save after clearing pending flags (T-09-08)
+                save_state(state)
+        except Exception:
+            pass  # Never block the user's terminal workflow
     except Exception:
         pass  # Never block the user's terminal workflow
 

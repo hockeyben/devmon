@@ -279,3 +279,21 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     # Update streak based on today's activity
     today = date.today()
     update_streak(profile, today, min_xp=min_xp_per_day, session_xp=session_xp_this_run, config=config)
+
+    # Phase 9: Quest and achievement progress (D-06)
+    from devmon.engine.quest_engine import (
+        daily_quest_refresh,
+        update_coding_quest_progress,
+        check_quest_completions,
+    )
+    from devmon.engine.achievement_engine import check_achievements
+
+    # Daily refresh on first processing of new day (D-02, Pitfall 2)
+    daily_quest_refresh(state, today)
+
+    # Update coding quest progress from this event batch
+    update_coding_quest_progress(state, sorted_events)
+
+    # Check quest completions and achievement unlocks
+    check_quest_completions(state, config)
+    check_achievements(state)

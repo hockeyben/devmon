@@ -146,28 +146,54 @@ def test_get_stat_value():
 
 
 # ---------------------------------------------------------------------------
-# xfail stubs — behavior not yet implemented (Plan 05)
+# ACHV-03, CLI-08: devmon achievements CLI command
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="ACHV-03/CLI-08: devmon achievements command not yet created")
-def test_achievements_command_renders():
+def test_achievements_command_renders(tmp_devmon_home):
     """ACHV-03, CLI-08: `devmon achievements` renders achievement progress to terminal."""
     from typer.testing import CliRunner
     from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    state = GameState.new_game("Tester")
+    save(state)
+
     runner = CliRunner()
     result = runner.invoke(app, ["achievements"])
-    # Command must exist and render achievement content — not yet implemented
     assert "Achievements" in result.output
-    raise NotImplementedError("achievements command not yet implemented")
 
 
-@pytest.mark.xfail(strict=True, reason="CLI-08: devmon achievements command not yet created")
-def test_achievements_cli_exit_code():
+def test_achievements_cli_exit_code(tmp_devmon_home):
     """CLI-08: `devmon achievements` exits with code 0 on success."""
     from typer.testing import CliRunner
     from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    state = GameState.new_game("Tester")
+    save(state)
+
     runner = CliRunner()
     result = runner.invoke(app, ["achievements"])
-    # Exit code 0 requires command to exist — not yet implemented
     assert result.exit_code == 0
-    raise NotImplementedError("achievements command not yet implemented")
+
+
+def test_achievement_unlock_panel_renders():
+    """ACHV-02: render_achievement_unlock_panel returns a Panel with correct title."""
+    from devmon.models.quest import AchievementUnlock
+    from devmon.render.quests import render_achievement_unlock_panel
+    from devmon.render.themes import get_theme
+    from rich.panel import Panel
+
+    unlock = AchievementUnlock(
+        achievement_name="Warrior",
+        tier_label="Bronze",
+        xp_reward=50,
+        bits_reward=25,
+    )
+    theme = get_theme("neon")
+    panel = render_achievement_unlock_panel(unlock, theme)
+
+    assert isinstance(panel, Panel)
+    assert "Achievement Unlocked!" in str(panel.title)
