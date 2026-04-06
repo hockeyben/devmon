@@ -172,10 +172,10 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 08-01-PLAN.md — ItemDefinition model, GameState v8, migration 7->8, item engine, test scaffold (Wave 1)
-- [ ] 08-02-PLAN.md — Item JSON data files (8 items), item_loader module (Wave 1, parallel with 08-01)
-- [ ] 08-03-PLAN.md — Shop command, items command, shop render module, main.py wiring (Wave 2)
-- [ ] 08-04-PLAN.md — Battle integration: capsule sub-menu, items sub-menu, status Bits, XP booster (Wave 3)
+- [x] 08-01-PLAN.md — ItemDefinition model, GameState v8, migration 7->8, item engine, test scaffold (Wave 1)
+- [x] 08-02-PLAN.md — Item JSON data files (8 items), item_loader module (Wave 1, parallel with 08-01)
+- [x] 08-03-PLAN.md — Shop command, items command, shop render module, main.py wiring (Wave 2)
+- [x] 08-04-PLAN.md — Battle integration: capsule sub-menu, items sub-menu, status Bits, XP booster (Wave 3)
 - [ ] 08-05-PLAN.md — Human verification: shop, items, battle integration, status display (Wave 4)
 
 ### Phase 9: Quests and Achievements
