@@ -1,0 +1,320 @@
+"""Shop and inventory rendering for DevMon terminal UI.
+
+Pure render module — no game logic, no persistence, no engine imports.
+Imports from models/ and render/themes only.
+
+Requirements: ECON-02, ECON-04, CLI-05, CLI-06
+"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+
+from devmon.render.themes import RARITY_COLORS  # noqa: F401 — available for callers
+
+if TYPE_CHECKING:
+    from devmon.models.item import ItemDefinition
+
+
+# ---------------------------------------------------------------------------
+# Surface 1 header: Bits balance
+# ---------------------------------------------------------------------------
+
+def render_shop_header(bits: int, theme: dict) -> Panel:
+    """Render the shop header panel showing the player's Bits balance.
+
+    UI-SPEC Surface 1 header.
+    expand=True so it spans full terminal width.
+
+    Args:
+        bits: Current Bits balance.
+        theme: Theme dict with border, stat_key semantic keys.
+
+    Returns:
+        Rich Panel with Bits balance.
+    """
+    body = Text()
+    body.append("Bits: ", style=theme["stat_key"])
+    body.append(str(bits), style="bold white")
+
+    return Panel(
+        body,
+        title="[bold]Shop[/bold]",
+        border_style=theme["border"],
+        box=box.ROUNDED,
+        expand=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Surface 1 category panel: items list per category
+# ---------------------------------------------------------------------------
+
+def render_shop_category(
+    name: str,
+    items: list[tuple[int, "ItemDefinition", int]],
+    player_bits: int,
+    theme: dict,
+) -> Panel:
+    """Render a single category panel for the shop listing.
+
+    Items are passed as (number, ItemDefinition, quantity_owned) tuples.
+    Items with number=0 are earn-only (e.g. master_capsule) — shown without
+    a selection number.
+
+    Graying logic (D-21):
+      - If player_bits >= item.price: price in "green"
+      - Else: price in "dim white" (grayed out)
+
+    Args:
+        name: Category display name (e.g. "Capsules").
+        items: List of (num, ItemDefinition, qty_owned) tuples.
+               num=0 signals an earn-only item (no selection number shown).
+        player_bits: Current player Bits for affordability check.
+        theme: Theme dict.
+
+    Returns:
+        Rich Panel for this category.
+    """
+    body = Text()
+    for i, (num, item, qty) in enumerate(items):
+        if i > 0:
+            body.append("\n")
+
+        if num == 0:
+            # Earn-only item — no number, dim style throughout
+            body.append(f"      {item.name}", style="dim white")
+            body.append("   ", style="dim white")
+            body.append("(earn only)", style="dim white")
+        else:
+            # Numbered buyable item
+            body.append(f"  [{num}] {item.name}", style="white")
+            body.append("   ", style="white")
+            price_style = "green" if player_bits >= item.price else "dim white"
+            body.append(f"{item.price} Bits", style=price_style)
+            body.append("   ", style="dim white")
+            body.append(f"x{qty}", style="dim white")
+
+    return Panel(
+        body,
+        title=f"[bold]{name}[/bold]",
+        border_style=theme["border"],
+        box=box.ROUNDED,
+        expand=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Surface 2: Purchase confirmation panel
+# ---------------------------------------------------------------------------
+
+def render_purchase_confirmation(
+    item_name: str,
+    qty: int,
+    cost: int,
+    balance: int,
+) -> Panel:
+    """Render the purchase confirmation panel.
+
+    UI-SPEC Surface 2. Green border, expand=False.
+
+    Args:
+        item_name: Display name of the purchased item.
+        qty: Quantity purchased.
+        cost: Total Bits spent.
+        balance: New Bits balance after purchase.
+
+    Returns:
+        Rich Panel with purchase details.
+    """
+    body = Text()
+    body.append(f"  {item_name} x{qty}\n", style="white")
+    body.append("  Cost: ", style="dim white")
+    body.append(f"-{cost} Bits\n", style="red")
+    body.append("  Balance: ", style="dim white")
+    body.append(f"{balance} Bits", style="bold white")
+
+    return Panel(
+        body,
+        title="[bold green]Purchased[/bold green]",
+        border_style="green",
+        box=box.ROUNDED,
+        expand=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Surface 4: Inventory display
+# ---------------------------------------------------------------------------
+
+def render_items_inventory(
+    inventory: dict[str, int],
+    items_catalog: dict[str, "ItemDefinition"],
+    booster_remaining: int,
+    theme: dict,
+) -> Panel:
+    """Render the full inventory panel grouped by category.
+
+    UI-SPEC Surface 4. Single panel titled "Your Items".
+
+    Category order: capsules → potions → boosters.
+    Items with qty > 0 in "white", qty = 0 in "dim white".
+    XP booster active line in "bold magenta" if booster_remaining > 0.
+    Empty-bag state: single dim white message.
+
+    Args:
+        inventory: Player's inventory dict {item_id: quantity}.
+        items_catalog: Full item catalog {item_id: ItemDefinition}.
+        booster_remaining: Minutes remaining on XP booster (0 = inactive).
+        theme: Theme dict.
+
+    Returns:
+        Rich Panel with full inventory.
+    """
+    CATEGORY_ORDER = ["capsule", "potion", "booster"]
+    CATEGORY_LABELS = {
+        "capsule": "Capsules",
+        "potion": "Potions",
+        "booster": "Boosters",
+    }
+
+    # Group items by category
+    grouped: dict[str, list["ItemDefinition"]] = {c: [] for c in CATEGORY_ORDER}
+    for item in items_catalog.values():
+        if item.category in grouped:
+            grouped[item.category].append(item)
+
+    # Sort each category by price ascending
+    for cat in CATEGORY_ORDER:
+        grouped[cat].sort(key=lambda i: i.price)
+
+    # Check if bag is truly empty (all quantities are 0)
+    total_qty = sum(inventory.get(item_id, 0) for item_id in items_catalog)
+
+    body = Text()
+
+    if total_qty == 0 and booster_remaining == 0:
+        body.append(
+            "  Your bag is empty. Visit the shop to stock up.",
+            style="dim white",
+        )
+    else:
+        first_section = True
+        for cat in CATEGORY_ORDER:
+            items = grouped[cat]
+            if not items:
+                continue
+
+            if not first_section:
+                body.append("\n")
+            first_section = False
+
+            # Category header
+            body.append(f"  {CATEGORY_LABELS[cat]}\n", style=theme["stat_key"])
+            body.append("  " + "\u2500" * 38 + "\n", style="dim white")
+
+            for item in items:
+                qty = inventory.get(item.id, 0)
+                item_style = "white" if qty > 0 else "dim white"
+                qty_style = "bold white" if qty > 0 else "dim white"
+
+                # Build item line: name (effect) — qty
+                body.append(f"  {item.name}", style=item_style)
+                # Show effect summary in dim
+                if item.effect_description:
+                    body.append(f" ({item.effect_description})", style="dim white")
+                body.append("   ", style="dim white")
+                body.append(f"x{qty}\n", style=qty_style)
+
+                # XP booster active indicator
+                if item.id == "xp_booster" and booster_remaining > 0:
+                    body.append(
+                        f"  XP Booster ACTIVE — {booster_remaining} min remaining\n",
+                        style="bold magenta",
+                    )
+
+    return Panel(
+        body,
+        title="[bold]Your Items[/bold]",
+        border_style=theme["border"],
+        box=box.ROUNDED,
+        expand=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Surface 5: Battle items sub-menu (inline, no panel)
+# ---------------------------------------------------------------------------
+
+def render_battle_items_menu(
+    usable_items: list[tuple[str, str, int]],
+) -> None:
+    """Print the battle items sub-menu inline (no panel).
+
+    UI-SPEC Surface 5. Matches action menu indentation style.
+    Items as "  [{n}] {name} ({effect})   x{qty}".
+    Appends "  [b] Back" at end.
+
+    Args:
+        usable_items: List of (item_name, effect_description, qty) tuples.
+    """
+    console = Console()
+    heading = Text("  Use which item?\n", style="bold white")
+    console.print(heading)
+
+    for n, (name, effect, qty) in enumerate(usable_items, start=1):
+        row = Text()
+        item_style = "white" if qty > 0 else "dim white"
+        row.append(f"  [{n}] {name}", style=item_style)
+        if effect:
+            row.append(f" ({effect})", style="dim white")
+        row.append("   ", style="dim white")
+        row.append(f"x{qty}", style=item_style)
+        console.print(row)
+
+    back = Text("  [b] Back", style="dim white")
+    console.print(back)
+
+
+# ---------------------------------------------------------------------------
+# Surface 6: Battle capture sub-menu (inline, no panel)
+# ---------------------------------------------------------------------------
+
+def render_capture_submenu(
+    capsules_owned: list[tuple[str, str, int]],
+) -> None:
+    """Print the battle capture sub-menu inline (no panel).
+
+    UI-SPEC Surface 6. Same style as battle items sub-menu.
+    Empty state: "  You have no capsules. Buy some at the shop." in "dim white".
+
+    Args:
+        capsules_owned: List of (item_name, effect_description, qty) tuples
+                        for capsules. Only capsules with qty > 0 are typically
+                        passed by the caller.
+    """
+    console = Console()
+
+    if not capsules_owned:
+        console.print(
+            "  You have no capsules. Buy some at the shop.",
+            style="dim white",
+        )
+        return
+
+    heading = Text("  Throw which capsule?\n", style="bold white")
+    console.print(heading)
+
+    for n, (name, effect, qty) in enumerate(capsules_owned, start=1):
+        row = Text()
+        row.append(f"  [{n}] {name}", style="white")
+        row.append("   ", style="dim white")
+        row.append(f"x{qty}", style="white")
+        console.print(row)
+
+    back = Text("  [b] Back", style="dim white")
+    console.print(back)

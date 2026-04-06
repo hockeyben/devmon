@@ -438,22 +438,67 @@ def test_bits_persist_save_load():
     raise AssertionError("Not implemented")
 
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: shop command not yet implemented")
-def test_shop_purchase():
-    """ECON-04: Shop purchase flow — Plan 03."""
-    raise AssertionError("Not implemented")
+def test_shop_purchase(tmp_save_dir):
+    """ECON-04: Shop --buy deducts Bits and adds item to inventory."""
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+    from devmon.main import app as devmon_app
+    from typer.testing import CliRunner
+
+    state = GameState.new_game("Tester")
+    state.player.currency = 100
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(devmon_app, ["shop", "--buy", "basic_capsule"])
+    assert result.exit_code == 0, result.output
+    assert "Purchased" in result.output or "Bits" in result.output
+
+    from devmon.persistence.save import load
+    updated = load()
+    assert updated is not None
+    assert updated.player.currency == 95  # 100 - 5
+    assert updated.inventory.get("basic_capsule", 0) >= 1
 
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: shop command not yet implemented")
-def test_shop_insufficient_funds():
-    """ECON-04: Shop purchase with insufficient funds — Plan 03."""
-    raise AssertionError("Not implemented")
+def test_shop_insufficient_funds(tmp_save_dir):
+    """ECON-04: Shop purchase with insufficient funds shows error, exits 1."""
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+    from devmon.main import app as devmon_app
+    from typer.testing import CliRunner
+
+    state = GameState.new_game("Tester")
+    state.player.currency = 2  # ultra_capsule costs 30
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(devmon_app, ["shop", "--buy", "ultra_capsule"])
+    assert result.exit_code != 0
+    assert "Not enough Bits" in result.output
 
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: shop quick-buy not yet implemented")
-def test_shop_quick_buy():
-    """ECON-04: Shop quick-buy shorthand — Plan 03."""
-    raise AssertionError("Not implemented")
+def test_shop_quick_buy(tmp_save_dir):
+    """ECON-04: Shop quick-buy with --qty flag purchases correct quantity."""
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+    from devmon.main import app as devmon_app
+    from typer.testing import CliRunner
+
+    state = GameState.new_game("Tester")
+    state.player.currency = 200
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(devmon_app, ["shop", "--buy", "basic_capsule", "--qty", "3"])
+    assert result.exit_code == 0, result.output
+
+    from devmon.persistence.save import load
+    updated = load()
+    assert updated is not None
+    # new_game gives 5 basic_capsules already, + 3 purchased = 8
+    assert updated.inventory.get("basic_capsule", 0) >= 3
+    assert updated.player.currency == 200 - 15  # 3 * 5 Bits
 
 
 @pytest.mark.xfail(strict=True, reason="Plan 03: items command not yet implemented")
