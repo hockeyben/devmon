@@ -54,7 +54,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=10, description="Save file schema version for migration support")
+    schema_version: int = Field(default=11, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
@@ -111,6 +111,10 @@ class GameState(BaseModel):
     flee_count: int = 0
     expired_count: int = 0
     total_encounters_seen: int = 0
+
+    # Phase 11 indicator daemon (SC4)
+    indicator_hidden: bool = False
+    """True when battle is active — daemon hides indicator. Set by battle command, cleared on exit."""
 
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":

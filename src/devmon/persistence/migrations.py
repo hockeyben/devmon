@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 10
+CURRENT_VERSION = 11
 
 
 def migrate(data: dict) -> dict:
@@ -37,6 +37,7 @@ def migrate(data: dict) -> dict:
         7: _migrate_7_to_8,
         8: _migrate_8_to_9,
         9: _migrate_9_to_10,
+        10: _migrate_10_to_11,
     }
 
     while version < CURRENT_VERSION:
@@ -172,4 +173,11 @@ def _migrate_9_to_10(data: dict) -> dict:
     """
     data.setdefault("pending_evolution_notifications", [])
     data["schema_version"] = 10
+    return data
+
+
+def _migrate_10_to_11(data: dict) -> dict:
+    """Phase 11: Add indicator_hidden field for daemon battle detection."""
+    data.setdefault("indicator_hidden", False)
+    data["schema_version"] = 11
     return data
