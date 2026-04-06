@@ -123,4 +123,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-05 after Phase 7 completion — party management (display, swap), collection viewer (list, detail, codex, rename), schema v7 with codex_state tracking*
+*Last updated: 2026-04-06 after Phase 10 completion — creature evolution system (level-threshold + condition-based), 15 evolution chains, deferred evolution notifications, narrow terminal adaptation (width < 40), schema v10*
