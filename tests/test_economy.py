@@ -501,16 +501,39 @@ def test_shop_quick_buy(tmp_save_dir):
     assert updated.player.currency == 200 - 15  # 3 * 5 Bits
 
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: items command not yet implemented")
-def test_items_command():
-    """CLI-05: Items command displays inventory — Plan 03."""
-    raise AssertionError("Not implemented")
+def test_items_command(tmp_save_dir):
+    """CLI-06: Items command displays inventory grouped by category."""
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+    from devmon.main import app as devmon_app
+    from typer.testing import CliRunner
+
+    state = GameState.new_game("Tester")
+    # new_game() gives starter kit: 5 basic_capsule, 3 small_potion
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(devmon_app, ["items"])
+    assert result.exit_code == 0, result.output
+    # Should show item names from catalog
+    assert "Capsule" in result.output or "Your Items" in result.output
 
 
-@pytest.mark.xfail(strict=True, reason="Plan 03: items command not yet implemented")
-def test_items_exits_ok():
-    """CLI-05: Items command exits with code 0 — Plan 03."""
-    raise AssertionError("Not implemented")
+def test_items_exits_ok(tmp_save_dir):
+    """CLI-06: Items command exits with code 0 even with empty inventory."""
+    from devmon.models.state import GameState, PlayerProfile
+    from devmon.persistence.save import save
+    from devmon.main import app as devmon_app
+    from typer.testing import CliRunner
+
+    state = GameState(player=PlayerProfile(name="EmptyTester"))
+    # Empty inventory (no starter kit)
+    assert state.inventory == {}
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(devmon_app, ["items"])
+    assert result.exit_code == 0, result.output
 
 
 # ---------------------------------------------------------------------------

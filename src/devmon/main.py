@@ -21,8 +21,10 @@ from devmon.commands import collection as collection_cmd_mod
 from devmon.commands import party as party_cmd_mod
 from devmon.commands import encounter as encounter_cmd
 from devmon.commands import hook as hook_cmd
+from devmon.commands import items as items_cmd
 from devmon.commands import prompt as prompt_cmd
 from devmon.commands import settings as settings_cmd
+from devmon.commands import shop as shop_cmd
 from devmon.commands import status as status_cmd
 from devmon.commands.hook import track_app
 from devmon.config.defaults import DEFAULT_CONFIG
@@ -48,6 +50,8 @@ app.add_typer(encounter_cmd.app, name="encounter")
 app.add_typer(battle_cmd.app, name="battle")
 app.add_typer(party_cmd_mod.app, name="party")
 app.add_typer(collection_cmd_mod.app, name="collection")
+app.add_typer(shop_cmd.app, name="shop")
+app.add_typer(items_cmd.app, name="items")
 
 
 def _version_callback(value: bool) -> None:
