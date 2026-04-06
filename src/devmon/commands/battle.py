@@ -259,6 +259,10 @@ def battle_cmd() -> None:
 
     entry = state.encounter_queue
 
+    # Phase 11: Signal daemon to hide during battle (SC4)
+    state.indicator_hidden = True
+    save(state)
+
     # Update codex: mark as encountered (if not already captured)
     if state.codex_state.get(entry.template_id) != "captured":
         state.codex_state[entry.template_id] = "encountered"
@@ -1037,6 +1041,13 @@ def battle_cmd() -> None:
             else:
                 last_narration = "Invalid choice. Enter 1, 2, 3, 4, 5, or 6."
                 continue
+
+    # Phase 11: Restore indicator after battle ends (SC5)
+    try:
+        state.indicator_hidden = False
+        save(state)
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------

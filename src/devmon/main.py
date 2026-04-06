@@ -17,6 +17,7 @@ import typer
 
 from devmon import __version__
 from devmon.commands import battle as battle_cmd
+from devmon.commands import indicator as indicator_cmd
 from devmon.commands import collection as collection_cmd_mod
 from devmon.commands import party as party_cmd_mod
 from devmon.commands import encounter as encounter_cmd
@@ -56,6 +57,7 @@ app.add_typer(shop_cmd.app, name="shop")
 app.add_typer(items_cmd.app, name="items")
 app.add_typer(quests_cmd.app, name="quests")
 app.add_typer(achievements_cmd.app, name="achievements")
+app.add_typer(indicator_cmd.app, name="indicator")
 
 
 def _version_callback(value: bool) -> None:

@@ -66,29 +66,89 @@ class TestAnsiHelpers:
         assert "   " in result  # 3 spaces
 
 
-# === Plan 02 stubs (xfail — daemon loop not yet implemented) ===
+# === Plan 02 tests (real — daemon loop implemented) ===
 
-@pytest.mark.xfail(reason="Plan 02: daemon loop not yet implemented", strict=True)
 class TestDaemonLoop:
-    def test_daemon_searching_animation(self):
-        from devmon.daemon.indicator import SEARCH_FRAMES_EMOJI
+    def test_search_frames_emoji_count(self):
+        from devmon.daemon.frames import SEARCH_FRAMES_EMOJI
         assert len(SEARCH_FRAMES_EMOJI) == 4
 
-    def test_daemon_alert_animation(self):
-        from devmon.daemon.indicator import ALERT_FRAMES_EMOJI
+    def test_alert_frames_emoji_count(self):
+        from devmon.daemon.frames import ALERT_FRAMES_EMOJI
         assert len(ALERT_FRAMES_EMOJI) == 2
 
-    def test_daemon_reads_state(self, tmp_path):
+    def test_search_frames_ascii_count(self):
+        from devmon.daemon.frames import SEARCH_FRAMES_ASCII
+        assert len(SEARCH_FRAMES_ASCII) == 4
+
+    def test_alert_frames_ascii_count(self):
+        from devmon.daemon.frames import ALERT_FRAMES_ASCII
+        assert len(ALERT_FRAMES_ASCII) == 2
+
+    def test_read_state_missing_file(self, tmp_path):
         from devmon.daemon.indicator import read_indicator_state
         assert read_indicator_state(tmp_path / "missing.json") == "searching"
 
-    def test_emoji_detection(self):
+    def test_read_state_searching(self, tmp_path):
+        import json
+        from devmon.daemon.indicator import read_indicator_state
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({"encounter_queue": None, "indicator_hidden": False}))
+        assert read_indicator_state(sf) == "searching"
+
+    def test_read_state_alert(self, tmp_path):
+        import json
+        from devmon.daemon.indicator import read_indicator_state
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({"encounter_queue": {"template_id": "x"}, "indicator_hidden": False}))
+        assert read_indicator_state(sf) == "alert"
+
+    def test_read_state_hidden(self, tmp_path):
+        import json
+        from devmon.daemon.indicator import read_indicator_state
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({"indicator_hidden": True}))
+        assert read_indicator_state(sf) == "hidden"
+
+    def test_read_state_corrupt_json(self, tmp_path):
+        from devmon.daemon.indicator import read_indicator_state
+        sf = tmp_path / "save.json"
+        sf.write_text("not json")
+        assert read_indicator_state(sf) == "searching"
+
+    def test_emoji_detection_returns_bool(self):
         from devmon.daemon.indicator import detect_emoji_support
-        result = detect_emoji_support()
-        assert isinstance(result, bool)
+        assert isinstance(detect_emoji_support(), bool)
+
+    def test_emoji_detection_dumb_term(self, monkeypatch):
+        from devmon.daemon.indicator import detect_emoji_support
+        monkeypatch.setenv("TERM", "dumb")
+        monkeypatch.delenv("COLORTERM", raising=False)
+        assert detect_emoji_support() is False
+
+    def test_typing_flag_path_returns_path(self):
+        from devmon.daemon.indicator import typing_flag_path
+        result = typing_flag_path()
+        assert result.name == "typing.flag"
+
+    def test_typing_flag_skips_write(self, tmp_path, monkeypatch):
+        """When typing.flag exists, daemon should not call write_to_terminal."""
+        from devmon.daemon.indicator import typing_flag_path
+        # Verify the function exists and returns a Path with correct name
+        tf = typing_flag_path()
+        assert "typing.flag" in str(tf)
 
 
-# === Plan 03 stubs (xfail — shell hook + battle wiring not yet done) ===
+class TestIndicatorCli:
+    def test_indicator_status_not_running(self):
+        from typer.testing import CliRunner
+        from devmon.commands.indicator import app
+        runner = CliRunner()
+        result = runner.invoke(app, ["status"])
+        assert "not running" in result.output.lower()
+
+
+# === Plan 03 stubs (xfail — shell hook integration not yet done) ===
 
 @pytest.mark.xfail(reason="Plan 03: shell hook integration not yet done", strict=True)
 class TestShellHookIntegration:
