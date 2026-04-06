@@ -7,12 +7,12 @@ ASCII mode frames use ANSI color codes + dots to 3 cols.
 
 # --- Searching State ---
 
-# Emoji mode: 4-frame cycle (UI-SPEC)
+# Emoji mode: 4-frame marching in place — alternates walking and standing poses
 SEARCH_FRAMES_EMOJI = [
-    "\U0001f43e ",   # frame 0: paw print + trailing space (2+1=3 cols)
-    " \U0001f43e",   # frame 1: leading space + paw print (1+2=3 cols)
-    "\U0001f43e ",   # frame 2: same as 0
-    "\u2728 ",       # frame 3: sparkle + trailing space (2+1=3 cols)
+    "\U0001f6b6 ",           # frame 0: mid-stride (2+1=3 cols)
+    "\U0001f9cd ",           # frame 1: standing   (2+1=3 cols)
+    "\U0001f6b6 ",           # frame 2: mid-stride
+    "\U0001f9cd ",           # frame 3: standing
 ]
 SEARCH_WIDTH_EMOJI = 3  # display columns per frame
 

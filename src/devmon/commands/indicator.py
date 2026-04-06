@@ -22,19 +22,21 @@ def start() -> None:
         typer.echo(f"Indicator already running (PID {pid})")
         raise typer.Exit()
 
-    # Launch daemon detached (RESEARCH.md Pattern 6)
+    # Launch daemon as a background process.
+    # Bypass Typer CLI routing — Typer exits immediately when stdin is DEVNULL
+    # on Windows. Call run_indicator_daemon() directly via -c instead.
     devmon_exe = sys.executable
-    cmd = [devmon_exe, "-m", "devmon.main", "indicator", "run"]
+    daemon_cmd = "from devmon.daemon.indicator import run_indicator_daemon; run_indicator_daemon()"
+    cmd = [devmon_exe, "-c", daemon_cmd]
 
     if sys.platform == "win32":
+        # CREATE_NEW_PROCESS_GROUP so Ctrl+C doesn't kill daemon.
+        # Do NOT use DETACHED_PROCESS — daemon needs the parent's console
+        # to write ANSI via CONOUT$. stdin/stdout/stderr are devnull'd so
+        # the daemon doesn't interfere with normal terminal I/O.
         subprocess.Popen(
             cmd,
-            creationflags=(
-                subprocess.DETACHED_PROCESS
-                | subprocess.CREATE_NEW_PROCESS_GROUP
-                | subprocess.CREATE_NO_WINDOW
-            ),
-            close_fds=True,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

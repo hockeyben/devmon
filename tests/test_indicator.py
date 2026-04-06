@@ -179,7 +179,9 @@ class TestShellHookIntegration:
         assert "rm -f" in BASH_ZSH_HOOK_SNIPPET
         assert "typing.flag" in BASH_ZSH_HOOK_SNIPPET
 
-    def test_powershell_unchanged(self):
-        """PowerShell hook should NOT have indicator daemon (D-06 fallback)."""
+    def test_powershell_has_indicator_autostart(self):
+        """PowerShell hook should auto-start indicator daemon."""
         from devmon.shell.hooks import POWERSHELL_HOOK_SNIPPET
-        assert "indicator" not in POWERSHELL_HOOK_SNIPPET
+        assert "indicator.pid" in POWERSHELL_HOOK_SNIPPET
+        assert "devmon" in POWERSHELL_HOOK_SNIPPET
+        assert "indicator" in POWERSHELL_HOOK_SNIPPET

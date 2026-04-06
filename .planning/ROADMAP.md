@@ -233,8 +233,8 @@ Plans:
 
 Plans:
 - [ ] 11-01-PLAN.md — Daemon package foundation: PID helpers, ANSI helpers, schema v11 migration, test scaffold (Wave 1)
-- [ ] 11-02-PLAN.md — Daemon animation loop, frame definitions, emoji detection, CLI subcommand, battle wiring (Wave 2)
-- [ ] 11-03-PLAN.md — Shell hook auto-start integration, final tests, human verification (Wave 3)
+- [x] 11-02-PLAN.md — Daemon animation loop, frame definitions, emoji detection, CLI subcommand, battle wiring (Wave 2)
+- [x] 11-03-PLAN.md — Shell hook auto-start integration, final tests, human verification (Wave 3)
 
 ## Progress
 
@@ -253,7 +253,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Economy and Shop | 0/5 | Not started | - |
 | 9. Quests and Achievements | 0/5 | Not started | - |
 | 10. Evolution and Polish | 3/4 | Complete    | 2026-04-06 |
-| 11. Terminal Status Indicator | 0/3 | Not started | - |
+| 11. Terminal Status Indicator | 2/3 | In Progress|  |
 
 ## Backlog
 
@@ -261,7 +261,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 **Goal:** Upgrade creature ASCII art from minimal/functional to detailed, recognizable terminal art. Current art is basic geometric shapes — upgrade to more expressive designs while staying within 80-col and 3-20 line constraints.
 **Requirements:** TBD
-**Plans:** 3/4 plans complete
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)

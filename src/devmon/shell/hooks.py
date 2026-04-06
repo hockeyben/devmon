@@ -74,6 +74,16 @@ function _DevmonPrePrompt {
         $aiEntry = "{`"ts`":$now,`"exit`":0,`"dur`":0,`"cwd`":`"$cwd`",`"type`":`"ai_start`"}`n"
         try { Add-Content -Path $log -Value $aiEntry -NoNewline -ErrorAction SilentlyContinue } catch {}
     }
+    # Indicator daemon auto-start (Phase 11)
+    $pidFile = if ($env:DEVMON_HOME) { Join-Path $env:DEVMON_HOME 'indicator.pid' } else { Join-Path $env:APPDATA 'devmon\\devmon\\indicator.pid' }
+    $daemonAlive = $false
+    if (Test-Path $pidFile) {
+        $pidVal = Get-Content $pidFile -ErrorAction SilentlyContinue
+        if ($pidVal) { try { Get-Process -Id $pidVal -ErrorAction Stop | Out-Null; $daemonAlive = $true } catch {} }
+    }
+    if (-not $daemonAlive) {
+        Start-Process -FilePath 'devmon' -ArgumentList 'indicator','start' -WindowStyle Hidden -ErrorAction SilentlyContinue
+    }
 }
 $ExecutionContext.InvokeCommand.PostCommandLookupAction = {
     param($cmd, $cmdInfo, $inputObj, $outputObj)

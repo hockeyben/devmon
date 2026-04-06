@@ -24,13 +24,15 @@ def get_terminal_cols() -> int:
 def write_to_terminal(text: str) -> None:
     """Write text directly to terminal device, bypassing stdout/pipes.
 
-    Unix: /dev/tty. Windows: sys.stderr. Silently swallows OSError (UI-SPEC).
-    This ensures indicator writes survive piped commands (T-11-02).
+    Unix: /dev/tty. Windows: CONOUT$ (console output device).
+    CONOUT$ works even from detached processes that lack stderr.
+    Silently swallows OSError (UI-SPEC).
     """
     try:
         if sys.platform == "win32":
-            sys.stderr.write(text)
-            sys.stderr.flush()
+            with open("CONOUT$", "w") as con:
+                con.write(text)
+                con.flush()
         else:
             with open("/dev/tty", "w") as tty:
                 tty.write(text)

@@ -70,19 +70,27 @@ def detect_emoji_support() -> bool:
         pass
 
     term = os.environ.get("TERM", "")
-    if term in ("dumb", ""):
+    if term == "dumb":
         return False
 
     colorterm = os.environ.get("COLORTERM", "")
     if colorterm in ("truecolor", "24bit"):
         return True
 
+    # Windows Terminal sets WT_SESSION, VS Code sets TERM_PROGRAM
+    if sys.platform == "win32":
+        if os.environ.get("WT_SESSION") or os.environ.get("TERM_PROGRAM"):
+            return True
+        return False
+
+    if not term:
+        return False
+
     locale_str = os.environ.get("LC_ALL", "") or os.environ.get("LANG", "")
     if "UTF-8" in locale_str.upper() or "UTF8" in locale_str.upper():
         return True
 
-    # Platform default
-    return sys.platform != "win32"
+    return True
 
 
 def _resolve_save_path() -> Path:
