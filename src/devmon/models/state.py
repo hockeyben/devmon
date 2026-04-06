@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from devmon.models.creature import OwnedCreature
 from devmon.models.encounter import EncounterEntry
+from devmon.models.quest import ActiveQuest, AchievementUnlock, QuestCompletion
 
 
 class PlayerProfile(BaseModel):
@@ -53,7 +54,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=8, description="Save file schema version for migration support")
+    schema_version: int = Field(default=9, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
@@ -71,6 +72,26 @@ class GameState(BaseModel):
 
     xp_booster_active_until: float = 0.0
     """Unix timestamp when XP booster expires. 0.0 = inactive. D-08."""
+
+    # Phase 9 quest fields (QUST-01)
+    active_quests: list[ActiveQuest] = Field(default_factory=list)
+    """Up to 5 active quests per D-01. Completed slots removed; daily refresh fills."""
+
+    quest_last_refresh_date: Optional[date] = None
+    """Date of last daily quest refresh. Prevents double-refresh on same day (Pitfall 2)."""
+
+    pending_quest_completions: list[QuestCompletion] = Field(default_factory=list)
+    """Completed quests awaiting notification display on next invocation (D-05)."""
+
+    # Phase 9 achievement fields (ACHV-01)
+    achievement_state: dict[str, list[str]] = Field(default_factory=dict)
+    """Unlocked tiers per achievement id: {"battle_initiate": ["Bronze"]}. Prevents re-unlock (Pitfall 3)."""
+
+    pending_achievement_unlocks: list[AchievementUnlock] = Field(default_factory=list)
+    """Achievement tier unlocks awaiting notification display (ACHV-02)."""
+
+    daily_bonus_pending: bool = False
+    """True if all 5 quests completed today and daily bonus not yet displayed (D-07)."""
 
     # Phase 5 encounter fields (D-23)
     encounter_queue: Optional[EncounterEntry] = None

@@ -162,12 +162,12 @@ def test_owned_creature_no_template_fields():
     )
 
 
-def test_schema_version_is_8():
-    """GameState should default to schema_version=8 after Phase 8 bump."""
+def test_schema_version_is_9():
+    """GameState should default to schema_version=9 after Phase 9 bump."""
     from devmon.models.state import GameState
     state = GameState(player={"name": "Tester"})
-    assert state.schema_version == 8, (
-        f"Expected schema_version=8, got {state.schema_version}. "
+    assert state.schema_version == 9, (
+        f"Expected schema_version=9, got {state.schema_version}. "
         "Did you forget to update GameState.schema_version default?"
     )
 

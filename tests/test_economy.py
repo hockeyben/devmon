@@ -91,12 +91,12 @@ def test_item_definition_negative_price_rejected():
         })
 
 
-def test_game_state_schema_version_default_is_8():
-    """GameState schema_version default is 8."""
+def test_game_state_schema_version_default_is_9():
+    """GameState schema_version default is 9."""
     from devmon.models.state import GameState
     from devmon.models.state import PlayerProfile
     state = GameState(player=PlayerProfile(name="test"))
-    assert state.schema_version == 8
+    assert state.schema_version == 9
 
 
 def test_game_state_has_inventory_field():
@@ -159,7 +159,7 @@ def test_migrate_full_chain_0_to_8():
     from devmon.persistence.migrations import migrate, CURRENT_VERSION
     data = {"schema_version": 0, "player": {"name": "ancient"}}
     result = migrate(data)
-    assert result["schema_version"] == CURRENT_VERSION == 8
+    assert result["schema_version"] == CURRENT_VERSION == 9
 
 
 # ---------------------------------------------------------------------------

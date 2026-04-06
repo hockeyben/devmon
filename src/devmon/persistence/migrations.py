@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 8
+CURRENT_VERSION = 9
 
 
 def migrate(data: dict) -> dict:
@@ -35,6 +35,7 @@ def migrate(data: dict) -> dict:
         5: _migrate_5_to_6,
         6: _migrate_6_to_7,
         7: _migrate_7_to_8,
+        8: _migrate_8_to_9,
     }
 
     while version < CURRENT_VERSION:
@@ -142,4 +143,21 @@ def _migrate_7_to_8(data: dict) -> dict:
     data.setdefault("inventory", {})
     data.setdefault("xp_booster_active_until", 0.0)
     data["schema_version"] = 8
+    return data
+
+
+def _migrate_8_to_9(data: dict) -> dict:
+    """Version 8 -> 9: Phase 9 adds quest and achievement fields to GameState.
+
+    Uses setdefault() so pre-existing values are never overwritten (T-09-01).
+    All 6 new fields default to empty/inactive state — existing players start
+    with no active quests and no achievement progress.
+    """
+    data.setdefault("active_quests", [])
+    data.setdefault("quest_last_refresh_date", None)
+    data.setdefault("pending_quest_completions", [])
+    data.setdefault("achievement_state", {})
+    data.setdefault("pending_achievement_unlocks", [])
+    data.setdefault("daily_bonus_pending", False)
+    data["schema_version"] = 9
     return data
