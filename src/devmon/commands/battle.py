@@ -184,7 +184,7 @@ def _run_evolution_checks(state, participated: set, prev_levels: dict, console) 
                 if answer == "y":
                     old_template = t
                     apply_evolution(owned_c, t.evolves_to)
-                    render_evolution_before_after(old_template, evolved_template, console)
+                    render_evolution_before_after(old_template, evolved_template, console, narrow=narrow)
                 else:
                     owned_c.evolution_declined = True
                     console.print(
@@ -244,6 +244,7 @@ def battle_cmd() -> None:
     )
 
     console = Console()
+    narrow = console.width < 40
 
     # Load items catalog once — used by capsule sub-menu and items sub-menu
     items_catalog = load_all_items()
@@ -324,6 +325,7 @@ def battle_cmd() -> None:
                 wild.level,
                 "WILD",
                 wild.rarity,
+                narrow=narrow,
             )
             player_panel = render_battle_creature_panel(
                 player_template,
@@ -334,6 +336,7 @@ def battle_cmd() -> None:
                 player_template.rarity,
                 xp=player_owned.xp,
                 xp_threshold=player_owned.level * 50,
+                narrow=narrow,
             )
 
             abilities = get_available_abilities(player_template.abilities, player_owned.level)
@@ -462,8 +465,8 @@ def battle_cmd() -> None:
                 if player_fainted:
                     apply_faint(player_owned)
                     live.update(build_battle_renderable(
-                        render_battle_creature_panel(wild_template, wild.current_hp, wild.max_hp, wild.level, "WILD", wild.rarity),
-                        render_battle_creature_panel(player_template, 0, player_max_hp, player_owned.level, "YOUR", player_template.rarity),
+                        render_battle_creature_panel(wild_template, wild.current_hp, wild.max_hp, wild.level, "WILD", wild.rarity, narrow=narrow),
+                        render_battle_creature_panel(player_template, 0, player_max_hp, player_owned.level, "YOUR", player_template.rarity, narrow=narrow),
                         turn, last_narration,
                         render_action_menu(ability_name, False, turn),
                     ))

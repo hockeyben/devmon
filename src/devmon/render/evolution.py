@@ -57,6 +57,7 @@ def render_evolution_before_after(
     old_template: "CreatureTemplate",
     new_template: "CreatureTemplate",
     console: Console,
+    narrow: bool = False,
 ) -> None:
     """Render the before/after evolution display with both creature panels.
 
@@ -67,12 +68,13 @@ def render_evolution_before_after(
         old_template: CreatureTemplate of the creature before evolution.
         new_template: CreatureTemplate of the evolved creature.
         console: Rich Console instance to print to.
+        narrow: When True, passes narrow=True to render_creature_panel (UI-06).
     """
     from devmon.render.creatures import render_creature_panel
 
-    render_creature_panel(old_template, console)
+    render_creature_panel(old_template, console, narrow=narrow)
     console.print(Text("  \u2193  Evolving...  \u2193", style="bold yellow"))
-    render_creature_panel(new_template, console)
+    render_creature_panel(new_template, console, narrow=narrow)
     console.print(
         Text(f"  {old_template.name} evolved into {new_template.name}!", style="bold yellow")
     )

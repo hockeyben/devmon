@@ -39,6 +39,7 @@ def encounter_cmd() -> None:
     theme = get_theme(config.get("ui", {}).get("theme", "neon"))
 
     # Render creature panel with encounter level (UI-SPEC Surface 2)
+    narrow = console.width < 40
     render_creature_panel(
         template,
         console,
@@ -46,6 +47,7 @@ def encounter_cmd() -> None:
         encounter_level=entry.encounter_level,
         encounter_type=entry.encounter_type,
         encounter_rarity=entry.rarity,
+        narrow=narrow,
     )
 
     # Action menu loop — T-05-08: validate input is exactly "1", "2", or "3"
