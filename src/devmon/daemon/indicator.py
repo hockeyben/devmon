@@ -34,6 +34,56 @@ from devmon.daemon.frames import (
 from devmon.daemon.pid import remove_pid, write_pid
 
 
+def _make_cursor_checker():
+    """Return a function that reads the cursor column on Windows via Win32 API.
+
+    Returns None on non-Windows or if the console handle can't be opened.
+    The returned function returns the cursor X column (0-based), or -1 on error.
+    """
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+        import ctypes.wintypes
+
+        class COORD(ctypes.Structure):
+            _fields_ = [("X", ctypes.c_short), ("Y", ctypes.c_short)]
+
+        class CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
+            _fields_ = [
+                ("dwSize", COORD),
+                ("dwCursorPosition", COORD),
+                ("wAttributes", ctypes.c_ushort),
+                ("srWindow", ctypes.c_short * 4),
+                ("dwMaximumWindowSize", COORD),
+            ]
+
+        # Open CONOUT$ to get console handle (works from background processes)
+        kernel32 = ctypes.windll.kernel32
+        GENERIC_READ = 0x80000000
+        GENERIC_WRITE = 0x40000000
+        FILE_SHARE_WRITE = 0x2
+        OPEN_EXISTING = 3
+        handle = kernel32.CreateFileW(
+            "CONOUT$", GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_WRITE, None, OPEN_EXISTING, 0, None,
+        )
+        if handle == -1:
+            return None
+
+        info = CONSOLE_SCREEN_BUFFER_INFO()
+
+        def get_cursor_pos() -> tuple[int, int]:
+            """Return (X, Y) cursor position, or (-1, -1) on error."""
+            if kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(info)):
+                return (info.dwCursorPosition.X, info.dwCursorPosition.Y)
+            return (-1, -1)
+
+        return get_cursor_pos
+    except Exception:
+        return None
+
+
 def typing_flag_path() -> Path:
     """Return path to the typing flag file.
 
@@ -211,6 +261,14 @@ def run_indicator_daemon(
 
     frame_idx = 0
     was_hidden = False
+    _render_counter = 0  # counts 100ms ticks; render new frame every 5 (=500ms)
+
+    # Windows: use cursor position to detect typing (no shell hook needed).
+    get_cursor_pos = _make_cursor_checker()
+    _prompt_x = -1  # learned dynamically when cursor is stable on a line
+    _last_y = -1
+    _last_x = -1
+    _stable_ticks = 0  # consecutive ticks where cursor X and Y haven't changed
 
     try:
         while True:
@@ -218,43 +276,112 @@ def run_indicator_daemon(
 
             # Skip if terminal too narrow (UI-SPEC: <20 cols -> disabled)
             if _cols < 20:
-                time.sleep(0.5)
-                frame_idx = (frame_idx + 1) % 4
+                time.sleep(0.1)
+                _render_counter += 1
                 continue
 
             # SC6: Skip write when typing flag exists (readline is active).
-            # On bash/zsh, preexec creates the flag and precmd deletes it.
             if tf.exists():
-                time.sleep(0.5)
+                time.sleep(0.1)
+                _render_counter += 1
+                continue
+
+            # Windows: fast cursor polling (100ms) to catch typing/Enter quickly.
+            # Only render animation frames every 500ms (every 5th tick).
+            should_render = False
+
+            if get_cursor_pos is not None:
+                cur_x, cur_y = get_cursor_pos()
+                if cur_x >= 0:
+                    cursor_moved = (cur_x != _last_x or cur_y != _last_y)
+
+                    if cur_y != _last_y:
+                        # New line — clear indicator on old line and reset
+                        if not was_hidden:
+                            write_to_terminal(clear_indicator(_cols))
+                            was_hidden = True
+                        _last_y = cur_y
+                        _last_x = cur_x
+                        _stable_ticks = 0
+                        _prompt_x = -1  # re-learn prompt position on new line
+                        time.sleep(0.1)
+                        _render_counter += 1
+                        continue
+
+                    if cursor_moved:
+                        _last_x = cur_x
+                        _stable_ticks = 0
+                        # Cursor moved horizontally — user typing, hide immediately
+                        if not was_hidden:
+                            write_to_terminal(clear_indicator(_cols))
+                            was_hidden = True
+                        time.sleep(0.1)
+                        _render_counter += 1
+                        continue
+                    else:
+                        _stable_ticks += 1
+
+                    # After cursor stable for 5 ticks (500ms), learn prompt position
+                    if _stable_ticks >= 5 and _prompt_x == -1:
+                        _prompt_x = cur_x
+
+                    if _prompt_x >= 0:
+                        if cur_x > _prompt_x:
+                            # Text on command line — stay hidden
+                            if not was_hidden:
+                                write_to_terminal(clear_indicator(_cols))
+                                was_hidden = True
+                            time.sleep(0.1)
+                            _render_counter += 1
+                            continue
+                        else:
+                            # Empty command line — OK to show
+                            was_hidden = False
+                            if _render_counter % 5 == 0:
+                                should_render = True
+                    elif _stable_ticks >= 5:
+                        # Prompt position learned this tick, show on next cycle
+                        was_hidden = False
+                        if _render_counter % 5 == 0:
+                            should_render = True
+                    else:
+                        # Still learning prompt position — wait
+                        time.sleep(0.1)
+                        _render_counter += 1
+                        continue
+            else:
+                # No cursor checker (Unix) — always render on 500ms cycle
+                if _render_counter % 5 == 0:
+                    should_render = True
+
+            if should_render:
+                state = read_indicator_state(sp)
+
+                if state == "hidden":
+                    if not was_hidden:
+                        write_to_terminal(clear_indicator(_cols))
+                        was_hidden = True
+                    time.sleep(0.1)
+                    _render_counter += 1
+                    continue
+
+                was_hidden = False
+
+                if state == "alert":
+                    frames = alert_frames
+                    width = alert_width
+                    idx = frame_idx % len(alert_frames)
+                else:
+                    frames = search_frames
+                    width = search_width
+                    idx = frame_idx % len(search_frames)
+
+                output = render_indicator(frames[idx], width, _cols)
+                write_to_terminal(output)
                 frame_idx = (frame_idx + 1) % 4
-                continue
 
-            state = read_indicator_state(sp)
-
-            if state == "hidden":
-                if not was_hidden:
-                    # Clear indicator when transitioning to hidden
-                    write_to_terminal(clear_indicator(_cols))
-                    was_hidden = True
-                time.sleep(0.5)
-                continue
-
-            was_hidden = False
-
-            if state == "alert":
-                frames = alert_frames
-                width = alert_width
-                idx = frame_idx % len(alert_frames)
-            else:  # "searching"
-                frames = search_frames
-                width = search_width
-                idx = frame_idx % len(search_frames)
-
-            output = render_indicator(frames[idx], width, _cols)
-            write_to_terminal(output)
-
-            frame_idx = (frame_idx + 1) % 4
-            time.sleep(0.5)
+            time.sleep(0.1)
+            _render_counter += 1
     except KeyboardInterrupt:
         pass
     finally:

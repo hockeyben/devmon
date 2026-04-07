@@ -27,10 +27,10 @@ SEARCH_WIDTH_ASCII = 3
 
 # --- Alert State ---
 
-# Emoji mode: 2-frame flash (UI-SPEC, per D-04)
+# Emoji mode: 2-frame flash — emoji blinks on/off
 ALERT_FRAMES_EMOJI = [
-    "\u26a0\ufe0f ",    # frame 0: warning emoji + space (2+1=3 cols)
-    "!! ",              # frame 1: double bang + space (3 cols)
+    "\u26a0\ufe0f ",    # frame 0: warning emoji (2+1=3 cols)
+    "   ",              # frame 1: blank (blink effect)
 ]
 ALERT_WIDTH_EMOJI = 3
 
