@@ -253,7 +253,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Economy and Shop | 0/5 | Not started | - |
 | 9. Quests and Achievements | 0/5 | Not started | - |
 | 10. Evolution and Polish | 3/4 | Complete    | 2026-04-06 |
-| 11. Terminal Status Indicator | 2/3 | In Progress|  |
+| 11. Terminal Status Indicator | 2/3 | Complete    | 2026-04-07 |
 
 ## Backlog
 
@@ -261,7 +261,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 **Goal:** Upgrade creature ASCII art from minimal/functional to detailed, recognizable terminal art. Current art is basic geometric shapes — upgrade to more expressive designs while staying within 80-col and 3-20 line constraints.
 **Requirements:** TBD
-**Plans:** 2/3 plans executed
+**Plans:** 2/3 plans complete
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
