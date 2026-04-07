@@ -259,9 +259,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 ### Phase 999.1: Improve ASCII art for all 25 creatures (BACKLOG)
 
-**Goal:** Upgrade creature ASCII art from minimal/functional to detailed, recognizable terminal art. Current art is basic geometric shapes — upgrade to more expressive designs while staying within 80-col and 3-20 line constraints.
-**Requirements:** TBD
-**Plans:** 2/3 plans complete
+**Goal:** Upgrade creature ASCII art from minimal/functional to detailed, recognizable terminal art with Rich markup coloring, flexible sizing by rarity tier, and side-by-side evolution display.
+**Requirements:** ART-01, ART-02, ART-03, ART-04, ART-05, ART-06, ART-07, ART-08
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+- [ ] 999.1-01-PLAN.md — Code infrastructure: markup-aware validator, from_markup renderer, tests (Wave 1)
+- [ ] 999.1-02-PLAN.md — Common creatures art: 8 creatures with Rich markup coloring (Wave 2)
+- [ ] 999.1-03-PLAN.md — Uncommon creatures art: 8 creatures with Rich markup coloring (Wave 2, parallel with 02)
+- [ ] 999.1-04-PLAN.md — Rare + Epic + Legendary art: 10 creatures with dramatic detail (Wave 3)
+- [ ] 999.1-05-PLAN.md — Evolution side-by-side display + human verification (Wave 4)
