@@ -26,7 +26,7 @@
   ],
   "primary_color": "bold magenta",
   "accent_color": "dim white",
-  "evolves_from": "shade_specter",
+  "evolves_from": "shade_spectre",
   "evolves_to": null,
   "evolution_level_threshold": null,
   "evolution_condition": null,

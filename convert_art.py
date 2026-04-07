@@ -85,19 +85,65 @@ def rgb_to_rich(r, g, b):
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _remove_background(img, tolerance=30):
+    """Remove background by flood-filling from corners with transparency.
+
+    Detects background color from the four corners, then marks any pixel
+    within `tolerance` distance of that color as transparent.
+    """
+    pixels = img.load()
+    w, h = img.size
+
+    # Sample corners to find background color
+    corners = [pixels[0, 0], pixels[w-1, 0], pixels[0, h-1], pixels[w-1, h-1]]
+    # Average the corner colors
+    bg_r = sum(c[0] for c in corners) // 4
+    bg_g = sum(c[1] for c in corners) // 4
+    bg_b = sum(c[2] for c in corners) // 4
+
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = pixels[x, y]
+            dist = abs(r - bg_r) + abs(g - bg_g) + abs(b - bg_b)
+            if dist < tolerance:
+                pixels[x, y] = (0, 0, 0, 0)
+
+    return img
+
+
+def _crop_to_content(img):
+    """Crop image to the bounding box of non-transparent pixels."""
+    bbox = img.getbbox()
+    if bbox:
+        return img.crop(bbox)
+    return img
+
+
 def png_to_halfblock(img_path, max_width=20):
     """Convert PNG to Rich-markup half-block art lines.
 
     Each character cell represents 2 vertical pixels using ▀▄█ characters.
     Transparent pixels become the default terminal background.
+    Auto-removes background and crops to content.
     """
     img = Image.open(img_path).convert("RGBA")
+
+    # Remove background (handles Gemini/DALL-E images with solid backgrounds)
+    has_transparency = any(
+        img.getpixel((x, y))[3] < 128
+        for x, y in [(0, 0), (img.width-1, 0), (0, img.height-1), (img.width-1, img.height-1)]
+    )
+    if not has_transparency:
+        img = _remove_background(img)
+
+    # Crop to content (remove empty space around the creature)
+    img = _crop_to_content(img)
 
     # Scale to fit max_width while preserving aspect ratio
     w, h = img.size
     if w > max_width:
         scale = max_width / w
-        img = img.resize((max_width, int(h * scale)), Image.NEAREST)
+        img = img.resize((max_width, int(h * scale)), Image.LANCZOS)
     w, h = img.size
 
     # Ensure even height (half-block needs pairs of rows)

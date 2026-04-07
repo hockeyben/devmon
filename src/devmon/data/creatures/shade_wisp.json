@@ -30,7 +30,7 @@
   "primary_color": "bold magenta",
   "accent_color": "dim white",
   "evolves_from": null,
-  "evolves_to": "shade_specter",
+  "evolves_to": "shade_spectre",
   "evolution_level_threshold": 10,
   "evolution_condition": null,
   "abilities": [

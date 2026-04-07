@@ -1,0 +1,54 @@
+{
+  "id": "shade_spectre",
+  "name": "ShadeSpectre",
+  "species": "Twilight Swooper",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "uncommon",
+    "rare"
+  ],
+  "type": "Shadow",
+  "level_range": [
+    5,
+    12
+  ],
+  "base_hp": 54,
+  "base_attack": 24,
+  "base_defense": 17,
+  "base_speed": 28,
+  "capture_rate": 0.32,
+  "flavor_text": "Navigates by echolocation and dark patterns. It appears only after your third `git rebase --abort`.",
+  "ascii_art": [
+    " /\\     /\\ ",
+    "/  \\___/  \\",
+    "\\ (o,_,o) /",
+    " \\-------/ ",
+    "  |     |  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "dim white",
+  "evolves_from": "shade_wisp",
+  "evolves_to": "shade_wraith",
+  "evolution_level_threshold": 18,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Dark Pattern Dive",
+      "damage_multiplier": 1.5,
+      "type": "Shadow",
+      "learn_level": 1
+    },
+    {
+      "name": "Rebase Rupture",
+      "damage_multiplier": 1.9,
+      "type": "Shadow",
+      "learn_level": 5
+    },
+    {
+      "name": "Void Swoop",
+      "damage_multiplier": 2.4,
+      "type": "Shadow",
+      "learn_level": 10
+    }
+  ]
+}
