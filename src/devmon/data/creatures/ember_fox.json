@@ -18,11 +18,14 @@
   "capture_rate": 0.65,
   "flavor_text": "Thrives in repos with zero test coverage. Its tail sparks every time a linter warning is ignored.",
   "ascii_art": [
-    "  /\\_/\\  ",
-    " ( ^.^ ) ",
-    "  > ~ <  ",
-    " ~{   }~ ",
-    "   \\_/   "
+    "[yellow]  /[bold red]^[yellow]\\_/[bold red]^[yellow]\\  [/yellow]",
+    "[yellow] ([bold red]>[yellow]..[bold red]<[yellow])  [/yellow]",
+    "[yellow] /[bold red]##[yellow]_[bold red]##[yellow]\\ [/yellow]",
+    "[yellow]|[bold red]=[yellow]   [bold red]=[yellow]| [/yellow]",
+    "[yellow]|[bold red]_[yellow]___[bold red]_[yellow]| [/yellow]",
+    "[yellow] /[bold red]~[yellow] [bold red]~[yellow] [bold red]~[yellow]\\ [/yellow]",
+    "[yellow]/[bold red]~~~[yellow] [bold red]~~~[yellow]\\ [/yellow]",
+    "[bold red] ~~[yellow]*[bold red]~~~[yellow]*[bold red]~~ [/bold red]"
   ],
   "primary_color": "bold red",
   "accent_color": "yellow",

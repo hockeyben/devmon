@@ -18,11 +18,14 @@
   "capture_rate": 0.6,
   "flavor_text": "Ancient as a monorepo with no README. It moves slowly but compiles faster than Gradle.",
   "ascii_art": [
-    "  _____  ",
-    " /o   o\\ ",
-    "|  ___  |",
-    "|_/   \\_|",
-    " \\[_] \\[_] "
+    "[bold green] ,[bright_green]@[bold green],[bright_green]@[bold green],[bright_green]@[bold green], [/bold green]",
+    "[dim green]/[bold green]##[dim green]###[bold green]##[dim green]\\ [/dim green]",
+    "[bold green]|[dim green]o[bold green] ## [dim green]o[bold green]|[/bold green]",
+    "[dim green]|[bold green]_[bright_green]~~~[bold green]_[dim green]|[/dim green]",
+    "[bold green]|[dim green]##[bold green] | [dim green]##[bold green]|[/bold green]",
+    "[dim green]/[bold green]=[dim green]|[bold green]   [dim green]|[bold green]=[dim green]\\ [/dim green]",
+    "[bold green]|[bright_green]~[bold green] | [bright_green]~[bold green]|[/bold green]",
+    "[dim green] \\_[bold green]/ [dim green]\\_[bold green]/ [/dim green]"
   ],
   "primary_color": "bold yellow",
   "accent_color": "green",

@@ -18,11 +18,14 @@
   "capture_rate": 0.63,
   "flavor_text": "Emerges when CI pipelines freeze. It bites through frozen build caches without mercy.",
   "ascii_art": [
-    "  /^ ^\\  ",
-    " ( *,* ) ",
-    "  \\___/  ",
-    " /|   |\\ ",
-    "  *   *  "
+    "[bright_cyan]  /[bold cyan]^^[bright_cyan]_[bold cyan]^^[bright_cyan]\\  [/bright_cyan]",
+    "[bright_cyan] ([bold cyan]*[bright_cyan] , [bold cyan]*[bright_cyan]) [/bright_cyan]",
+    "[bold cyan] >[bright_cyan]###[bold cyan]###[bright_cyan]< [/bold cyan]",
+    "[bright_cyan] |[bold cyan]##[bright_cyan]_[bold cyan]##[bright_cyan]| [/bright_cyan]",
+    "[bold cyan]/[bright_cyan]=[bold cyan]|[bright_cyan]   [bold cyan]|[bright_cyan]=[bold cyan]\\ [/bold cyan]",
+    "[bright_cyan]|[bold cyan]~~[bright_cyan]|[bold cyan]   [bright_cyan]|[bold cyan]~~[bright_cyan]|[/bright_cyan]",
+    "[bold cyan] \\[bright_cyan]*[bold cyan]/ [bright_cyan]\\[bold cyan]*[bright_cyan]/ [/bold cyan]",
+    "[bright_cyan]  [bold cyan]`[bright_cyan]`   [bold cyan]`[bright_cyan]`  [/bright_cyan]"
   ],
   "primary_color": "bold white",
   "accent_color": "bright_blue",

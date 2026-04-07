@@ -18,11 +18,14 @@
   "capture_rate": 0.7,
   "flavor_text": "Materializes at line 42 of every file you open. It considers undefined behavior its natural habitat.",
   "ascii_art": [
-    " _______  ",
-    "| 0   1 | ",
-    "|_bug___|  ",
-    "  /   \\   ",
-    " *     *  "
+    "[bold magenta] /\\ [bright_magenta]~[bold magenta] /\\[/bold magenta]",
+    "[bold magenta]( [bright_magenta]0[bold magenta] @ [bright_magenta]1[bold magenta] )[/bold magenta]",
+    "[bright_magenta]%[bold magenta]-[bright_magenta]##[bold magenta]_[bright_magenta]##[bold magenta]-[bright_magenta]%[/bright_magenta]",
+    "[bold magenta]|[bright_magenta]bug[bold magenta]:[bright_magenta]err[bold magenta]|[/bold magenta]",
+    "[bold magenta]|[bright_magenta]~~[bold magenta]:[bright_magenta]~~[bold magenta]|[/bold magenta]",
+    "[bright_magenta]*[bold magenta]-[bright_magenta]**[bold magenta]-[bright_magenta]**[bold magenta]-[bright_magenta]*[/bright_magenta]",
+    "[bold magenta] \\ [bright_magenta]##[bold magenta] / [/bold magenta]",
+    "[bright_magenta] `[bold magenta]--[bright_magenta]`[bold magenta]--[bright_magenta]` [/bright_magenta]"
   ],
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
