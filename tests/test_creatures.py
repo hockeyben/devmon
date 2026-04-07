@@ -262,3 +262,85 @@ def test_invalid_creature_json_fails_fast(tmp_devmon_home):
     (creatures_dir / "bad_creature.json").write_text("{not valid json", encoding="utf-8")
     with pytest.raises((ValueError, Exception)):
         load_all_creatures()
+
+
+# ---------------------------------------------------------------------------
+# Task 1 (999.1-01): Markup-aware validator and renderer tests
+# ---------------------------------------------------------------------------
+
+def test_art_markup_renders_correctly():
+    """CreatureTemplate with Rich markup in ascii_art loads and renders without literal tags."""
+    from rich.errors import MarkupError
+    from rich.text import Text
+    from devmon.models.creature import CreatureTemplate
+
+    markup_art = [
+        "[bold red]AB[/bold red]",
+        "  oo  ",
+        " /--\\ ",
+    ]
+    d = _sample_creature_dict()
+    d["ascii_art"] = markup_art
+    template = CreatureTemplate.model_validate(d)
+
+    # Each art line should parse via Text.from_markup without raising
+    for line in template.ascii_art:
+        try:
+            t = Text.from_markup(line)
+        except MarkupError as exc:
+            raise AssertionError(f"MarkupError on art line {repr(line)}: {exc}") from exc
+
+    # The first line with markup: plain text should be "AB", not include "[bold red]"
+    first_line_text = Text.from_markup(template.ascii_art[0])
+    assert "[bold" not in first_line_text.plain, (
+        f"Literal '[bold' found in plain text: {first_line_text.plain!r}"
+    )
+    assert first_line_text.plain == "AB", (
+        f"Expected plain='AB', got {first_line_text.plain!r}"
+    )
+
+
+def test_art_visual_width_strips_markup():
+    """_MARKUP_RE strips Rich markup tags, leaving only visual characters."""
+    from devmon.models.creature import _MARKUP_RE
+
+    # "[bold red]xx[/bold red]" is visually 2 chars
+    assert len(_MARKUP_RE.sub("", "[bold red]xx[/bold red]")) == 2
+    # Plain text is unchanged
+    assert len(_MARKUP_RE.sub("", "plain text")) == 10
+    # Multiple inline tags
+    assert len(_MARKUP_RE.sub("", "[dim]a[/dim][bold]b[/bold]")) == 2
+
+
+@pytest.mark.xfail(reason="Art upgrade pending — 999.1 plans 02-04", strict=False)
+def test_art_line_counts_by_rarity():
+    """Each creature's ascii_art line count must fall within its rarity size-class range.
+
+    common/uncommon: 8-10 lines
+    rare: 10-14 lines
+    epic: 14-18 lines
+    legendary: 14-18 lines
+
+    Marked xfail until art upgrade plans 02-04 complete.
+    """
+    from devmon.engine.creature_loader import load_all_creatures
+
+    RARITY_LINE_RANGES = {
+        "common": (8, 10),
+        "uncommon": (8, 10),
+        "rare": (10, 14),
+        "epic": (14, 18),
+        "legendary": (14, 18),
+    }
+
+    registry = load_all_creatures()
+    failures = []
+    for cid, template in registry.items():
+        min_lines, max_lines = RARITY_LINE_RANGES[template.rarity]
+        line_count = len(template.ascii_art)
+        if not (min_lines <= line_count <= max_lines):
+            failures.append(
+                f"{cid} ({template.rarity}): {line_count} lines, expected {min_lines}-{max_lines}"
+            )
+
+    assert not failures, "Creatures with wrong line counts:\n" + "\n".join(failures)
