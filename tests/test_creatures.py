@@ -110,7 +110,7 @@ def test_creature_template_art_line_too_wide():
         "  normal line  ",
         "  another line  ",
     ]
-    with pytest.raises(ValidationError, match="40-char limit"):
+    with pytest.raises(ValidationError, match="40-char visual limit"):
         CreatureTemplate.model_validate(bad)
 
 

@@ -14,9 +14,17 @@ RULES (per architecture):
 """
 from __future__ import annotations
 
+import re
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
+
+
+# ---------------------------------------------------------------------------
+# Markup stripping (D-04): measure visual width ignoring Rich markup tags
+# ---------------------------------------------------------------------------
+
+_MARKUP_RE = re.compile(r"\[[^\[\]]*\]")
 
 
 # ---------------------------------------------------------------------------
@@ -103,10 +111,11 @@ class CreatureTemplate(BaseModel):
     """Humorous dev-culture flavor text (D-13)."""
 
     ascii_art: list[str]
-    """Plain ASCII art lines, NO Rich markup (D-07, D-08).
+    """ASCII art lines. May contain Rich markup tags for per-character coloring (D-05).
 
-    Color is applied at render time via Text.append(line, style=primary_color).
-    Never include Rich markup tags inside these strings.
+    Renderer uses Text.from_markup(line) so markup renders as styled text.
+    Width validation strips markup tags before measuring visual width (_MARKUP_RE).
+    Literal bracket characters that are NOT markup must be escaped as \\[ in JSON.
     """
 
     primary_color: str
@@ -145,9 +154,10 @@ class CreatureTemplate(BaseModel):
         if len(lines) > 20:
             raise ValueError("ASCII art must not exceed 20 lines")
         for i, line in enumerate(lines):
-            if len(line) > 40:
+            visual_line = _MARKUP_RE.sub("", line)
+            if len(visual_line) > 40:
                 raise ValueError(
-                    f"ASCII art line {i + 1} exceeds 40-char limit ({len(line)} chars)"
+                    f"ASCII art line {i + 1} exceeds 40-char visual limit ({len(visual_line)} visual chars)"
                 )
         return self
 

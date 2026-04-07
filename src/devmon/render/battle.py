@@ -113,12 +113,12 @@ def render_battle_creature_panel(
     body = Text()
 
     if not narrow:
-        # ASCII art block (only in wide mode)
+        # ASCII art block (only in wide mode) — markup tags rendered via Text.from_markup
         art = Text()
         for i, line in enumerate(template.ascii_art):
             if i > 0:
                 art.append("\n")
-            art.append(line, style=template.primary_color)
+            art.append_text(Text.from_markup(line))
         body.append_text(art)
         body.append("\n\n")
 

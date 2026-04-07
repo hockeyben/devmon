@@ -53,12 +53,12 @@ def render_creature_panel(
     stats = Text()
 
     if not narrow:
-        # Build ASCII art text block — plain content, color applied via style=
+        # Build ASCII art text block — markup tags rendered via Text.from_markup
         art = Text()
         for i, line in enumerate(template.ascii_art):
             if i > 0:
                 art.append("\n")
-            art.append(line, style=template.primary_color)
+            art.append_text(Text.from_markup(line))
 
         # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
         if encounter_level is not None:
