@@ -1,0 +1,56 @@
+{
+  "id": "stack_kitten",
+  "name": "StackKitten",
+  "species": "Memory Feline",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    3,
+    8
+  ],
+  "base_hp": 36,
+  "base_attack": 18,
+  "base_defense": 10,
+  "base_speed": 20,
+  "capture_rate": 0.52,
+  "flavor_text": "Pushes and pops its thoughts at O(1). It panics only when the call stack overflows.",
+  "ascii_art": [
+    "  /\\  /\\ ",
+    " ( ^  ^ )",
+    "  \\LIFO/ ",
+    "   |  |  ",
+    "  \\[__]   "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": "stackcat",
+  "evolution_level_threshold": null,
+  "evolution_condition": {
+    "type": "battles_won",
+    "count": 10
+  },
+  "abilities": [
+    {
+      "name": "Push Pounce",
+      "damage_multiplier": 1.4,
+      "type": "Psychic",
+      "learn_level": 1
+    },
+    {
+      "name": "Heap Smash",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 5
+    },
+    {
+      "name": "Recursive Rend",
+      "damage_multiplier": 2.3,
+      "type": "Psychic",
+      "learn_level": 10
+    }
+  ]
+}

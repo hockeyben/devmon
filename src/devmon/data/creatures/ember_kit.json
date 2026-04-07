@@ -1,0 +1,56 @@
+{
+  "id": "ember_kit",
+  "name": "EmberKit",
+  "species": "Flame Kit",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Fire",
+  "level_range": [
+    1,
+    5
+  ],
+  "base_hp": 28,
+  "base_attack": 12,
+  "base_defense": 7,
+  "base_speed": 15,
+  "capture_rate": 0.65,
+  "flavor_text": "Thrives in repos with zero test coverage. Its tail sparks every time a linter warning is ignored.",
+  "ascii_art": [
+    "[yellow]  /[bold red]^[yellow]\\_/[bold red]^[yellow]\\  [/yellow]",
+    "[yellow] ([bold red]>[yellow]..[bold red]<[yellow])  [/yellow]",
+    "[yellow] /[bold red]##[yellow]_[bold red]##[yellow]\\ [/yellow]",
+    "[yellow]|[bold red]=[yellow]   [bold red]=[yellow]| [/yellow]",
+    "[yellow]|[bold red]_[yellow]___[bold red]_[yellow]| [/yellow]",
+    "[yellow] /[bold red]~[yellow] [bold red]~[yellow] [bold red]~[yellow]\\ [/yellow]",
+    "[yellow]/[bold red]~~~[yellow] [bold red]~~~[yellow]\\ [/yellow]",
+    "[bold red] ~~[yellow]*[bold red]~~~[yellow]*[bold red]~~ [/bold red]"
+  ],
+  "primary_color": "bold red",
+  "accent_color": "yellow",
+  "evolves_from": null,
+  "evolves_to": "ember_fox",
+  "evolution_level_threshold": 12,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Lint Flare",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 1
+    },
+    {
+      "name": "Hot Patch",
+      "damage_multiplier": 1.7,
+      "type": "Fire",
+      "learn_level": 5
+    },
+    {
+      "name": "Coverage Blaze",
+      "damage_multiplier": 2.1,
+      "type": "Fire",
+      "learn_level": 10
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "id": "thorn_ancient",
+  "name": "ThornAncient",
+  "species": "Primordial Trunk",
+  "rarity": "legendary",
+  "allowed_rarities": [
+    "legendary"
+  ],
+  "type": "Nature",
+  "level_range": [
+    12,
+    20
+  ],
+  "base_hp": 118,
+  "base_attack": 42,
+  "base_defense": 48,
+  "base_speed": 30,
+  "capture_rate": 0.03,
+  "flavor_text": "Older than version control. Its roots contain the original source code for everything, indented with tabs.",
+  "ascii_art": [
+    "    @@@    ",
+    "   @@@@@   ",
+    "  @@ | @@  ",
+    " @@  |  @@ ",
+    "   __|__   ",
+    "   |   |   ",
+    "  /|   |\\  "
+  ],
+  "primary_color": "bold green",
+  "accent_color": "green",
+  "evolves_from": "thorn_vine",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Ancient Branch",
+      "damage_multiplier": 1.5,
+      "type": "Nature",
+      "learn_level": 1
+    },
+    {
+      "name": "Tab Entangle",
+      "damage_multiplier": 2.0,
+      "type": "Nature",
+      "learn_level": 5
+    },
+    {
+      "name": "Version Zero Strike",
+      "damage_multiplier": 2.5,
+      "type": "Nature",
+      "learn_level": 10
+    }
+  ]
+}

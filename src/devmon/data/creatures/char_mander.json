@@ -29,8 +29,23 @@
   "evolves_from": null,
   "evolves_to": null,
   "abilities": [
-    {"name": "Chmod Scorch", "damage_multiplier": 1.3, "type": "Fire", "learn_level": 1},
-    {"name": "Shell Ignite", "damage_multiplier": 1.8, "type": "Fire", "learn_level": 5},
-    {"name": "Bash Inferno", "damage_multiplier": 2.3, "type": "Fire", "learn_level": 10}
+    {
+      "name": "Chmod Scorch",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 1
+    },
+    {
+      "name": "Shell Ignite",
+      "damage_multiplier": 1.8,
+      "type": "Fire",
+      "learn_level": 5
+    },
+    {
+      "name": "Bash Inferno",
+      "damage_multiplier": 2.3,
+      "type": "Fire",
+      "learn_level": 10
+    }
   ]
 }

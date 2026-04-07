@@ -30,8 +30,23 @@
   "evolution_level_threshold": null,
   "evolution_condition": null,
   "abilities": [
-    {"name": "Stack Trace Slash", "damage_multiplier": 1.5, "type": "Psychic", "learn_level": 1},
-    {"name": "Compiled Strike", "damage_multiplier": 2.0, "type": "Psychic", "learn_level": 10},
-    {"name": "Binary Barrage", "damage_multiplier": 2.5, "type": "Psychic", "learn_level": 15}
+    {
+      "name": "Stack Trace Slash",
+      "damage_multiplier": 1.5,
+      "type": "Psychic",
+      "learn_level": 1
+    },
+    {
+      "name": "Compiled Strike",
+      "damage_multiplier": 2.0,
+      "type": "Psychic",
+      "learn_level": 10
+    },
+    {
+      "name": "Binary Barrage",
+      "damage_multiplier": 2.5,
+      "type": "Psychic",
+      "learn_level": 15
+    }
   ]
 }

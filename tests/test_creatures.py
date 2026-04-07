@@ -202,10 +202,10 @@ def test_migrate_3_to_4_preserves_existing():
 # ---------------------------------------------------------------------------
 
 def test_roster_count():
-    """load_all_creatures() must return exactly 26 creatures (CREA-01 + Phase 10 cyber_beetle)."""
+    """load_all_creatures() must return exactly 27 creatures (CREA-01 + Phase 10 cyber_beetle)."""
     from devmon.engine.creature_loader import load_all_creatures
     registry = load_all_creatures()
-    assert len(registry) == 26, f"Expected 26 creatures, got {len(registry)}"
+    assert len(registry) == 27, f"Expected 27 creatures, got {len(registry)}"
 
 
 def test_rarity_distribution():
@@ -217,7 +217,7 @@ def test_rarity_distribution():
         counts[t.rarity] = counts.get(t.rarity, 0) + 1
     assert counts.get("common", 0) == 8
     assert counts.get("uncommon", 0) == 8
-    assert counts.get("rare", 0) == 5
+    assert counts.get("rare", 0) == 6
     assert counts.get("epic", 0) == 3
     assert counts.get("legendary", 0) == 2
 

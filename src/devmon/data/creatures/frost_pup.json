@@ -1,0 +1,50 @@
+{
+  "id": "frost_pup",
+  "name": "FrostPup",
+  "species": "Ice Pup",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Ice",
+  "level_range": [
+    1,
+    5
+  ],
+  "base_hp": 26,
+  "base_attack": 10,
+  "base_defense": 10,
+  "base_speed": 12,
+  "capture_rate": 0.63,
+  "flavor_text": "Emerges when CI pipelines freeze. It bites through frozen build caches without mercy.",
+  "ascii_art": [
+    "[bright_cyan]  /[bold cyan]^^[bright_cyan]_[bold cyan]^^[bright_cyan]\\  [/bright_cyan]",
+    "[bright_cyan] ([bold cyan]*[bright_cyan] , [bold cyan]*[bright_cyan]) [/bright_cyan]",
+    "[bold cyan] >[bright_cyan]###[bold cyan]###[bright_cyan]< [/bold cyan]",
+    "[bright_cyan] |[bold cyan]##[bright_cyan]_[bold cyan]##[bright_cyan]| [/bright_cyan]",
+    "[bold cyan]/[bright_cyan]=[bold cyan]|[bright_cyan]   [bold cyan]|[bright_cyan]=[bold cyan]\\ [/bold cyan]",
+    "[bright_cyan]|[bold cyan]~~[bright_cyan]|[bold cyan]   [bright_cyan]|[bold cyan]~~[bright_cyan]|[/bright_cyan]",
+    "[bold cyan] \\[bright_cyan]*[bold cyan]/ [bright_cyan]\\[bold cyan]*[bright_cyan]/ [/bold cyan]",
+    "[bright_cyan]  [bold cyan]`[bright_cyan]`   [bold cyan]`[bright_cyan]`  [/bright_cyan]"
+  ],
+  "primary_color": "bold white",
+  "accent_color": "bright_blue",
+  "evolves_from": null,
+  "evolves_to": "frost_fang",
+  "evolution_level_threshold": 14,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Cache Bite",
+      "damage_multiplier": 1.3,
+      "type": "Ice",
+      "learn_level": 1
+    },
+    {
+      "name": "Pipeline Freeze",
+      "damage_multiplier": 1.7,
+      "type": "Ice",
+      "learn_level": 5
+    }
+  ]
+}

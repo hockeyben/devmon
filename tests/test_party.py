@@ -19,14 +19,14 @@ def party_state() -> GameState:
     """GameState with 4 creatures in collection and 3 in party (real creature IDs)."""
     collection = [
         OwnedCreature(template_id="bugbyte", level=5),
-        OwnedCreature(template_id="stackcat", level=3),
+        OwnedCreature(template_id="stack_kitten", level=3),
         OwnedCreature(template_id="ember_fox", level=4),
-        OwnedCreature(template_id="volt_whisker", level=2),
+        OwnedCreature(template_id="volt_ferret", level=2),
     ]
     return GameState(
         player=__import__("devmon.models.state", fromlist=["PlayerProfile"]).PlayerProfile(name="Ash"),
         creature_collection=collection,
-        party=["bugbyte", "stackcat", "ember_fox"],
+        party=["bugbyte", "stack_kitten", "ember_fox"],
     )
 
 
@@ -40,7 +40,7 @@ def test_party_max_three(party_state):
 
     # The model itself doesn't enforce max-3 (command layer does)
     # Appending a 4th shouldn't raise — just extend the list
-    party_state.party.append("volt_whisker")
+    party_state.party.append("volt_ferret")
     assert len(party_state.party) == 4  # model doesn't block this
 
 
@@ -79,9 +79,9 @@ def test_party_display_shows_three_slots(tmp_save_dir):
         player=PlayerProfile(name="Ash"),
         creature_collection=[
             OwnedCreature(template_id="bugbyte", level=5),
-            OwnedCreature(template_id="stackcat", level=3),
+            OwnedCreature(template_id="stack_kitten", level=3),
         ],
-        party=["bugbyte", "stackcat"],
+        party=["bugbyte", "stack_kitten"],
     )
     save_state(state)
 
@@ -175,9 +175,9 @@ def test_party_swap_direct_mode(tmp_save_dir):
         player=PlayerProfile(name="Ash"),
         creature_collection=[
             OwnedCreature(template_id="bugbyte", level=5),
-            OwnedCreature(template_id="stackcat", level=3),
+            OwnedCreature(template_id="stack_kitten", level=3),
         ],
-        party=["stackcat"],
+        party=["stack_kitten"],
     )
     save_state(state)
 
@@ -219,12 +219,12 @@ def test_fainted_excluded_from_swap(tmp_save_dir):
     from devmon.persistence.save import save as save_state
     from devmon.models.state import PlayerProfile
 
-    # volt_whisker is fainted — should not appear as swap candidate
+    # volt_ferret is fainted — should not appear as swap candidate
     state = GameState(
         player=PlayerProfile(name="Ash"),
         creature_collection=[
             OwnedCreature(template_id="bugbyte", level=5),
-            OwnedCreature(template_id="volt_whisker", level=2, is_fainted=True),
+            OwnedCreature(template_id="volt_ferret", level=2, is_fainted=True),
         ],
         party=["bugbyte"],
     )
@@ -277,9 +277,9 @@ def test_party_swap_case_insensitive(tmp_save_dir):
         player=PlayerProfile(name="Ash"),
         creature_collection=[
             OwnedCreature(template_id="bugbyte", level=5),
-            OwnedCreature(template_id="stackcat", level=3),
+            OwnedCreature(template_id="stack_kitten", level=3),
         ],
-        party=["stackcat"],
+        party=["stack_kitten"],
     )
     save_state(state)
 

@@ -1,0 +1,51 @@
+{
+  "id": "thorn_sprout",
+  "name": "ThornSprout",
+  "species": "Bramble Imp",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common",
+    "uncommon"
+  ],
+  "type": "Nature",
+  "level_range": [
+    1,
+    5
+  ],
+  "base_hp": 30,
+  "base_attack": 8,
+  "base_defense": 11,
+  "base_speed": 11,
+  "capture_rate": 0.64,
+  "flavor_text": "Hides in dependency trees with circular imports. It blooms every time you run `pip list --outdated`.",
+  "ascii_art": [
+    "[bold green] ,[bright_green]*[bold green],[bright_green]*[bold green], [/bold green]",
+    "[dim yellow]`[bold green]@[bright_green]###[bold green]@[dim yellow]`[/dim yellow]",
+    "[bold green]([bright_green]>[bold green]O[bright_green]^[bold green]O[bright_green]<[bold green])[/bold green]",
+    "[dim yellow],[bold green]#[bright_green]###[bold green]#[dim yellow],[/dim yellow]",
+    "[bold green]([dim yellow]*[bold green]|[dim yellow]*[bold green]|[dim yellow]*[bold green])[/bold green]",
+    "[bright_green] [bold green]|[bright_green]~[bold green]|[bright_green]~[bold green]| [/bright_green]",
+    "[bold green] [bright_green]@[bold green]=[bright_green]@[bold green]=[bright_green]@ [/bold green]",
+    "[dim yellow] `[bold green],[dim yellow]`[bold green],[dim yellow]` [/dim yellow]"
+  ],
+  "primary_color": "bold green",
+  "accent_color": "green",
+  "evolves_from": null,
+  "evolves_to": "thorn_vine",
+  "evolution_level_threshold": 12,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Circular Prick",
+      "damage_multiplier": 1.2,
+      "type": "Nature",
+      "learn_level": 1
+    },
+    {
+      "name": "Dep Tree Tangle",
+      "damage_multiplier": 1.6,
+      "type": "Nature",
+      "learn_level": 5
+    }
+  ]
+}

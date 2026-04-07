@@ -1,0 +1,53 @@
+{
+  "id": "terra_golem",
+  "name": "TerraGolem",
+  "species": "Seismic Colossus",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Earth",
+  "level_range": [
+    8,
+    16
+  ],
+  "base_hp": 88,
+  "base_attack": 36,
+  "base_defense": 34,
+  "base_speed": 22,
+  "capture_rate": 0.12,
+  "flavor_text": "Formed from millions of merged pull requests. It trembles when someone force pushes to main.",
+  "ascii_art": [
+    "  _______  ",
+    " /# # # #\\ ",
+    "| O     O |",
+    "|  -----  |",
+    "|__|   |__|"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "green",
+  "evolves_from": "boulder_golem",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Merge Quake",
+      "damage_multiplier": 1.5,
+      "type": "Earth",
+      "learn_level": 1
+    },
+    {
+      "name": "Force Push Tremor",
+      "damage_multiplier": 2.0,
+      "type": "Earth",
+      "learn_level": 5
+    },
+    {
+      "name": "Seismic Commit",
+      "damage_multiplier": 2.5,
+      "type": "Earth",
+      "learn_level": 10
+    }
+  ]
+}

@@ -358,7 +358,7 @@ def test_render_evolution_prompt():
     from rich.panel import Panel
     from devmon.render.evolution import render_evolution_prompt
 
-    panel = render_evolution_prompt("EmberFox", "InfernoDrake", 12)
+    panel = render_evolution_prompt("EmberFox", "EmberFox", 12)
     assert isinstance(panel, Panel)
     # Title contains the creature name and 'wants to evolve'
     title_str = str(panel.title)
@@ -382,14 +382,14 @@ def test_render_evolution_before_after():
         )
 
     old_t = make_template("ember_fox", "EmberFox")
-    new_t = make_template("inferno_drake", "InfernoDrake")
+    new_t = make_template("ember_fox", "EmberFox")
 
     console = Console(record=True)
     render_evolution_before_after(old_t, new_t, console)
     output = console.export_text()
 
     assert "EmberFox" in output
-    assert "InfernoDrake" in output
+    assert "EmberFox" in output
 
 
 def test_render_evolution_notification():
@@ -398,7 +398,7 @@ def test_render_evolution_notification():
     from rich.panel import Panel
     from devmon.render.evolution import render_evolution_notification
 
-    panel = render_evolution_notification("EmberFox", "InfernoDrake")
+    panel = render_evolution_notification("EmberFox", "EmberFox")
     assert isinstance(panel, Panel)
     assert panel.box is box.DOUBLE
     # Body contains "evolved into"

@@ -1,0 +1,54 @@
+{
+  "id": "depth_byte",
+  "name": "DepthByte",
+  "species": "Deep Data Leviathan",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "rare",
+    "epic"
+  ],
+  "type": "Water",
+  "level_range": [
+    8,
+    16
+  ],
+  "base_hp": 78,
+  "base_attack": 34,
+  "base_defense": 28,
+  "base_speed": 22,
+  "capture_rate": 0.15,
+  "flavor_text": "Eight tentacles, each running a separate microservice. It sinks monoliths without reading the docs.",
+  "ascii_art": [
+    "   /\\/\\/\\   ",
+    "  | ~  ~ |  ",
+    " /| o  o |\\ ",
+    "|  \\____/  |",
+    " \\__||||__/ "
+  ],
+  "primary_color": "bold blue",
+  "accent_color": "bright_blue",
+  "evolves_from": "tide_byte",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Microservice Crush",
+      "damage_multiplier": 1.5,
+      "type": "Water",
+      "learn_level": 1
+    },
+    {
+      "name": "API Flood",
+      "damage_multiplier": 2.0,
+      "type": "Water",
+      "learn_level": 5
+    },
+    {
+      "name": "Deep Packet Surge",
+      "damage_multiplier": 2.5,
+      "type": "Water",
+      "learn_level": 10
+    }
+  ]
+}

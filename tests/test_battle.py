@@ -186,17 +186,17 @@ def test_switch_creature_costs_a_turn():
     state = GameState.new_game("TestPlayer")
     creature_a = OwnedCreature(template_id="bugbyte", level=5)
     creature_b = OwnedCreature(template_id="ember_fox", level=3)
-    creature_c = OwnedCreature(template_id="volt_whisker", level=2, is_fainted=True)
+    creature_c = OwnedCreature(template_id="volt_ferret", level=2, is_fainted=True)
     state.creature_collection = [creature_a, creature_b, creature_c]
 
-    # When active is bugbyte, only ember_fox should be switchable (volt_whisker is fainted)
+    # When active is bugbyte, only ember_fox should be switchable (volt_ferret is fainted)
     switchable = _get_switchable_creatures(state, "bugbyte")
     assert len(switchable) == 1
     assert switchable[0].template_id == "ember_fox"
 
     # Confirm fainted creature is excluded
     ids = [c.template_id for c in switchable]
-    assert "volt_whisker" not in ids
+    assert "volt_ferret" not in ids
     assert "bugbyte" not in ids  # current active excluded
 
 

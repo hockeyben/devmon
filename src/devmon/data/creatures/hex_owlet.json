@@ -1,0 +1,53 @@
+{
+  "id": "hex_owlet",
+  "name": "HexOwlet",
+  "species": "Cipher Raptor",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    5,
+    12
+  ],
+  "base_hp": 50,
+  "base_attack": 26,
+  "base_defense": 18,
+  "base_speed": 24,
+  "capture_rate": 0.35,
+  "flavor_text": "Decodes obfuscated code by staring at it for exactly one hoot. Never asks for context.",
+  "ascii_art": [
+    "  /\\   /\\  ",
+    " (O     O) ",
+    "  \\ ___ /  ",
+    "   |   |   ",
+    "  /|   |\\  "
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": "hex_owl",
+  "evolution_level_threshold": 14,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Cipher Stare",
+      "damage_multiplier": 1.4,
+      "type": "Psychic",
+      "learn_level": 1
+    },
+    {
+      "name": "Obfuscation Wave",
+      "damage_multiplier": 1.8,
+      "type": "Psychic",
+      "learn_level": 5
+    },
+    {
+      "name": "Decode Rupture",
+      "damage_multiplier": 2.3,
+      "type": "Psychic",
+      "learn_level": 10
+    }
+  ]
+}

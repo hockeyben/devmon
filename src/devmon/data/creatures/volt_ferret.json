@@ -1,0 +1,50 @@
+{
+  "id": "volt_ferret",
+  "name": "VoltFerret",
+  "species": "Spark Mouse",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Electric",
+  "level_range": [
+    1,
+    5
+  ],
+  "base_hp": 24,
+  "base_attack": 13,
+  "base_defense": 6,
+  "base_speed": 16,
+  "capture_rate": 0.68,
+  "flavor_text": "Appears whenever you forget to close a WebSocket connection. Its whiskers are fully ionized.",
+  "ascii_art": [
+    "[bright_yellow]~[bold yellow]/\\[bright_yellow]~[bold yellow]/\\[bright_yellow]~[/bright_yellow]",
+    "[bold yellow]([bright_yellow]*[bold yellow]^[bright_yellow].[bold yellow]^[bright_yellow]*[bold yellow])[/bold yellow]",
+    "[bright_yellow]=[bold yellow])[bright_yellow]##[bold yellow]([bright_yellow]=[/bright_yellow]",
+    "[bold yellow] /[bright_yellow]#[bold yellow]_[bright_yellow]#[bold yellow]\\ [/bold yellow]",
+    "[bright_yellow]([bold yellow]=[bright_yellow]*[bold yellow]|[bright_yellow]*[bold yellow]=[bright_yellow])[/bright_yellow]",
+    "[bold yellow] |[bright_yellow]~[bold yellow]|[bright_yellow]~[bold yellow]| [/bold yellow]",
+    "[bright_yellow] /[bold yellow]=[bright_yellow]/[bold yellow]=[bright_yellow]\\ [/bright_yellow]",
+    "[bold yellow][bright_yellow]~[bold yellow]`[bright_yellow]~[bold yellow] [bright_yellow]~[bold yellow]`[bright_yellow]~[/bold yellow]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "bright_yellow",
+  "evolves_from": "zap_kit",
+  "evolves_to": "thunder_ferret",
+  "evolution_level_threshold": 20,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Socket Zap",
+      "damage_multiplier": 1.3,
+      "type": "Electric",
+      "learn_level": 1
+    },
+    {
+      "name": "Websocket Shock",
+      "damage_multiplier": 1.7,
+      "type": "Electric",
+      "learn_level": 5
+    }
+  ]
+}

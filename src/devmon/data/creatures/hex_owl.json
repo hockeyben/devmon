@@ -1,38 +1,54 @@
 {
   "id": "hex_owl",
   "name": "HexOwl",
-  "species": "Cipher Raptor",
-  "rarity": "rare",
+  "species": "Thought Flutterer",
+  "rarity": "uncommon",
   "allowed_rarities": [
+    "uncommon",
     "rare"
   ],
   "type": "Psychic",
   "level_range": [
-    5,
-    12
+    3,
+    8
   ],
-  "base_hp": 50,
-  "base_attack": 26,
-  "base_defense": 18,
-  "base_speed": 24,
-  "capture_rate": 0.35,
-  "flavor_text": "Decodes obfuscated code by staring at it for exactly one hoot. Never asks for context.",
+  "base_hp": 32,
+  "base_attack": 19,
+  "base_defense": 12,
+  "base_speed": 19,
+  "capture_rate": 0.42,
+  "flavor_text": "Drawn irresistibly to bright monitor light at 2am. It reads your stack traces before you do.",
   "ascii_art": [
-    "  /\\   /\\  ",
-    " (O     O) ",
-    "  \\ ___ /  ",
-    "   |   |   ",
-    "  /|   |\\  "
+    " /|   |\\ ",
+    "< (o.o) >",
+    " \\|___|/ ",
+    "   | |   ",
+    "  /   \\  "
   ],
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
-  "evolves_from": null,
-  "evolves_to": "mind_moth",
-  "evolution_level_threshold": 14,
+  "evolves_from": "hex_owlet",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
   "evolution_condition": null,
   "abilities": [
-    {"name": "Cipher Stare", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
-    {"name": "Obfuscation Wave", "damage_multiplier": 1.8, "type": "Psychic", "learn_level": 5},
-    {"name": "Decode Rupture", "damage_multiplier": 2.3, "type": "Psychic", "learn_level": 10}
+    {
+      "name": "Trace Flutter",
+      "damage_multiplier": 1.4,
+      "type": "Psychic",
+      "learn_level": 1
+    },
+    {
+      "name": "Stack Trace Sting",
+      "damage_multiplier": 1.7,
+      "type": "Psychic",
+      "learn_level": 5
+    },
+    {
+      "name": "Monitor Burn",
+      "damage_multiplier": 2.1,
+      "type": "Psychic",
+      "learn_level": 10
+    }
   ]
 }

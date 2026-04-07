@@ -1,41 +1,54 @@
 {
   "id": "ember_fox",
   "name": "EmberFox",
-  "species": "Flame Kit",
-  "rarity": "common",
+  "species": "Blaze Wyrm",
+  "rarity": "rare",
   "allowed_rarities": [
-    "common"
+    "rare",
+    "epic"
   ],
   "type": "Fire",
   "level_range": [
-    1,
-    5
+    5,
+    12
   ],
-  "base_hp": 28,
-  "base_attack": 12,
-  "base_defense": 7,
-  "base_speed": 15,
-  "capture_rate": 0.65,
-  "flavor_text": "Thrives in repos with zero test coverage. Its tail sparks every time a linter warning is ignored.",
+  "base_hp": 62,
+  "base_attack": 28,
+  "base_defense": 15,
+  "base_speed": 26,
+  "capture_rate": 0.25,
+  "flavor_text": "Burns hot enough to melt Docker images. It has never once read a Dockerfile before igniting.",
   "ascii_art": [
-    "[yellow]  /[bold red]^[yellow]\\_/[bold red]^[yellow]\\  [/yellow]",
-    "[yellow] ([bold red]>[yellow]..[bold red]<[yellow])  [/yellow]",
-    "[yellow] /[bold red]##[yellow]_[bold red]##[yellow]\\ [/yellow]",
-    "[yellow]|[bold red]=[yellow]   [bold red]=[yellow]| [/yellow]",
-    "[yellow]|[bold red]_[yellow]___[bold red]_[yellow]| [/yellow]",
-    "[yellow] /[bold red]~[yellow] [bold red]~[yellow] [bold red]~[yellow]\\ [/yellow]",
-    "[yellow]/[bold red]~~~[yellow] [bold red]~~~[yellow]\\ [/yellow]",
-    "[bold red] ~~[yellow]*[bold red]~~~[yellow]*[bold red]~~ [/bold red]"
+    "   ___     ",
+    "  /   \\~~~ ",
+    " / o o \\   ",
+    "|  ===  |  ",
+    " \\_____/   "
   ],
   "primary_color": "bold red",
   "accent_color": "yellow",
-  "evolves_from": null,
-  "evolves_to": "inferno_drake",
-  "evolution_level_threshold": 12,
+  "evolves_from": "ember_kit",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
   "evolution_condition": null,
   "abilities": [
-    {"name": "Lint Flare", "damage_multiplier": 1.3, "type": "Fire", "learn_level": 1},
-    {"name": "Hot Patch", "damage_multiplier": 1.7, "type": "Fire", "learn_level": 5},
-    {"name": "Coverage Blaze", "damage_multiplier": 2.1, "type": "Fire", "learn_level": 10}
+    {
+      "name": "Docker Melt",
+      "damage_multiplier": 1.5,
+      "type": "Fire",
+      "learn_level": 1
+    },
+    {
+      "name": "Container Scorch",
+      "damage_multiplier": 2.0,
+      "type": "Fire",
+      "learn_level": 5
+    },
+    {
+      "name": "Image Incinerate",
+      "damage_multiplier": 2.5,
+      "type": "Fire",
+      "learn_level": 10
+    }
   ]
 }

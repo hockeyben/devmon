@@ -2,21 +2,21 @@
   "id": "stackcat",
   "name": "Stackcat",
   "species": "Memory Feline",
-  "rarity": "uncommon",
+  "rarity": "rare",
   "allowed_rarities": [
-    "uncommon"
+    "rare"
   ],
   "type": "Psychic",
   "level_range": [
-    3,
-    8
+    12,
+    20
   ],
-  "base_hp": 36,
-  "base_attack": 18,
-  "base_defense": 10,
-  "base_speed": 20,
-  "capture_rate": 0.52,
-  "flavor_text": "Pushes and pops its thoughts at O(1). It panics only when the call stack overflows.",
+  "base_hp": 57,
+  "base_attack": 28,
+  "base_defense": 16,
+  "base_speed": 30,
+  "capture_rate": 0.3,
+  "flavor_text": "A fully grown memory feline. Its recursive purr can solve NP-complete problems in polynomial time.",
   "ascii_art": [
     "  /\\  /\\ ",
     " ( ^  ^ )",
@@ -26,13 +26,31 @@
   ],
   "primary_color": "bold magenta",
   "accent_color": "bright_magenta",
-  "evolves_from": null,
-  "evolves_to": "kraken_byte",
+  "evolves_from": "stack_kitten",
+  "evolves_to": null,
   "evolution_level_threshold": null,
-  "evolution_condition": {"type": "battles_won", "count": 10},
+  "evolution_condition": {
+    "type": "battles_won",
+    "count": 10
+  },
   "abilities": [
-    {"name": "Push Pounce", "damage_multiplier": 1.4, "type": "Psychic", "learn_level": 1},
-    {"name": "Heap Smash", "damage_multiplier": 1.9, "type": "Psychic", "learn_level": 5},
-    {"name": "Recursive Rend", "damage_multiplier": 2.3, "type": "Psychic", "learn_level": 10}
+    {
+      "name": "Push Pounce",
+      "damage_multiplier": 1.4,
+      "type": "Psychic",
+      "learn_level": 1
+    },
+    {
+      "name": "Heap Smash",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 5
+    },
+    {
+      "name": "Recursive Rend",
+      "damage_multiplier": 2.3,
+      "type": "Psychic",
+      "learn_level": 10
+    }
   ]
 }

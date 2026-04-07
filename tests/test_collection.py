@@ -19,14 +19,14 @@ def collection_state() -> GameState:
     """GameState with 3 creatures, 1 in party, and 1 in codex_state only."""
     collection = [
         OwnedCreature(template_id="bugbyte", level=5),        # common, party member
-        OwnedCreature(template_id="kraken_byte", level=8),    # epic
+        OwnedCreature(template_id="depth_byte", level=8),    # epic
         OwnedCreature(template_id="ember_fox", level=3),      # common
     ]
     return GameState(
         player=PlayerProfile(name="Ash"),
         creature_collection=collection,
         party=["bugbyte"],
-        codex_state={"nullhound": "encountered"},              # encountered but not captured
+        codex_state={"shade_wraith": "encountered"},              # encountered but not captured
     )
 
 
@@ -68,7 +68,7 @@ def test_collection_shows_table(saved_collection_state, tmp_save_dir):
     assert "Your Collection" in result.output
     assert "Bugbyte" in result.output
     assert "EmberFox" in result.output
-    assert "KrakenByte" in result.output
+    assert "DepthByte" in result.output
 
 
 def test_collection_sort_rarity(saved_collection_state, tmp_save_dir):
@@ -77,8 +77,8 @@ def test_collection_sort_rarity(saved_collection_state, tmp_save_dir):
     runner = CliRunner()
     result = runner.invoke(collection_app, [])
     assert result.exit_code == 0
-    # KrakenByte (epic) should appear before Bugbyte (common)
-    epic_pos = result.output.find("KrakenByte")
+    # DepthByte (epic) should appear before Bugbyte (common)
+    epic_pos = result.output.find("DepthByte")
     common_pos = result.output.find("Bugbyte")
     assert epic_pos < common_pos, f"Epic should appear before common: {epic_pos} vs {common_pos}"
 
@@ -89,8 +89,8 @@ def test_collection_sort_level(saved_collection_state, tmp_save_dir):
     runner = CliRunner()
     result = runner.invoke(collection_app, ["--sort", "level"])
     assert result.exit_code == 0
-    # KrakenByte level 8 before ember_fox level 3
-    high_pos = result.output.find("KrakenByte")
+    # DepthByte level 8 before ember_fox level 3
+    high_pos = result.output.find("DepthByte")
     low_pos = result.output.find("EmberFox")
     assert high_pos < low_pos
 
@@ -101,11 +101,11 @@ def test_collection_sort_name(saved_collection_state, tmp_save_dir):
     runner = CliRunner()
     result = runner.invoke(collection_app, ["--sort", "name"])
     assert result.exit_code == 0
-    # Bugbyte < EmberFox < KrakenByte alphabetically
+    # Bugbyte < DepthByte < EmberFox alphabetically
     b_pos = result.output.find("Bugbyte")
+    d_pos = result.output.find("DepthByte")
     e_pos = result.output.find("EmberFox")
-    k_pos = result.output.find("KrakenByte")
-    assert b_pos < e_pos < k_pos
+    assert b_pos < d_pos < e_pos
 
 
 def test_collection_party_badge(saved_collection_state, tmp_save_dir):
@@ -144,13 +144,13 @@ def test_collection_empty_state(tmp_save_dir):
 
 
 def test_codex_progress_line(saved_collection_state, tmp_save_dir):
-    """D-10: Collection list shows 'Codex:' progress line with '/26' (26 creatures after Phase 10 cyber_beetle)."""
+    """D-10: Collection list shows 'Codex:' progress line with '/27' (27 creatures after stackcat added)."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
     result = runner.invoke(collection_app, [])
     assert result.exit_code == 0
     assert "Codex:" in result.output
-    assert "/26" in result.output
+    assert "/27" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -238,13 +238,13 @@ def test_rename_too_long_rejected(tmp_save_dir):
 # ---------------------------------------------------------------------------
 
 def test_codex_lists_all_creatures(saved_collection_state, tmp_save_dir):
-    """COLL-03: codex lists all 26 creatures (26 after Phase 10 cyber_beetle added)."""
+    """COLL-03: codex lists all 27 creatures (26 after Phase 10 cyber_beetle added)."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
     result = runner.invoke(collection_app, ["codex"])
     assert result.exit_code == 0
     assert "Creature Codex" in result.output
-    assert "/26" in result.output
+    assert "/27" in result.output
 
 
 def test_codex_unknown_shows_question_marks(tmp_save_dir):
