@@ -32,6 +32,8 @@ _devmon_precmd() {
   local _exit=$?
   # SC6: Signal daemon that prompt is drawing — safe to write to terminal
   rm -f "${DEVMON_HOME:-$HOME/.local/share/devmon/devmon}/typing.flag" 2>/dev/null
+  # Touch show signal so daemon renders for a few seconds then auto-hides
+  touch "${DEVMON_HOME:-$HOME/.local/share/devmon/devmon}/indicator.show" 2>/dev/null
   local _now
   _now=$(date +%s%3N)
   local _dur=$(( _now - ${_DEVMON_CMD_START:-$_now} ))
@@ -74,8 +76,12 @@ function _DevmonPrePrompt {
         $aiEntry = "{`"ts`":$now,`"exit`":0,`"dur`":0,`"cwd`":`"$cwd`",`"type`":`"ai_start`"}`n"
         try { Add-Content -Path $log -Value $aiEntry -NoNewline -ErrorAction SilentlyContinue } catch {}
     }
+    # Touch show signal so daemon renders briefly then auto-hides
+    $runtimeDir = if ($env:DEVMON_HOME) { $env:DEVMON_HOME } else { Join-Path $env:TEMP 'devmon\\devmon' }
+    $showFile = Join-Path $runtimeDir 'indicator.show'
+    try { New-Item -ItemType Directory -Path $runtimeDir -Force -ErrorAction SilentlyContinue | Out-Null; [System.IO.File]::WriteAllText($showFile, '') } catch {}
     # Indicator daemon auto-start (Phase 11)
-    $pidFile = if ($env:DEVMON_HOME) { Join-Path $env:DEVMON_HOME 'indicator.pid' } else { Join-Path $env:APPDATA 'devmon\\devmon\\indicator.pid' }
+    $pidFile = Join-Path $runtimeDir 'indicator.pid'
     $daemonAlive = $false
     if (Test-Path $pidFile) {
         $pidVal = Get-Content $pidFile -ErrorAction SilentlyContinue

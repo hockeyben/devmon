@@ -49,6 +49,34 @@ def typing_flag_path() -> Path:
     return Path(user_runtime_dir("devmon", "devmon")) / "typing.flag"
 
 
+# Display timeout in seconds — indicator shows briefly after each command,
+# then hides before the user starts typing. Prevents ghost indicators and
+# text collision with user input.
+DISPLAY_TIMEOUT = 3.0
+
+
+def show_signal_path() -> Path:
+    """Return path to the show signal file.
+
+    Written by precmd/prompt hook with a timestamp. The daemon only renders
+    when this file's timestamp is less than DISPLAY_TIMEOUT seconds old.
+    """
+    devmon_home = os.environ.get("DEVMON_HOME")
+    if devmon_home:
+        return Path(devmon_home) / "indicator.show"
+    from platformdirs import user_runtime_dir
+    return Path(user_runtime_dir("devmon", "devmon")) / "indicator.show"
+
+
+def should_show(show_file: Path) -> bool:
+    """Return True if the show signal is recent enough to display indicator."""
+    try:
+        mtime = show_file.stat().st_mtime
+        return (time.time() - mtime) < DISPLAY_TIMEOUT
+    except (FileNotFoundError, OSError):
+        return False
+
+
 def detect_emoji_support() -> bool:
     """Determine if terminal supports emoji rendering.
 
@@ -195,9 +223,7 @@ def run_indicator_daemon(
                 continue
 
             # SC6: Skip write when typing flag exists (readline is active).
-            # preexec creates typing.flag when user starts a command,
-            # precmd deletes it when the prompt is redrawn.
-            # This prevents ANSI writes from corrupting bash readline input.
+            # On bash/zsh, preexec creates the flag and precmd deletes it.
             if tf.exists():
                 time.sleep(0.5)
                 frame_idx = (frame_idx + 1) % 4
