@@ -18,11 +18,14 @@
   "capture_rate": 0.62,
   "flavor_text": "Spawns exclusively during long `npm install` waits. It feeds on buffered stdin.",
   "ascii_art": [
-    "   ~~~~~   ",
-    "  ( o_o )  ",
-    " ~|     |~ ",
-    "  \\_____/  ",
-    "  ~ ~ ~ ~  "
+    "[bright_cyan] ~[bold blue]~~~[bright_cyan]~~~ [/bright_cyan]",
+    "[bold blue]([bright_cyan]0[bold blue]:[bright_cyan]1[bold blue]:[bright_cyan]0[bold blue])[/bold blue]",
+    "[dim blue]/[bold blue]##[bright_cyan]~[bold blue]##[bright_cyan]~[bold blue]##[dim blue]\\ [/dim blue]",
+    "[bright_cyan]|[bold blue]==[bright_cyan]=[bold blue]==[bright_cyan]=[bold blue]=[bright_cyan]|[/bright_cyan]",
+    "[bold blue]|[dim blue]~~[bright_cyan]~[dim blue]~~[bright_cyan]~[dim blue]~~[bold blue]|[/bold blue]",
+    "[dim blue]\\[bold blue]##[bright_cyan]~[bold blue]##[bright_cyan]~[bold blue]##[dim blue]/ [/dim blue]",
+    "[bright_cyan] ~[bold blue]~[bright_cyan]~~~[bold blue]~[bright_cyan]~ [/bright_cyan]",
+    "[bold blue]  [bright_cyan]~[bold blue]~[bright_cyan]~[bold blue]~[bright_cyan]~  [/bold blue]"
   ],
   "primary_color": "bold blue",
   "accent_color": "bright_blue",

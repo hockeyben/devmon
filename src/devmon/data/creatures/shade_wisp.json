@@ -18,11 +18,14 @@
   "capture_rate": 0.67,
   "flavor_text": "Lives in commented-out code that no one dares delete. It dissipates when you run `git blame`.",
   "ascii_art": [
-    "  . * .  ",
-    " * (o) * ",
-    "  *   *  ",
-    " ~ ~ ~ ~ ",
-    "  .   .  "
+    "[dim white] . [bright_magenta]*[dim white] . [bright_magenta]*[dim white] . [/dim white]",
+    "[bright_magenta] *[dim magenta](([bright_magenta]O[dim magenta]))[bright_magenta]* [/bright_magenta]",
+    "[dim magenta]~[bright_magenta]%[dim magenta]##[bright_magenta]@[dim magenta]##[bright_magenta]%[dim magenta]~[/dim magenta]",
+    "[dim white] `[dim magenta]~[bright_magenta]~[dim magenta]~[bright_magenta]~[dim magenta]~[dim white]` [/dim white]",
+    "[dim magenta] ,[bright_magenta]`[dim magenta]~[bright_magenta]~[dim magenta]~[bright_magenta]`[dim magenta], [/dim magenta]",
+    "[dim white].  [dim magenta]`[bright_magenta]~[dim magenta]~[bright_magenta]`[dim magenta]  .[/dim white]",
+    "[dim magenta]  .[dim white]  [dim magenta]~[dim white]  .[/dim magenta]",
+    "[dim white]    [dim magenta]`[dim white]  [dim magenta]`[/dim white]"
   ],
   "primary_color": "bold magenta",
   "accent_color": "dim white",

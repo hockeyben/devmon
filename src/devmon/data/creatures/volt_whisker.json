@@ -18,11 +18,14 @@
   "capture_rate": 0.68,
   "flavor_text": "Appears whenever you forget to close a WebSocket connection. Its whiskers are fully ionized.",
   "ascii_art": [
-    " /\\/\\  ",
-    "(=^.^=)",
-    " )   ( ",
-    "/|   |\\",
-    " ~   ~ "
+    "[bright_yellow]~[bold yellow]/\\[bright_yellow]~[bold yellow]/\\[bright_yellow]~[/bright_yellow]",
+    "[bold yellow]([bright_yellow]*[bold yellow]^[bright_yellow].[bold yellow]^[bright_yellow]*[bold yellow])[/bold yellow]",
+    "[bright_yellow]=[bold yellow])[bright_yellow]##[bold yellow]([bright_yellow]=[/bright_yellow]",
+    "[bold yellow] /[bright_yellow]#[bold yellow]_[bright_yellow]#[bold yellow]\\ [/bold yellow]",
+    "[bright_yellow]([bold yellow]=[bright_yellow]*[bold yellow]|[bright_yellow]*[bold yellow]=[bright_yellow])[/bright_yellow]",
+    "[bold yellow] |[bright_yellow]~[bold yellow]|[bright_yellow]~[bold yellow]| [/bold yellow]",
+    "[bright_yellow] /[bold yellow]=[bright_yellow]/[bold yellow]=[bright_yellow]\\ [/bright_yellow]",
+    "[bold yellow][bright_yellow]~[bold yellow]`[bright_yellow]~[bold yellow] [bright_yellow]~[bold yellow]`[bright_yellow]~[/bold yellow]"
   ],
   "primary_color": "bold yellow",
   "accent_color": "bright_yellow",

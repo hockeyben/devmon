@@ -19,11 +19,14 @@
   "capture_rate": 0.64,
   "flavor_text": "Hides in dependency trees with circular imports. It blooms every time you run `pip list --outdated`.",
   "ascii_art": [
-    "  ,@,  ",
-    " @(*)@ ",
-    "@(*|*)@",
-    " @(*)@ ",
-    "  |||  "
+    "[bold green] ,[bright_green]*[bold green],[bright_green]*[bold green], [/bold green]",
+    "[dim yellow]`[bold green]@[bright_green]###[bold green]@[dim yellow]`[/dim yellow]",
+    "[bold green]([bright_green]>[bold green]O[bright_green]^[bold green]O[bright_green]<[bold green])[/bold green]",
+    "[dim yellow],[bold green]#[bright_green]###[bold green]#[dim yellow],[/dim yellow]",
+    "[bold green]([dim yellow]*[bold green]|[dim yellow]*[bold green]|[dim yellow]*[bold green])[/bold green]",
+    "[bright_green] [bold green]|[bright_green]~[bold green]|[bright_green]~[bold green]| [/bright_green]",
+    "[bold green] [bright_green]@[bold green]=[bright_green]@[bold green]=[bright_green]@ [/bold green]",
+    "[dim yellow] `[bold green],[dim yellow]`[bold green],[dim yellow]` [/dim yellow]"
   ],
   "primary_color": "bold green",
   "accent_color": "green",
