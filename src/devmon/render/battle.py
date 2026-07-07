@@ -5,6 +5,8 @@ Pure render module — no game logic, no persistence, no engine imports.
 ARCHITECTURE: This module imports ONLY from:
   - devmon.models.creature (CreatureTemplate type annotation)
   - devmon.render.themes (RARITY_COLORS)
+  - devmon.render.image (creature art — half-block + optional sixel)
+  - devmon.render.sixel (mode resolution — PIL + stdlib only)
   - rich (terminal rendering)
   - stdlib (time, typing)
 
@@ -20,7 +22,8 @@ from rich.console import Console, Group
 from rich.panel import Panel
 from rich.text import Text
 
-from devmon.render.image import render_creature_art
+from devmon.render.image import get_sixel_art, render_creature_art
+from devmon.render.sixel import resolve_art_mode
 from devmon.render.themes import RARITY_COLORS
 
 if TYPE_CHECKING:
@@ -76,6 +79,7 @@ def render_battle_creature_panel(
     xp: int | None = None,
     xp_threshold: int | None = None,
     narrow: bool = False,
+    console: Console | None = None,
 ) -> Panel:
     """Render a compact creature panel for the battle screen.
 
@@ -94,6 +98,15 @@ def render_battle_creature_panel(
         xp_threshold: XP needed to reach next level (optional, shown with xp).
         narrow: When True (terminal width < 40), skips ASCII art, compresses
             HP bar to width=10, and renders stats single-column. (UI-06)
+        console: Optional Rich Console to write a raw sixel art block to,
+            immediately before this function returns (sixel escapes cannot
+            live inside a Rich Panel — see devmon.render.sixel). When None
+            (the default — today's call sites do not pass one), this
+            function's behavior is completely unchanged from before sixel
+            support existed: half-block art is always embedded in the panel
+            body. Passing a console is what actually opts a call site into
+            sixel rendering; resolving "sixel" mode with no console passed
+            still safely falls back to half-block (no blank-art regression).
 
     Returns:
         Rich Panel ready to be rendered.
@@ -125,8 +138,26 @@ def render_battle_creature_panel(
 
     # Combine into panel body
     if not narrow:
-        art = render_creature_art(template.id, template.ascii_art, width=25)
-        body = Group(art, stats_block)
+        sixel_art = None
+        if console is not None:
+            # Only actually resolve/attempt sixel when a console was passed
+            # in — this keeps the default (console=None) call path a pure
+            # no-op fast path, guaranteeing byte-identical half-block output
+            # for every call site that hasn't opted in yet.
+            art_mode = resolve_art_mode(stream=getattr(console, "file", None))
+            if art_mode == "sixel":
+                sixel_art = get_sixel_art(template.id, width=25)
+
+        if sixel_art:
+            # Sixel escapes cannot live inside a Rich Panel (Rich would
+            # mangle/measure them as text) — write the raw image directly
+            # above this panel and omit half-block art from the body.
+            console.file.write(sixel_art)
+            console.file.flush()
+            body = stats_block
+        else:
+            art = render_creature_art(template.id, template.ascii_art, width=25)
+            body = Group(art, stats_block)
     else:
         body = stats_block
 

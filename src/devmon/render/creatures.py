@@ -1,10 +1,12 @@
 """Creature panel rendering for Rich terminal UI.
 
-Pure render module — no I/O, no state mutation.
+Pure render module — no I/O beyond the console print this module already
+performs itself, no state mutation.
 
-ARCHITECTURE: This module imports from devmon.models.creature (types only) and
-devmon.render.themes (colors). It must NOT import from commands/, engine/,
-config/, or persistence/.
+ARCHITECTURE: This module imports from devmon.models.creature (types only),
+devmon.render.themes (colors), devmon.render.image (art), and
+devmon.render.sixel (optional high-fidelity art mode — PIL + stdlib only).
+It must NOT import from commands/, engine/, config/, or persistence/.
 """
 from __future__ import annotations
 
@@ -14,7 +16,8 @@ from rich.panel import Panel
 from rich.text import Text
 
 from devmon.models.creature import CreatureTemplate
-from devmon.render.image import render_creature_art
+from devmon.render.image import get_sixel_art, render_creature_art
+from devmon.render.sixel import resolve_art_mode
 from devmon.render.themes import RARITY_COLORS, get_theme
 
 
@@ -54,8 +57,24 @@ def render_creature_panel(
     stats = Text()
 
     if not narrow:
-        # Build creature art — prefer PNG image, fall back to ascii_art markup
-        art = render_creature_art(template.id, template.ascii_art, width=30)
+        # Art mode resolution (sixel opt-in via DEVMON_ART_MODE=sixel, else
+        # half-block — see devmon.render.sixel.resolve_art_mode). Checked
+        # against this console's actual output stream so raw escape bytes
+        # never leak into a non-TTY / Console(record=True) export.
+        art_mode = resolve_art_mode(stream=getattr(console, "file", None))
+        sixel_art = get_sixel_art(template.id, width=30) if art_mode == "sixel" else None
+
+        if sixel_art:
+            # Sixel escapes cannot live inside a Rich Panel (Rich would
+            # mangle/measure them as text) — write the raw image directly to
+            # the terminal immediately above the panel, and omit the
+            # half-block art from the panel body entirely.
+            console.file.write(sixel_art)
+            console.file.flush()
+            art = None
+        else:
+            # Build creature art — prefer PNG image, fall back to ascii_art markup
+            art = render_creature_art(template.id, template.ascii_art, width=30)
 
         # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
         if encounter_level is not None:
@@ -83,8 +102,13 @@ def render_creature_panel(
         # Build flavor text block
         flavor = Text(template.flavor_text, style="dim white")
 
-        # Combine sections using Group (supports mixed renderable types)
-        body = Group(art, Text(""), stats, Text(""), flavor)
+        # Combine sections using Group (supports mixed renderable types).
+        # When sixel mode already wrote the art above the panel, `art` is
+        # None and is omitted from the body entirely.
+        if art is not None:
+            body = Group(art, Text(""), stats, Text(""), flavor)
+        else:
+            body = Group(stats, Text(""), flavor)
     else:
         # Narrow mode: skip ASCII art, single-column stats
         if encounter_level is not None:

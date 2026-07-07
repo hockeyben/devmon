@@ -63,6 +63,7 @@ DEFAULT_CONFIG: dict = {
         "theme": "neon",
         "verbosity": "normal",
         "ascii_art": True,
+        "render_mode": "auto",
     },
     "shell": {
         "event_log": _default_event_log(),

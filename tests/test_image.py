@@ -13,7 +13,7 @@ import pytest
 from rich.console import Console
 from rich.text import Text
 
-from devmon.render.image import CreatureImage, render_creature_art
+from devmon.render.image import CreatureImage, get_sixel_art, render_creature_art
 
 HALF_BLOCK_CHARS = {"▀", "▄", "█"}  # ▀ ▄ █
 
@@ -128,3 +128,48 @@ def test_rendering_is_deterministic():
     first = _render_lines("ember_fox")
     second = _render_lines("ember_fox")
     assert first == second
+
+
+# ---------------------------------------------------------------------------
+# get_sixel_art — optional high-fidelity sixel encoding entry point
+# ---------------------------------------------------------------------------
+
+
+def test_get_sixel_art_returns_none_for_bogus_id():
+    """A nonexistent creature id returns None (no PNG to encode)."""
+    assert get_sixel_art("this_creature_does_not_exist_xyz") is None
+
+
+def test_get_sixel_art_returns_sixel_escape_for_real_creature():
+    """A real creature id returns a raw sixel escape sequence string."""
+    result = get_sixel_art("ember_fox", width=25)
+    assert isinstance(result, str)
+    assert result.startswith("\x1bP")
+    assert result.endswith("\x1b\\")
+
+
+def test_get_sixel_art_is_deterministic():
+    """Two encodes of the same creature/width produce identical output."""
+    first = get_sixel_art("ember_fox", width=25)
+    second = get_sixel_art("ember_fox", width=25)
+    assert first == second
+
+
+def test_default_halfblock_rendering_unaffected_by_sixel_addition():
+    """Half-block rendering (the universal fallback) is byte-identical to
+    its pre-sixel behavior regardless of DEVMON_ART_MODE — CreatureImage /
+    render_creature_art never resolve or reference sixel mode at all."""
+    import os
+
+    prior = os.environ.get("DEVMON_ART_MODE")
+    try:
+        os.environ["DEVMON_ART_MODE"] = "sixel"
+        with_sixel_env = _render_lines("ember_fox")
+    finally:
+        if prior is None:
+            os.environ.pop("DEVMON_ART_MODE", None)
+        else:
+            os.environ["DEVMON_ART_MODE"] = prior
+
+    without_sixel_env = _render_lines("ember_fox")
+    assert with_sixel_env == without_sixel_env

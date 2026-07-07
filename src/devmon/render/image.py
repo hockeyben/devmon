@@ -6,8 +6,16 @@ directly inside Rich Panels.
 
 Falls back to stored ascii_art when a PNG is not available.
 
-ARCHITECTURE: This module imports from PIL (Pillow) and Rich only.
-It must NOT import from commands/, engine/, or persistence/.
+Also exposes `get_sixel_art()`, an optional high-fidelity alternative that
+reuses this module's background-removal/crop pipeline but encodes the result
+as a raw DEC sixel escape sequence (devmon.render.sixel) instead of
+half-block characters. Half-block rendering (CreatureImage / render_creature_
+art) remains the universal fallback and its behavior is completely
+unchanged by the sixel addition.
+
+ARCHITECTURE: This module imports from PIL (Pillow), Rich, and the sibling
+devmon.render.sixel module (itself PIL + stdlib only). It must NOT import
+from commands/, engine/, or persistence/.
 """
 from __future__ import annotations
 
@@ -20,6 +28,17 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.segment import Segment
 from rich.style import Style
 from rich.text import Text
+
+from devmon.render.sixel import encode_sixel
+
+# Approximate monospace terminal cell width in pixels, used to scale a
+# char-cell `width` into a pixel width for sixel encoding. Sixel images are
+# not constrained to 1px-per-character-cell the way half-block rendering is
+# (each half-block cell is exactly 1 source pixel wide) — this multiplier is
+# what actually delivers the "high-fidelity" pixel detail the sixel mode
+# exists for. The exact value only affects visual crispness/size, never
+# correctness — real terminal cell widths vary by font/DPI.
+_SIXEL_PX_PER_CHAR = 9
 
 # Art directory at project root — PNGs named {creature_id}.png
 _ART_DIR = Path(__file__).resolve().parents[3] / "art"
@@ -261,6 +280,40 @@ def _render_halfblocks(png_path: str, width: int) -> list[list[tuple[str, Style 
         rows.pop()
 
     return rows
+
+
+@functools.lru_cache(maxsize=64)
+def _render_sixel(png_path: str, pixel_width: int) -> str:
+    """Convert PNG to a raw sixel escape sequence string (cached).
+
+    Reuses the same `_load_and_process` pipeline as half-block rendering
+    (background removal, cropping, resizing) so both modes render an
+    identical processed image — only the final encoding differs.
+    """
+    img = _load_and_process(Path(png_path), pixel_width)
+    return encode_sixel(img)
+
+
+def get_sixel_art(creature_id: str, width: int = 30) -> str | None:
+    """Return the raw sixel escape sequence for a creature's PNG art.
+
+    Args:
+        creature_id: The creature's id (matches PNG filename stem).
+        width: Target character-cell width — the same value callers pass to
+            `render_creature_art`/`CreatureImage`. Internally scaled up to a
+            pixel width (see `_SIXEL_PX_PER_CHAR`) since sixel graphics are
+            not constrained to 1px-per-character-cell.
+
+    Returns:
+        Raw sixel escape sequence string ready to be written directly to a
+        sixel-capable terminal, or None if no PNG exists for this creature.
+    """
+    png_path = _find_art_dir() / f"{creature_id}.png"
+    if not png_path.is_file():
+        return None
+
+    pixel_width = max(2, width * _SIXEL_PX_PER_CHAR)
+    return _render_sixel(str(png_path), pixel_width)
 
 
 class CreatureImage:
