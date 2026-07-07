@@ -20,6 +20,7 @@ from rich.console import Console, Group
 from rich.panel import Panel
 from rich.text import Text
 
+from devmon.render.image import render_creature_art
 from devmon.render.themes import RARITY_COLORS
 
 if TYPE_CHECKING:
@@ -109,29 +110,25 @@ def render_battle_creature_panel(
     stat_row.append("  Type ", style="dim cyan")
     stat_row.append(f"{template.type}", style="white")
 
-    # Combine into panel body
-    body = Text()
-
-    if not narrow:
-        # ASCII art block (only in wide mode) — markup tags rendered via Text.from_markup
-        art = Text()
-        for i, line in enumerate(template.ascii_art):
-            if i > 0:
-                art.append("\n")
-            art.append_text(Text.from_markup(line))
-        body.append_text(art)
-        body.append("\n\n")
-
-    body.append_text(hp_bar)
-    body.append("\n")
-    body.append_text(stat_row)
+    # Build stats block
+    stats_block = Text()
+    stats_block.append_text(hp_bar)
+    stats_block.append("\n")
+    stats_block.append_text(stat_row)
 
     if xp is not None and xp_threshold is not None:
-        body.append("\n")
+        stats_block.append("\n")
         xp_row = Text()
         xp_row.append("XP  ", style="dim cyan")
         xp_row.append(f"{xp}/{xp_threshold}", style="white")
-        body.append_text(xp_row)
+        stats_block.append_text(xp_row)
+
+    # Combine into panel body
+    if not narrow:
+        art = render_creature_art(template.id, template.ascii_art, width=25)
+        body = Group(art, stats_block)
+    else:
+        body = stats_block
 
     # Truncate title to 30 chars in narrow mode
     display_name = template.name

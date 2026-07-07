@@ -9,11 +9,12 @@ config/, or persistence/.
 from __future__ import annotations
 
 from rich import box
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.text import Text
 
 from devmon.models.creature import CreatureTemplate
+from devmon.render.image import render_creature_art
 from devmon.render.themes import RARITY_COLORS, get_theme
 
 
@@ -53,12 +54,8 @@ def render_creature_panel(
     stats = Text()
 
     if not narrow:
-        # Build ASCII art text block — markup tags rendered via Text.from_markup
-        art = Text()
-        for i, line in enumerate(template.ascii_art):
-            if i > 0:
-                art.append("\n")
-            art.append_text(Text.from_markup(line))
+        # Build creature art — prefer PNG image, fall back to ascii_art markup
+        art = render_creature_art(template.id, template.ascii_art, width=30)
 
         # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
         if encounter_level is not None:
@@ -86,13 +83,8 @@ def render_creature_panel(
         # Build flavor text block
         flavor = Text(template.flavor_text, style="dim white")
 
-        # Combine all sections into one Text
-        body = Text()
-        body.append_text(art)
-        body.append("\n\n")
-        body.append_text(stats)
-        body.append("\n\n")
-        body.append_text(flavor)
+        # Combine sections using Group (supports mixed renderable types)
+        body = Group(art, Text(""), stats, Text(""), flavor)
     else:
         # Narrow mode: skip ASCII art, single-column stats
         if encounter_level is not None:
