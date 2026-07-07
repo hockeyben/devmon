@@ -10,14 +10,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from rich import box
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
+from rich.rule import Rule
+from rich.table import Table
 from rich.text import Text
 
 from devmon.render.themes import RARITY_COLORS  # noqa: F401 — available for callers
 
 if TYPE_CHECKING:
     from devmon.models.item import ItemDefinition
+
+
+# Currency accent color — Bits amounts everywhere (style guide exception).
+_CURRENCY = "gold1"
 
 
 # ---------------------------------------------------------------------------
@@ -38,14 +44,15 @@ def render_shop_header(bits: int, theme: dict) -> Panel:
         Rich Panel with Bits balance.
     """
     body = Text()
-    body.append("Bits: ", style=theme["stat_key"])
-    body.append(str(bits), style="bold white")
+    body.append("  Bits ", style=theme["stat_key"])
+    body.append(str(bits), style=f"bold {_CURRENCY}")
 
     return Panel(
         body,
         title="[bold]Shop[/bold]",
         border_style=theme["border"],
         box=box.ROUNDED,
+        padding=(0, 1),
         expand=True,
     )
 
@@ -64,11 +71,14 @@ def render_shop_category(
 
     Items are passed as (number, ItemDefinition, quantity_owned) tuples.
     Items with number=0 are earn-only (e.g. master_capsule) — shown without
-    a selection number.
+    a selection number, italic-dim, with an "(earn only)" tag.
+
+    Rendered as an aligned Table.grid ([n] marker | name | price | owned qty)
+    so prices and quantities line up across rows regardless of name length.
 
     Graying logic (D-21):
-      - If player_bits >= item.price: price in "green"
-      - Else: price in "dim white" (grayed out)
+      - If player_bits >= item.price: price in currency color ("gold1")
+      - Else: price dimmed, with the Bits shortfall shown inline
 
     Args:
         name: Category display name (e.g. "Capsules").
@@ -80,30 +90,43 @@ def render_shop_category(
     Returns:
         Rich Panel for this category.
     """
-    body = Text()
-    for i, (num, item, qty) in enumerate(items):
-        if i > 0:
-            body.append("\n")
+    grid = Table.grid(expand=True, padding=(0, 1))
+    grid.add_column()                                  # [n] marker
+    grid.add_column(ratio=1)                            # item name
+    grid.add_column(justify="right", no_wrap=True)      # price / earn-only tag
+    grid.add_column(justify="right", no_wrap=True)       # owned qty
 
+    for num, item, qty in items:
         if num == 0:
-            # Earn-only item — no number, dim style throughout
-            body.append(f"      {item.name}", style="dim white")
-            body.append("   ", style="dim white")
-            body.append("(earn only)", style="dim white")
+            # Earn-only item — no number, dim italic throughout, no qty shown.
+            marker = Text("")
+            name_cell = Text(item.name, style="dim italic")
+            price_cell = Text("(earn only)", style="dim italic")
+            qty_cell = Text("")
         else:
-            # Numbered buyable item
-            body.append(f"  [{num}] {item.name}", style="white")
-            body.append("   ", style="white")
-            price_style = "green" if player_bits >= item.price else "dim white"
-            body.append(f"{item.price} Bits", style=price_style)
-            body.append("   ", style="dim white")
-            body.append(f"x{qty}", style="dim white")
+            affordable = player_bits >= item.price
+            row_style = "white" if affordable else "dim"
+
+            marker = Text(f"[{num}]", style=row_style)
+            name_cell = Text(item.name, style=row_style)
+
+            price_cell = Text()
+            price_style = _CURRENCY if affordable else f"dim {_CURRENCY}"
+            price_cell.append(f"{item.price} Bits", style=price_style)
+            if not affordable:
+                shortfall = item.price - player_bits
+                price_cell.append(f"  (need {shortfall} more)", style="dim red")
+
+            qty_cell = Text(f"x{qty}", style="dim")
+
+        grid.add_row(marker, name_cell, price_cell, qty_cell)
 
     return Panel(
-        body,
+        grid,
         title=f"[bold]{name}[/bold]",
         border_style=theme["border"],
         box=box.ROUNDED,
+        padding=(0, 1),
         expand=True,
     )
 
@@ -131,18 +154,22 @@ def render_purchase_confirmation(
     Returns:
         Rich Panel with purchase details.
     """
-    body = Text()
-    body.append(f"  {item_name} x{qty}\n", style="white")
-    body.append("  Cost: ", style="dim white")
-    body.append(f"-{cost} Bits\n", style="red")
-    body.append("  Balance: ", style="dim white")
-    body.append(f"{balance} Bits", style="bold white")
+    heading = Text(f"  {item_name} x{qty}", style="white")
+
+    grid = Table.grid(padding=(0, 1))
+    grid.add_column(style="dim white")
+    grid.add_column(justify="right", no_wrap=True)
+    grid.add_row("  Cost:", Text(f"-{cost} Bits", style="red"))
+    grid.add_row("  Balance:", Text(f"{balance} Bits", style=f"bold {_CURRENCY}"))
+
+    body = Group(heading, grid)
 
     return Panel(
         body,
         title="[bold green]Purchased[/bold green]",
         border_style="green",
         box=box.ROUNDED,
+        padding=(0, 1),
         expand=False,
     )
 
@@ -195,53 +222,58 @@ def render_items_inventory(
     # Check if bag is truly empty (all quantities are 0)
     total_qty = sum(inventory.get(item_id, 0) for item_id in items_catalog)
 
-    body = Text()
-
     if total_qty == 0 and booster_remaining == 0:
-        body.append(
+        body: Text | Group = Text(
             "  Your bag is empty. Visit the shop to stock up.",
             style="dim white",
         )
     else:
-        first_section = True
+        sections: list[object] = []
         for cat in CATEGORY_ORDER:
             items = grouped[cat]
             if not items:
                 continue
 
-            if not first_section:
-                body.append("\n")
-            first_section = False
+            # Category header + divider rule (no literal dash strings)
+            sections.append(Text(f"  {CATEGORY_LABELS[cat]}", style=theme["stat_key"]))
+            sections.append(Rule(style="dim"))
 
-            # Category header
-            body.append(f"  {CATEGORY_LABELS[cat]}\n", style=theme["stat_key"])
-            body.append("  " + "\u2500" * 38 + "\n", style="dim white")
+            grid = Table.grid(expand=True, padding=(0, 1))
+            grid.add_column(ratio=1)                        # name (+ effect)
+            grid.add_column(justify="right", no_wrap=True)  # owned qty
 
+            booster_line: Text | None = None
             for item in items:
                 qty = inventory.get(item.id, 0)
                 item_style = "white" if qty > 0 else "dim white"
-                qty_style = "bold white" if qty > 0 else "dim white"
 
-                # Build item line: name (effect) — qty
-                body.append(f"  {item.name}", style=item_style)
-                # Show effect summary in dim
+                # Build item row: name (effect) | qty
+                name_cell = Text(f"  {item.name}", style=item_style)
                 if item.effect_description:
-                    body.append(f" ({item.effect_description})", style="dim white")
-                body.append("   ", style="dim white")
-                body.append(f"x{qty}\n", style=qty_style)
+                    name_cell.append(f" ({item.effect_description})", style="dim white")
+                qty_cell = Text(f"x{qty}", style="dim")
+                grid.add_row(name_cell, qty_cell)
 
-                # XP booster active indicator
+                # XP booster active indicator — shown after its row.
                 if item.id == "xp_booster" and booster_remaining > 0:
-                    body.append(
-                        f"  XP Booster ACTIVE — {booster_remaining} min remaining\n",
+                    booster_line = Text(
+                        f"  XP Booster ACTIVE — {booster_remaining} min remaining",
                         style="bold magenta",
                     )
+
+            sections.append(grid)
+            if booster_line is not None:
+                sections.append(booster_line)
+            sections.append(Text(""))
+
+        body = Group(*sections)
 
     return Panel(
         body,
         title="[bold]Your Items[/bold]",
         border_style=theme["border"],
         box=box.ROUNDED,
+        padding=(0, 1),
         expand=True,
     )
 
@@ -256,7 +288,8 @@ def render_battle_items_menu(
     """Print the battle items sub-menu inline (no panel).
 
     UI-SPEC Surface 5. Matches action menu indentation style.
-    Items as "  [{n}] {name} ({effect})   x{qty}".
+    Items rendered as an aligned Table.grid ([n] name (effect) | owned qty)
+    so quantities line up regardless of name length.
     Appends "  [b] Back" at end.
 
     Args:
@@ -266,18 +299,20 @@ def render_battle_items_menu(
     heading = Text("  Use which item?\n", style="bold white")
     console.print(heading)
 
-    for n, (name, effect, qty) in enumerate(usable_items, start=1):
-        row = Text()
-        item_style = "white" if qty > 0 else "dim white"
-        row.append(f"  [{n}] {name}", style=item_style)
-        if effect:
-            row.append(f" ({effect})", style="dim white")
-        row.append("   ", style="dim white")
-        row.append(f"x{qty}", style=item_style)
-        console.print(row)
+    grid = Table.grid(padding=(0, 1))
+    grid.add_column()                                   # marker + name (+ effect)
+    grid.add_column(justify="right", no_wrap=True)       # owned qty
 
-    back = Text("  [b] Back", style="dim white")
-    console.print(back)
+    for n, (name, effect, qty) in enumerate(usable_items, start=1):
+        item_style = "white" if qty > 0 else "dim white"
+        name_cell = Text(f"  [{n}] {name}", style=item_style)
+        if effect:
+            name_cell.append(f" ({effect})", style="dim white")
+        qty_cell = Text(f"x{qty}", style="dim")
+        grid.add_row(name_cell, qty_cell)
+
+    console.print(grid)
+    console.print(Text("  [b] Back", style="dim white"))
 
 
 # ---------------------------------------------------------------------------
@@ -309,12 +344,14 @@ def render_capture_submenu(
     heading = Text("  Throw which capsule?\n", style="bold white")
     console.print(heading)
 
-    for n, (name, effect, qty) in enumerate(capsules_owned, start=1):
-        row = Text()
-        row.append(f"  [{n}] {name}", style="white")
-        row.append("   ", style="dim white")
-        row.append(f"x{qty}", style="white")
-        console.print(row)
+    grid = Table.grid(padding=(0, 1))
+    grid.add_column()                                   # marker + name
+    grid.add_column(justify="right", no_wrap=True)       # owned qty
 
-    back = Text("  [b] Back", style="dim white")
-    console.print(back)
+    for n, (name, effect, qty) in enumerate(capsules_owned, start=1):
+        name_cell = Text(f"  [{n}] {name}", style="white")
+        qty_cell = Text(f"x{qty}", style="dim")
+        grid.add_row(name_cell, qty_cell)
+
+    console.print(grid)
+    console.print(Text("  [b] Back", style="dim white"))
