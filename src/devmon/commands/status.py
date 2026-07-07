@@ -12,9 +12,9 @@ from __future__ import annotations
 import typer
 from rich import box
 from rich.columns import Columns
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn
+from rich.table import Table
 from rich.text import Text
 
 from devmon.config.loader import load_config
@@ -27,9 +27,15 @@ from devmon.render.themes import get_theme
 app = typer.Typer()
 console = Console()
 
+XP_BAR_WIDTH = 20
 
-def xp_bar(earned: int, needed: int, theme: dict) -> Progress:
+
+def xp_bar(earned: int, needed: int, theme: dict) -> Table:
     """Create an XP progress bar renderable for use inside a Panel.
+
+    Renders as a fixed-width block bar ("█" filled / "░" empty) with the
+    earned/needed fraction and a percent readout right-aligned via a
+    Table.grid — never manual spacing.
 
     Args:
         earned: XP earned within the current level.
@@ -37,18 +43,30 @@ def xp_bar(earned: int, needed: int, theme: dict) -> Progress:
         theme: Theme dict with xp_bar and xp_complete style keys.
 
     Returns:
-        A Progress instance ready to be passed to console.print().
+        A Table.grid renderable ready to be passed to console.print()/Panel().
     """
-    p = Progress(
-        TextColumn("  XP to next level "),
-        BarColumn(bar_width=30, style=theme["xp_bar"], complete_style=theme["xp_complete"]),
-        MofNCompleteColumn(),
-        expand=False,
-    )
+    # Guard against a zero/negative denominator (defensive — Rule 2).
+    needed_safe = needed if needed > 0 else 1
     # Clamp completed to needed to prevent overflow display (Pitfall 1)
-    completed = min(earned, needed)
-    p.add_task("XP", total=needed, completed=completed)
-    return p
+    completed = max(0, min(earned, needed_safe))
+    ratio = completed / needed_safe
+    filled = max(0, min(XP_BAR_WIDTH, round(ratio * XP_BAR_WIDTH)))
+    empty = XP_BAR_WIDTH - filled
+    pct = int(round(ratio * 100))
+
+    label_and_bar = Text()
+    label_and_bar.append("XP to next level  ", style=theme["stat_key"])
+    label_and_bar.append("█" * filled, style=theme["xp_bar"])
+    label_and_bar.append("░" * empty, style="dim")
+
+    fraction = Text(f"{earned}/{needed} ", style=theme["stat_value"])
+    fraction.append(f"({pct}%)", style=theme["stat_value"])
+
+    grid = Table.grid(expand=True, padding=(0, 1))
+    grid.add_column(ratio=1)
+    grid.add_column(justify="right")
+    grid.add_row(label_and_bar, fraction)
+    return grid
 
 
 def render_status(state: GameState, config: dict, con: Console) -> None:
@@ -63,43 +81,49 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
     p = state.player
 
     # --- Identity panel (left) ---
-    identity = Text()
-    identity.append(f"{p.name}\n", style=theme["title"])
-    identity.append("Level ", style=theme["stat_key"])
-    identity.append(f"{p.level}\n", style=theme["level"])
-    identity.append("Currency ", style=theme["stat_key"])
-    identity.append(f"{p.currency} Bits", style=theme["stat_value"])
+    identity_grid = Table.grid(padding=(0, 1))
+    identity_grid.add_column(style=theme["stat_key"])
+    identity_grid.add_column(justify="right")
+    identity_grid.add_row(Text("Level"), Text(str(p.level), style=theme["level"]))
+    identity_grid.add_row(Text("Currency"), Text(f"{p.currency} Bits", style="gold1"))
 
     from devmon.engine.item_engine import is_booster_active, booster_remaining_minutes
     if is_booster_active(state):
         remaining = booster_remaining_minutes(state)
-        identity.append("\n")
-        identity.append("XP Boost  ", style=theme["stat_key"])
-        identity.append(f"ACTIVE ({remaining} min)", style="bold magenta")
+        identity_grid.add_row(
+            Text("XP Boost"), Text(f"ACTIVE ({remaining} min)", style="green")
+        )
+    else:
+        # Balanced two-column layout: keep Identity/Stats at an equal-height
+        # feel when the optional booster row is absent.
+        identity_grid.add_row(Text(""), Text(""))
+
+    identity_content = Group(Text(p.name, style=theme["title"]), Text(""), identity_grid)
 
     identity_panel = Panel(
-        identity,
+        identity_content,
         title="[bold]Identity[/bold]",
         border_style=theme["border"],
+        box=box.ROUNDED,
     )
 
     # --- Stats panel (right) ---
-    stats = Text()
-    stats.append("Sessions  ", style=theme["stat_key"])
-    stats.append(f"{p.total_sessions}\n", style=theme["stat_value"])
-    stats.append("Commands  ", style=theme["stat_key"])
-    stats.append(f"{p.total_commands}\n", style=theme["stat_value"])
-    stats.append("Streak    ", style=theme["stat_key"])
-    stats.append(f"{p.streak_count} days\n", style=theme["stat_value"])
-    stats.append("Battles   ", style=theme["stat_key"])
-    stats.append(f"{p.battles_won}\n", style=theme["stat_value"])
-    stats.append("Captures  ", style=theme["stat_key"])
-    stats.append(f"{p.total_creatures_captured}", style=theme["stat_value"])
+    streak_label = "day" if p.streak_count == 1 else "days"
+
+    stats_grid = Table.grid(padding=(0, 1))
+    stats_grid.add_column(style=theme["stat_key"])
+    stats_grid.add_column(justify="right", style=theme["stat_value"])
+    stats_grid.add_row("Sessions", str(p.total_sessions))
+    stats_grid.add_row("Commands", str(p.total_commands))
+    stats_grid.add_row("Streak", f"{p.streak_count} {streak_label}")
+    stats_grid.add_row("Battles", str(p.battles_won))
+    stats_grid.add_row("Captures", str(p.total_creatures_captured))
 
     stats_panel = Panel(
-        stats,
+        stats_grid,
         title="[bold]Stats[/bold]",
         border_style=theme["border"],
+        box=box.ROUNDED,
     )
 
     # --- XP / Progression panel (full width below) ---
@@ -110,9 +134,10 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
         xp_progress,
         title="[bold]Progression[/bold]",
         border_style=theme["border"],
+        box=box.ROUNDED,
     )
 
-    # Render: identity + stats side-by-side, then XP bar full-width
+    # Render: identity + stats side-by-side (balanced two-column layout), then XP bar full-width
     con.print(Columns([identity_panel, stats_panel], expand=True))
     con.print(xp_panel)
 
@@ -132,7 +157,7 @@ def render_levelup_banner(new_level: int, theme: dict, con: Console) -> None:
     )
     con.print(Panel(
         banner,
-        box=box.DOUBLE,
+        box=box.ROUNDED,
         border_style=theme["levelup_border"],
         expand=True,
         title=f"[{theme['levelup_border']}]ACHIEVEMENT[/{theme['levelup_border']}]",
