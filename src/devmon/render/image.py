@@ -187,6 +187,46 @@ def _crop_to_content(img: Image.Image) -> Image.Image:
     return img
 
 
+def _lift_dark_sprite(img: Image.Image) -> Image.Image:
+    """Brighten and saturate very dark sprites so they stay readable on
+    dark terminal backgrounds.
+
+    Near-black art (void/shadow creatures) renders as an unreadable smudge
+    against typical dark terminals. When the mean luminance of the opaque
+    pixels falls below the threshold, lift brightness proportionally
+    (capped) and add a mild saturation boost. Bright sprites are untouched.
+    """
+    from PIL import ImageEnhance
+
+    alpha = img.split()[3]
+    gray = img.convert("L")
+    total = count = 0
+    gpx, apx = gray.load(), alpha.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            if apx[x, y] >= 128:
+                total += gpx[x, y]
+                count += 1
+    if count == 0:
+        return img
+    mean_lum = total / count
+    if mean_lum >= 100:
+        return img
+
+    # Adaptive gamma toward a target mean of ~75: strong enough to make
+    # near-black sprites readable, while a linear brightness multiplier
+    # would barely move them. Clamped so shading structure survives.
+    import math
+
+    gamma = math.log(75 / 255) / math.log(max(mean_lum, 1) / 255)
+    gamma = max(0.45, min(1.0, gamma))
+    lut = [round(255 * (i / 255) ** gamma) for i in range(256)]
+    rgb = img.convert("RGB").point(lut * 3)
+    rgb = ImageEnhance.Color(rgb).enhance(1.25)
+    r, g, b = rgb.split()
+    return Image.merge("RGBA", (r, g, b, alpha))
+
+
 def _load_and_process(png_path: Path, width: int) -> Image.Image:
     """Load PNG, remove background, crop, and resize to target width."""
     img = Image.open(png_path).convert("RGBA")
@@ -217,6 +257,8 @@ def _load_and_process(png_path: Path, width: int) -> Image.Image:
     if w != content_width and w > 0:
         scale = content_width / w
         img = img.resize((content_width, max(1, round(h * scale))), Image.LANCZOS)
+
+    img = _lift_dark_sprite(img)
 
     if width > 2:
         w, h = img.size
