@@ -137,6 +137,9 @@ Recent decisions affecting current work:
 - [audit-fix 2026-07-07]: main() upgrades non-UTF stdout/stderr to utf-8/replace at startup — half-block chars crash cp1252 streams otherwise.
 - [audit-fix 2026-07-07]: Shared UI style guide: theme tokens only, box.ROUNDED, █/░ bars width 20, Rule dividers, Table.grid alignment; bronze=dark_orange3 silver=grey70 gold=gold1, currency=gold1.
 - [audit-fix 2026-07-07]: Sixel art mode is OPT-IN only (DEVMON_ART_MODE=sixel or ui.render_mode) — DA1 stdin probe rejected (could eat a keystroke, violates never-block). Battle screens stay half-block: raw sixel inside Rich Live refresh regions gets clobbered.
+- [art-v3 2026-07-07]: All 27 creatures regenerated as detailed 16-bit pixel art via local ComfyUI + FLUX.1-schnell (install at C:/Users/flopp/ComfyUI, checkpoint flux1-schnell-fp8). Recipe: 8 steps, cfg 1, euler/simple, profile-pose prompt template in scratchpad batch_gen.py; 2 seeds/creature, winners hand-picked, matted with rembg birefnet-general. schnell ONLY (Apache-2.0) — never FLUX.1-dev for shipped art.
+- [art-v3 2026-07-07]: Battle animations are procedural over the single sprite (render/animation.py: entrance/lunge/shake/flash + play() driver), gated by ui.animations config and animations_enabled() (off for non-terminal consoles, so tests see identical flow). Multi-frame AI sprite generation rejected: frame-to-frame consistency drift.
+- [art-v3 2026-07-07]: Follow-up candidates: adaptive art width (creatures render 30 cols; sources support 44-58 cols of detail — battle needs a height cap), wiring the deferred human-UAT items (phases 6/8/9/10).
 
 ### Pending Todos
 
