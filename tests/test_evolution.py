@@ -392,6 +392,86 @@ def test_render_evolution_before_after():
     assert "EmberFox" in output
 
 
+def test_evolution_side_by_side_wide():
+    """render_evolution_before_after (narrow=False) renders both creatures
+    side-by-side via a Table.grid, on overlapping output rows, rather than
+    stacking them sequentially with an 'Evolving...' divider between them.
+    """
+    from rich.console import Console
+    from devmon.models.creature import CreatureTemplate
+    from devmon.render.evolution import render_evolution_before_after
+
+    def make_template(id_, name):
+        return CreatureTemplate(
+            id=id_, name=name, species="Test Species",
+            rarity="common", type="Fire", level_range=(1, 10),
+            base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+            capture_rate=0.7, flavor_text="Test flavor.", primary_color="bold red",
+            accent_color="yellow", ascii_art=["  ^ ^  ", " (o o) ", "  ---  "],
+        )
+
+    old_t = make_template("test_base", "BaseForm")
+    new_t = make_template("test_evolved", "EvolvedForm")
+
+    console = Console(record=True, width=80)
+    render_evolution_before_after(old_t, new_t, console, narrow=False)
+    output = console.export_text()
+
+    assert "BaseForm" in output
+    assert "EvolvedForm" in output
+    # Side-by-side: no vertical "Evolving..." divider between the two panels.
+    assert "Evolving..." not in output
+
+    lines = output.splitlines()
+    base_lines = [i for i, line in enumerate(lines) if "BaseForm" in line]
+    evolved_lines = [i for i, line in enumerate(lines) if "EvolvedForm" in line]
+    assert base_lines and evolved_lines
+    # Titles render on the same row (side-by-side layout, not stacked).
+    assert base_lines[0] == evolved_lines[0]
+
+    # Both names should also appear together on at least one shared line
+    # (the title row), confirming a true side-by-side row, not just two
+    # separately-printed panels that happen to share no rows.
+    shared_rows = set(base_lines) & set(evolved_lines)
+    assert shared_rows
+
+
+def test_evolution_narrow_fallback():
+    """render_evolution_before_after (narrow=True) falls back to vertical
+    stacking — no Table.grid side-by-side layout, no crash.
+    """
+    from rich.console import Console
+    from devmon.models.creature import CreatureTemplate
+    from devmon.render.evolution import render_evolution_before_after
+
+    def make_template(id_, name):
+        return CreatureTemplate(
+            id=id_, name=name, species="Test Species",
+            rarity="common", type="Fire", level_range=(1, 10),
+            base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+            capture_rate=0.7, flavor_text="Test flavor.", primary_color="bold red",
+            accent_color="yellow", ascii_art=["  ^ ^  ", " (o o) ", "  ---  "],
+        )
+
+    old_t = make_template("test_base", "BaseForm")
+    new_t = make_template("test_evolved", "EvolvedForm")
+
+    console = Console(record=True, width=35)
+    render_evolution_before_after(old_t, new_t, console, narrow=True)
+    output = console.export_text()
+
+    assert "BaseForm" in output
+    assert "EvolvedForm" in output
+    assert "Evolving..." in output
+
+    lines = output.splitlines()
+    base_lines = [i for i, line in enumerate(lines) if "BaseForm" in line]
+    evolved_lines = [i for i, line in enumerate(lines) if "EvolvedForm" in line]
+    assert base_lines and evolved_lines
+    # Narrow mode stacks vertically — names appear on different rows.
+    assert base_lines[0] != evolved_lines[0]
+
+
 def test_render_evolution_notification():
     """render_evolution_notification returns a Panel with DOUBLE box and 'evolved into'."""
     from rich import box
