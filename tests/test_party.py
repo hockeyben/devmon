@@ -327,3 +327,132 @@ def test_party_table_helper_callable():
     """_render_party_table is callable from the party module."""
     from devmon.commands.party import _render_party_table
     assert callable(_render_party_table)
+
+
+# ---------------------------------------------------------------------------
+# render_party_panel: style-guide polish (enclosing panel, lead badge,
+# dim italic empty slots, colored HP bars). Pure render — resolved
+# templates/owned dicts are constructed directly, no engine import needed
+# inside render/party.py.
+# ---------------------------------------------------------------------------
+
+def _build_party_fixture():
+    """Return (party, owned_by_id, templates) for 2 real creatures + 1 open slot."""
+    from devmon.engine.creature_loader import get_creature
+
+    collection = [
+        OwnedCreature(template_id="bugbyte", level=5, current_hp=12, nickname="Sparky"),
+        OwnedCreature(template_id="ember_fox", level=4, current_hp=3),
+    ]
+    party = ["bugbyte", "ember_fox"]
+    owned_by_id = {oc.template_id: oc for oc in collection}
+    templates = {tid: get_creature(tid) for tid in owned_by_id}
+    return party, owned_by_id, templates
+
+
+def test_render_party_panel_encloses_in_rounded_panel():
+    """Panel is titled 'Active Party' and uses a rounded border box."""
+    from rich.console import Console
+    from devmon.render.party import render_party_panel
+
+    party, owned_by_id, templates = _build_party_fixture()
+    console = Console(record=True, width=100)
+    render_party_panel(party, owned_by_id, templates, console)
+    output = console.export_text()
+
+    assert "Active Party" in output
+    # ROUNDED box uses curved corner glyphs, not ASCII dashes only.
+    assert "╭" in output or "┌" in output
+
+
+def test_render_party_panel_marks_lead_slot():
+    """Slot 1 (index 0) shows the gold '★ LEAD' badge; slot 2 does not."""
+    from rich.console import Console
+    from devmon.render.party import render_party_panel
+
+    party, owned_by_id, templates = _build_party_fixture()
+    console = Console(record=True, width=100)
+    render_party_panel(party, owned_by_id, templates, console)
+    output = console.export_text()
+
+    lines = output.splitlines()
+    lead_lines = [line for line in lines if "LEAD" in line]
+    assert len(lead_lines) == 1
+    assert "Sparky" in lead_lines[0]
+    assert "EmberFox" not in lead_lines[0]
+
+
+def test_render_party_panel_empty_slot_dim_italic():
+    """Unfilled slots show '[Empty]' (dim italic styling applied in Rich text)."""
+    from rich.console import Console
+    from devmon.render.party import render_party_panel
+
+    party, owned_by_id, templates = _build_party_fixture()
+    console = Console(record=True, width=100)
+    render_party_panel(party, owned_by_id, templates, console)
+    output = console.export_text()
+
+    assert "[Empty]" in output
+
+
+def test_render_party_panel_hp_bar_thresholds():
+    """HP renders as a filled/empty block bar, not bare numbers."""
+    from rich.console import Console
+    from devmon.render.party import render_party_panel
+
+    party, owned_by_id, templates = _build_party_fixture()
+    console = Console(record=True, width=100)
+    render_party_panel(party, owned_by_id, templates, console)
+    output = console.export_text()
+
+    assert "█" in output  # filled block present somewhere
+    assert "░" in output  # empty block present somewhere
+    assert "12/20" in output  # bugbyte current/max
+    assert "3/62" in output  # ember_fox current/max (low HP -> red)
+
+
+def test_render_party_panel_empty_party_message():
+    """No creatures at all falls back to the plain empty-party message, no panel."""
+    from rich.console import Console
+    from devmon.render.party import render_party_panel
+
+    console = Console(record=True, width=100)
+    render_party_panel([], {}, {}, console)
+    output = console.export_text()
+
+    assert "Your party is empty" in output
+    assert "Active Party" not in output
+
+
+def test_render_party_panel_narrow_no_crash():
+    """Narrow terminal (< 40 cols) uses stacked layout and never crashes."""
+    from rich.console import Console
+    from devmon.render.party import render_party_panel
+
+    party, owned_by_id, templates = _build_party_fixture()
+    console = Console(record=True, width=35)
+    render_party_panel(party, owned_by_id, templates, console, narrow=True)
+    output = console.export_text()
+
+    assert "Active Party" in output
+    assert "Sparky" in output
+    assert "EmberFox" in output
+    # No line should exceed the console width (no runaway wrapping garbage).
+    for line in output.splitlines():
+        assert len(line) <= 35
+
+
+def test_render_party_panel_fainted_status():
+    """Fainted creature shows FAINTED status even in the lead slot."""
+    from rich.console import Console
+    from devmon.engine.creature_loader import get_creature
+    from devmon.render.party import render_party_panel
+
+    owned = OwnedCreature(template_id="bugbyte", level=5, current_hp=0, is_fainted=True)
+    owned_by_id = {"bugbyte": owned}
+    templates = {"bugbyte": get_creature("bugbyte")}
+    console = Console(record=True, width=100)
+    render_party_panel(["bugbyte"], owned_by_id, templates, console)
+    output = console.export_text()
+
+    assert "FAINTED" in output

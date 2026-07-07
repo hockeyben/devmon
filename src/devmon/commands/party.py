@@ -12,16 +12,14 @@ from __future__ import annotations
 from typing import Optional
 
 import typer
-from rich import box
 from rich.console import Console
-from rich.table import Table
-from rich.text import Text
 
+from devmon.config.loader import load_config
 from devmon.engine.creature_loader import get_creature
 from devmon.persistence.save import load as load_state
 from devmon.persistence.save import save as save_state
-from devmon.render.party import display_name
-from devmon.render.themes import RARITY_COLORS
+from devmon.render.party import display_name, render_party_panel
+from devmon.render.themes import RARITY_COLORS, get_theme
 
 app = typer.Typer()
 
@@ -29,23 +27,12 @@ app = typer.Typer()
 _PARTY_SIZE = 3
 
 
-def _hp_color(current: int, max_hp: int) -> str:
-    """Return Rich color string for an HP value relative to max."""
-    if max_hp == 0:
-        return "green"
-    ratio = current / max_hp
-    if ratio > 0.5:
-        return "green"
-    if ratio > 0.25:
-        return "yellow"
-    return "red"
-
-
 def _render_party_table(state, console: Console) -> None:
-    """Render the party table to the given console.
+    """Render the party panel to the given console.
 
     Extracted into a helper so party_cmd and swap_cmd can both call it.
-    Pure render — no I/O, no state mutation.
+    Resolves OwnedCreature/CreatureTemplate lookups here (CLI layer) and
+    delegates presentation to render_party_panel (render layer).
 
     Args:
         state: GameState instance (read-only).
@@ -59,86 +46,25 @@ def _render_party_table(state, console: Console) -> None:
         )
         return
 
-    # Build lookup: template_id -> OwnedCreature
-    owned_by_id: dict[str, object] = {
-        oc.template_id: oc for oc in state.creature_collection
-    }
+    # Build lookups: template_id -> OwnedCreature / CreatureTemplate
+    owned_by_id = {oc.template_id: oc for oc in state.creature_collection}
+    templates = {}
+    for template_id in state.party:
+        try:
+            templates[template_id] = get_creature(template_id)
+        except (KeyError, ValueError):
+            pass  # Unknown template — render_party_panel shows the slot as empty
 
-    table = Table(
-        title="Active Party",
-        box=box.SIMPLE,
-        pad_edge=False,
-        show_header=True,
-        header_style="bold white",
+    theme = get_theme(load_config().get("ui", {}).get("theme", "neon"))
+    render_party_panel(
+        state.party,
+        owned_by_id,
+        templates,
+        console,
+        theme=theme,
+        party_size=_PARTY_SIZE,
+        narrow=console.width < 40,
     )
-    table.add_column("Slot", width=4, style="dim white")
-    table.add_column("Name", width=20)
-    table.add_column("Level", width=5, style="white")
-    table.add_column("HP", width=12)
-    table.add_column("Status", width=10)
-
-    for slot in range(1, _PARTY_SIZE + 1):
-        slot_index = slot - 1
-        if slot_index < len(state.party):
-            template_id = state.party[slot_index]
-            owned = owned_by_id.get(template_id)
-
-            if owned is None:
-                # Template ID in party but not in collection — treat as empty
-                table.add_row(
-                    str(slot),
-                    Text("[Empty]", style="dim white"),
-                    "",
-                    "",
-                    Text("--", style="dim white"),
-                )
-                continue
-
-            try:
-                template = get_creature(template_id)
-            except (KeyError, ValueError):
-                # Unknown creature template — show as empty slot
-                table.add_row(
-                    str(slot),
-                    Text("[Empty]", style="dim white"),
-                    "",
-                    "",
-                    Text("--", style="dim white"),
-                )
-                continue
-
-            # Name: use display_name helper (D-13 — nickname replaces species name everywhere)
-            name = display_name(owned, template)
-            rarity_style = RARITY_COLORS.get(template.rarity, "white")
-            name_cell = Text(name, style=rarity_style)
-
-            # Level
-            level_cell = f"Lv.{owned.level}"
-
-            # HP
-            max_hp = template.base_hp
-            current_hp = owned.current_hp if owned.current_hp is not None else max_hp
-            hp_color = _hp_color(current_hp, max_hp)
-            hp_cell = Text(f"{current_hp}/{max_hp}", style=hp_color)
-
-            # Status
-            if owned.is_fainted:
-                status_cell = Text("FAINTED", style="bold red")
-            else:
-                status_cell = Text("OK", style="dim white")
-
-            table.add_row(str(slot), name_cell, level_cell, hp_cell, status_cell)
-        else:
-            # Empty slot
-            table.add_row(
-                str(slot),
-                Text("[Empty]", style="dim white"),
-                "",
-                "",
-                Text("--", style="dim white"),
-            )
-
-    console.print(table)
 
     # Tip when party has open slots and collection has more creatures
     if len(state.party) < _PARTY_SIZE and len(state.creature_collection) > len(state.party):

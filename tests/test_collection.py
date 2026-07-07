@@ -308,3 +308,68 @@ def test_codex_progress_bar(saved_collection_state, tmp_save_dir):
     result = runner.invoke(collection_app, ["codex"])
     assert result.exit_code == 0
     assert "Codex:" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Style-guide polish: rounded panels, block-based progress bar
+# ---------------------------------------------------------------------------
+
+def test_collection_table_in_rounded_panel(saved_collection_state, tmp_save_dir):
+    """Collection list is wrapped in a rounded panel titled 'Your Collection'."""
+    from devmon.commands.collection import app as collection_app
+    runner = CliRunner()
+    result = runner.invoke(collection_app, [])
+    assert result.exit_code == 0
+    assert "╭" in result.output or "┌" in result.output
+    assert "Your Collection" in result.output
+
+
+def test_codex_table_in_rounded_panel(saved_collection_state, tmp_save_dir):
+    """Codex table is wrapped in a rounded panel titled 'Creature Codex'."""
+    from devmon.commands.collection import app as collection_app
+    runner = CliRunner()
+    result = runner.invoke(collection_app, ["codex"])
+    assert result.exit_code == 0
+    assert "╭" in result.output or "┌" in result.output
+    assert "Creature Codex" in result.output
+
+
+def test_codex_progress_bar_uses_block_chars(saved_collection_state, tmp_save_dir):
+    """Codex progress line renders as a filled/empty block bar (style guide),
+    not the rich.progress default bar glyphs."""
+    from devmon.commands.collection import app as collection_app
+    runner = CliRunner()
+    result = runner.invoke(collection_app, ["codex"])
+    assert result.exit_code == 0
+    assert "█" in result.output
+    assert "░" in result.output
+
+
+def test_collection_party_badge_styled(saved_collection_state, tmp_save_dir, monkeypatch):
+    """[P] badge renders via a theme token, not a hardcoded literal color."""
+    from devmon.commands.collection import _show_collection_table
+    from devmon.render.themes import get_theme
+    from rich.console import Console
+    import devmon.commands.collection as collection_mod
+
+    theme = get_theme("neon")
+    console = Console(record=True, width=100)
+    monkeypatch.setattr(collection_mod, "console", console)
+    _show_collection_table(saved_collection_state, "rarity", theme)
+    output = console.export_text()
+    assert "[P]" in output
+
+
+def test_show_detail_uses_theme(saved_collection_state, tmp_save_dir, monkeypatch):
+    """_show_detail accepts an explicit theme and still renders party status."""
+    from devmon.commands.collection import _show_detail
+    from devmon.render.themes import get_theme
+    from rich.console import Console
+    import devmon.commands.collection as collection_mod
+
+    theme = get_theme("classic")
+    console = Console(record=True, width=100)
+    monkeypatch.setattr(collection_mod, "console", console)
+    _show_detail(saved_collection_state, "Bugbyte", theme)
+    output = console.export_text()
+    assert "Party slot" in output

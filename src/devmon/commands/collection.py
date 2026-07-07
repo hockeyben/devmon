@@ -22,7 +22,8 @@ from typing import Optional
 import typer
 from rich import box
 from rich.console import Console
-from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn
+from rich.rule import Rule
+from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
@@ -31,7 +32,10 @@ from devmon.models.creature import OwnedCreature, CreatureTemplate
 from devmon.models.state import GameState
 from devmon.persistence.save import load as load_state, save as save_state
 from devmon.render.creatures import render_creature_panel
-from devmon.render.themes import RARITY_COLORS
+from devmon.render.themes import RARITY_COLORS, get_theme
+
+# Standard progress bar width (style guide).
+_BAR_WIDTH = 20
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -67,18 +71,48 @@ def _display_name(owned: OwnedCreature, template: CreatureTemplate) -> str:
     return owned.nickname if owned.nickname else template.name
 
 
-def _print_codex_progress_line(discovered: int, total: int) -> None:
+def _progress_bar(current: int, total: int, theme: dict[str, str], width: int = _BAR_WIDTH) -> Text:
+    """Render a standard 20-wide progress bar as Rich Text.
+
+    Filled "█" in theme xp_bar color (xp_complete when full), empty "░" dim.
+    Guards against total<=0 and current>total overflow.
+    """
+    safe_total = max(total, 1)
+    safe_current = max(0, min(current, safe_total))
+    filled = int(width * safe_current / safe_total)
+    empty = width - filled
+    style = theme["xp_complete"] if safe_current >= safe_total else theme["xp_bar"]
+
+    bar = Text()
+    bar.append("█" * filled, style=style)
+    bar.append("░" * empty, style="dim")
+    return bar
+
+
+def _codex_progress_text(discovered: int, total: int, theme: dict[str, str]) -> Text:
+    """Build 'Codex: [bar] N/M discovered' as a single Rich Text line (D-10)."""
+    line = Text()
+    line.append("Codex: ", style=theme["stat_key"])
+    line.append_text(_progress_bar(discovered, total, theme))
+    line.append(f" {discovered}/{total} discovered", style=theme["stat_key"])
+    return line
+
+
+def _print_codex_progress_line(discovered: int, total: int, theme: dict[str, str] | None = None) -> None:
     """Print 'Codex: N/M discovered' with inline progress bar (D-10)."""
-    with Progress(
-        TextColumn("[dim white]Codex:[/dim white]"),
-        BarColumn(bar_width=20, complete_style="cyan", finished_style="cyan"),
-        TaskProgressColumn(),
-        TextColumn(f"[dim white]{discovered}/{total} discovered[/dim white]"),
-        console=console,
-        transient=False,
-    ) as progress:
-        task = progress.add_task("", total=total)
-        progress.update(task, completed=discovered)
+    if theme is None:
+        theme = get_theme("neon")
+    console.print(_codex_progress_text(discovered, total, theme))
+
+
+def _load_theme() -> dict[str, str]:
+    """Load the configured UI theme, falling back to 'neon' if config is unavailable."""
+    try:
+        from devmon.config.loader import load_config
+        config = load_config()
+        return get_theme(config.get("ui", {}).get("theme", "neon"))
+    except Exception:
+        return get_theme("neon")
 
 
 # ---------------------------------------------------------------------------
@@ -99,11 +133,14 @@ def collection_cmd(
         console.print("No save file found.", style="dim white")
         return
 
-    _show_collection_table(state, sort)
+    _show_collection_table(state, sort, _load_theme())
 
 
-def _show_collection_table(state: GameState, sort: str) -> None:
+def _show_collection_table(state: GameState, sort: str, theme: dict[str, str] | None = None) -> None:
     """Render collection table sorted per D-05, D-06."""
+    if theme is None:
+        theme = get_theme("neon")
+
     if not state.creature_collection:
         console.print(
             "No creatures captured yet. Use 'devmon battle' to start your collection.",
@@ -130,17 +167,18 @@ def _show_collection_table(state: GameState, sort: str) -> None:
         pairs.sort(key=lambda p: (RARITY_ORDER.get(p[1].rarity, 99), _display_name(p[0], p[1]).lower()))
 
     table = Table(
-        title="Your Collection",
-        box=box.SIMPLE,
+        box=box.SIMPLE_HEAD,
         show_header=True,
         header_style="bold white",
+        pad_edge=False,
+        expand=False,
     )
-    table.add_column("#", width=3, style="dim white")
+    table.add_column("#", justify="right", width=3, style="dim white")
     table.add_column("Name", width=22)
     table.add_column("Rarity", width=10)
-    table.add_column("Level", width=5, style="white")
+    table.add_column("Level", justify="right", width=6, style="white")
     table.add_column("Type", width=10, style="dim white")
-    table.add_column("Status", width=10)
+    table.add_column("Status", justify="center", width=10)
 
     for i, (owned, template) in enumerate(pairs, start=1):
         rarity_color = RARITY_COLORS.get(template.rarity, "white")
@@ -150,7 +188,7 @@ def _show_collection_table(state: GameState, sort: str) -> None:
         name_text = Text()
         name_text.append(display, style=rarity_color)
         if owned.template_id in state.party:
-            name_text.append(" [P]", style="dim cyan")
+            name_text.append(" [P]", style=f"bold {theme['border']}")
 
         rarity_text = Text(template.rarity.title(), style=rarity_color)
         level_text = f"Lv.{owned.level}"
@@ -169,7 +207,14 @@ def _show_collection_table(state: GameState, sort: str) -> None:
             status_text,
         )
 
-    console.print(table)
+    panel = Panel(
+        table,
+        title=f"[{theme['title']}]Your Collection[/{theme['title']}]",
+        border_style=theme["border"],
+        box=box.ROUNDED,
+        expand=False,
+    )
+    console.print(panel)
 
     # Codex progress line (D-10)
     all_templates = load_all_creatures()
@@ -178,7 +223,7 @@ def _show_collection_table(state: GameState, sort: str) -> None:
     encountered_ids = set(state.codex_state.keys())
     discovered_ids = captured_ids | encountered_ids
     discovered = len(discovered_ids)
-    _print_codex_progress_line(discovered, total)
+    _print_codex_progress_line(discovered, total, theme)
 
 
 # ---------------------------------------------------------------------------
@@ -194,11 +239,14 @@ def show_cmd(
     if state is None:
         console.print("No save file found.", style="dim white")
         return
-    _show_detail(state, name)
+    _show_detail(state, name, _load_theme())
 
 
-def _show_detail(state: GameState, name: str) -> None:
+def _show_detail(state: GameState, name: str, theme: dict[str, str] | None = None) -> None:
     """Show detail panel for a single owned creature (COLL-02)."""
+    if theme is None:
+        theme = get_theme("neon")
+
     # Case-insensitive substring match — nickname first, then template name
     matches: list[tuple[OwnedCreature, CreatureTemplate]] = []
     for owned in state.creature_collection:
@@ -226,12 +274,14 @@ def _show_detail(state: GameState, name: str) -> None:
 
     # Override panel title with nickname if set (D-13)
     display_template = template.model_copy(update={"name": display})
-    render_creature_panel(display_template, console)
+    render_creature_panel(display_template, console, theme=theme)
 
-    # Party/faint status below panel
+    # Party/faint status below panel — divider keeps this visually distinct
+    # from the (unmodified) creature panel above.
+    console.print(Rule(style="dim"))
     if owned.template_id in state.party:
         slot_number = state.party.index(owned.template_id) + 1
-        console.print(f"  Party slot: {slot_number}", style="dim cyan")
+        console.print(f"  Party slot: {slot_number}", style=theme["stat_key"])
     else:
         console.print("  Not in active party.", style="dim white")
 
@@ -347,6 +397,8 @@ def rename_cmd(
 @app.command("codex")
 def codex_cmd() -> None:
     """List all 25 creatures with 3-state discovery tracking (COLL-03, D-08, D-09)."""
+    theme = _load_theme()
+
     state = load_state()
     if state is None:
         console.print("No save file found.", style="dim white")
@@ -368,17 +420,18 @@ def codex_cmd() -> None:
     )
 
     # Progress header (D-10)
-    _print_codex_progress_line(discovered, total)
+    _print_codex_progress_line(discovered, total, theme)
     console.print("")
 
     # Codex table
     table = Table(
-        title="Creature Codex",
-        box=box.SIMPLE,
+        box=box.SIMPLE_HEAD,
         show_header=True,
         header_style="bold white",
+        pad_edge=False,
+        expand=False,
     )
-    table.add_column("#", width=3, style="dim white")
+    table.add_column("#", justify="right", width=3, style="dim white")
     table.add_column("Name", width=22)
     table.add_column("Rarity", width=10)
     table.add_column("Discovery", width=12)
@@ -391,13 +444,13 @@ def codex_cmd() -> None:
             # Captured — full brightness (D-08)
             name_text = Text(template.name, style=rarity_color)
             rarity_text = Text(template.rarity.title(), style=rarity_color)
-            discovery_text = Text("Captured", style="dim green")
+            discovery_text = Text("Captured", style="green")
         elif tid in encountered_ids:
             # Encountered — dimmed (D-08)
             dim_color = f"dim {rarity_color}"
             name_text = Text(template.name, style=dim_color)
             rarity_text = Text(template.rarity.title(), style=dim_color)
-            discovery_text = Text("Encountered", style="dim cyan")
+            discovery_text = Text("Encountered", style=theme["stat_key"])
         else:
             # Unknown — question marks (D-09)
             name_text = Text("???", style="dim white")
@@ -406,4 +459,11 @@ def codex_cmd() -> None:
 
         table.add_row(str(i), name_text, rarity_text, discovery_text)
 
-    console.print(table)
+    panel = Panel(
+        table,
+        title=f"[{theme['title']}]Creature Codex[/{theme['title']}]",
+        border_style=theme["border"],
+        box=box.ROUNDED,
+        expand=False,
+    )
+    console.print(panel)
