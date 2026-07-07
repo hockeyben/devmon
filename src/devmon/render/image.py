@@ -378,6 +378,19 @@ class CreatureImage:
         """True if the PNG file exists for this creature."""
         return self._png_path.is_file()
 
+    def get_rows(self) -> list[list[tuple[str, Style | None]]]:
+        """Return the raw half-block row data (char, Style) for this creature.
+
+        Empty list when no PNG is available. Additive accessor exposing the
+        same cached data __rich_console__ renders from Segments, for callers
+        (devmon.render.animation) that need to transform rows directly
+        rather than consume a Segment stream. Does not change any existing
+        rendering behavior.
+        """
+        if not self.available:
+            return []
+        return _render_halfblocks(str(self._png_path), self.width)
+
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         """Yield Segments for Rich rendering."""
         if not self.available:

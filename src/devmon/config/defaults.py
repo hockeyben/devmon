@@ -64,6 +64,7 @@ DEFAULT_CONFIG: dict = {
         "verbosity": "normal",
         "ascii_art": True,
         "render_mode": "auto",
+        "animations": True,
     },
     "shell": {
         "event_log": _default_event_log(),
