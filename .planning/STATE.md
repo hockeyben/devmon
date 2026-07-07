@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 999.1 paused — art rendering approach TBD
-last_updated: "2026-04-07T06:52:17.311Z"
-last_activity: 2026-04-07 -- Phase 999.1 planning complete
+stopped_at: Phase 999.1 complete via PNG pivot — audit-fix + visual polish sweep done
+last_updated: "2026-07-07T00:00:00.000Z"
+last_activity: 2026-07-07 -- audit-fix pipeline: renderer fixed, UI polish sweep, sixel mode
 progress:
   total_phases: 12
   completed_phases: 6
@@ -25,12 +25,16 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 ## Current Position
 
-Phase: 999.1
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-07 -- Phase 999.1 planning complete
+Phase: 999.1 — COMPLETE (via PNG pivot; see note below)
+Plan: Plans 01-02 executed; 03-04 SUPERSEDED by the PNG art pivot (hand-drawn
+ASCII per-creature replaced by art/{id}.png + half-block renderer in
+render/image.py); 05 (evolution side-by-side) delivered in commit d083563.
+Status: Done — 2026-07-07 audit-fix pipeline (findings F-01..F-06, F-08)
+Last activity: 2026-07-07 -- audit-fix: renderer bg-removal/perf fix, UTF-8
+stdio guard, evolution side-by-side, renderer tests, repo hygiene, UI polish
+sweep (status/shop/quests/party/collection), opt-in sixel art mode
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -128,6 +132,11 @@ Recent decisions affecting current work:
 - [Phase 06-battle-and-capture]: WildBattleState dataclass holds transient battle HP -- not persisted between sessions
 - [Phase 06-battle-and-capture]: Auto-heal after every battle outcome resets all creatures to full HP (current_hp=None, is_fainted=False)
 - [Phase 06-battle-and-capture]: Live context exited before capture animation and party switch list (Rich Live cannot be active during interactive sub-prompts)
+- [Phase 999.1/audit-fix 2026-07-07]: Creature art is PNG-based — art/{id}.png (512px max) rendered as truecolor half-blocks by render/image.py; JSON ascii_art retained only as fallback. Plans 999.1-03/04 (hand-drawn ASCII) superseded.
+- [audit-fix 2026-07-07]: Background removal = edge-connected flood fill decided against a Gaussian-blurred copy (blur 1.2, tol 30) — global corner-threshold fails on AI-generated textured backgrounds.
+- [audit-fix 2026-07-07]: main() upgrades non-UTF stdout/stderr to utf-8/replace at startup — half-block chars crash cp1252 streams otherwise.
+- [audit-fix 2026-07-07]: Shared UI style guide: theme tokens only, box.ROUNDED, █/░ bars width 20, Rule dividers, Table.grid alignment; bronze=dark_orange3 silver=grey70 gold=gold1, currency=gold1.
+- [audit-fix 2026-07-07]: Sixel art mode is OPT-IN only (DEVMON_ART_MODE=sixel or ui.render_mode) — DA1 stdin probe rejected (could eat a keystroke, violates never-block). Battle screens stay half-block: raw sixel inside Rich Live refresh regions gets clobbered.
 
 ### Pending Todos
 
