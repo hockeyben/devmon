@@ -5,8 +5,10 @@ which reads the event log, processes XP, and saves state.
 """
 from __future__ import annotations
 
+import io
 import json
 import os
+import sys
 import time
 
 import pytest
@@ -87,3 +89,105 @@ def test_process_event_log_on_startup_symbol_exists():
 
     assert hasattr(m, "_process_event_log_on_startup")
     assert callable(m._process_event_log_on_startup)
+
+
+# --- F-03: legacy codepage stdout guard --------------------------------
+
+
+def test_ensure_utf8_stdio_upgrades_legacy_codepage_stream(monkeypatch):
+    """_ensure_utf8_stdio reconfigures a cp1252 stdout to UTF-8 so half-block
+    creature art (U+2580/2584/2588) can be printed without UnicodeEncodeError.
+    """
+    import devmon.main as m
+
+    # Simulate a legacy-codepage Windows stdout: a TextIOWrapper over BytesIO
+    # with encoding='cp1252' (cannot encode U+2580 in strict mode).
+    fake_stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    fake_stderr = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+
+    # Sanity check: the raw cp1252 stream really does crash on half-blocks.
+    with pytest.raises(UnicodeEncodeError):
+        fake_stdout.write("▀")
+        fake_stdout.flush()
+
+    # Fresh streams for the actual guard test (previous write left the wrapper
+    # in an indeterminate state after the encode error).
+    fake_stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    fake_stderr = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
+    monkeypatch.setattr(sys, "stderr", fake_stderr)
+
+    # Guard must not raise.
+    m._ensure_utf8_stdio()
+
+    assert "utf" in sys.stdout.encoding.lower()
+    assert "utf" in sys.stderr.encoding.lower()
+
+    # Now printing half-block characters must not raise.
+    sys.stdout.write("▀▄█")
+    sys.stdout.flush()
+
+
+def test_ensure_utf8_stdio_noop_when_already_utf8(monkeypatch):
+    """When stdout is already UTF-8, the guard leaves it untouched (no-op)."""
+    import devmon.main as m
+
+    fake_stdout = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
+
+    m._ensure_utf8_stdio()  # Must not raise
+
+    # Still the same stream, still UTF-8 — write succeeds regardless.
+    sys.stdout.write("▀▄█")
+    sys.stdout.flush()
+
+
+def test_ensure_utf8_stdio_handles_non_reconfigurable_stream(monkeypatch):
+    """Streams without a `.reconfigure()` (e.g. some test/CI capture objects)
+    must not crash the guard — it should silently skip them.
+    """
+    import devmon.main as m
+
+    class _NoReconfigureStream:
+        encoding = "cp1252"
+
+        def write(self, data):
+            return len(data)
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys, "stdout", _NoReconfigureStream())
+
+    m._ensure_utf8_stdio()  # Must not raise (AttributeError guarded)
+
+
+def test_ensure_utf8_stdio_handles_reconfigure_raising(monkeypatch):
+    """If `.reconfigure()` itself raises (exotic stream), the guard swallows
+    the exception rather than propagating it (never blocks devmon usage).
+    """
+    import devmon.main as m
+
+    class _BrokenReconfigureStream:
+        encoding = "cp1252"
+
+        def reconfigure(self, **kwargs):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(sys, "stdout", _BrokenReconfigureStream())
+
+    m._ensure_utf8_stdio()  # Must not raise
+
+
+def test_cli_still_runs_under_clirunner_with_utf8_guard_wired_in():
+    """The encoding guard is invoked on every CLI callback (via main()) and
+    must not break normal CliRunner-based test invocation (350+ existing
+    tests rely on this continuing to work).
+    """
+    from devmon.main import app
+
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+
+    result = runner.invoke(app, ["status", "--help"])
+    assert result.exit_code == 0

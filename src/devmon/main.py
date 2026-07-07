@@ -9,6 +9,7 @@ systems as they are added in later phases.
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 from typing import Optional
@@ -58,6 +59,34 @@ app.add_typer(items_cmd.app, name="items")
 app.add_typer(quests_cmd.app, name="quests")
 app.add_typer(achievements_cmd.app, name="achievements")
 app.add_typer(indicator_cmd.app, name="indicator")
+
+
+def _ensure_utf8_stdio() -> None:
+    """Reconfigure stdout/stderr to UTF-8 when the current encoding can't
+    render half-block creature art (U+2580/2584/2588 via Rich).
+
+    On Windows, when a legacy codepage (e.g. cp1252 — common when output is
+    piped or run under a legacy console/PYTHONIOENCODING) is active, printing
+    these characters crashes with UnicodeEncodeError (F-03).
+
+    Guarded with hasattr/try so it never raises under test runners or exotic
+    streams — pytest's CliRunner replaces stdout with a stream whose
+    `.encoding` is already UTF-8 (no-op here) but that must never be assumed
+    to always support `.reconfigure()`.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None:
+            continue
+        encoding = getattr(stream, "encoding", None) or ""
+        if "utf" in encoding.lower():
+            continue  # Already UTF-8 (or a UTF variant) — nothing to do
+        reconfigure = getattr(stream, "reconfigure", None)
+        if not callable(reconfigure):
+            continue  # Non-reconfigurable stream (e.g. some test/CI capture objects)
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass  # Never let stdio setup block normal devmon usage
 
 
 def _version_callback(value: bool) -> None:
@@ -186,4 +215,5 @@ def main(
     ),
 ) -> None:
     """DevMon CLI — gamified terminal RPG powered by coding activity."""
+    _ensure_utf8_stdio()
     _process_event_log_on_startup()
