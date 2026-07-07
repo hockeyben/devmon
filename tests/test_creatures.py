@@ -312,35 +312,31 @@ def test_art_visual_width_strips_markup():
     assert len(_MARKUP_RE.sub("", "[dim]a[/dim][bold]b[/bold]")) == 2
 
 
-@pytest.mark.xfail(reason="Art upgrade pending — 999.1 plans 02-04", strict=False)
-def test_art_line_counts_by_rarity():
-    """Each creature's ascii_art line count must fall within its rarity size-class range.
+def test_every_creature_has_png_art():
+    """Every creature template must have a PNG in art/ named {id}.png.
 
-    common/uncommon: 8-10 lines
-    rare: 10-14 lines
-    epic: 14-18 lines
-    legendary: 14-18 lines
-
-    Marked xfail until art upgrade plans 02-04 complete.
+    Art was pivoted from hand-written ASCII (line-count-by-rarity classes)
+    to PNG half-block rendering (devmon.render.image). The PNG is now the
+    primary art asset for every creature; ascii_art remains only as a
+    fallback for CreatureImage.available == False (see test_image.py).
     """
+    from pathlib import Path
+
     from devmon.engine.creature_loader import load_all_creatures
 
-    RARITY_LINE_RANGES = {
-        "common": (8, 10),
-        "uncommon": (8, 10),
-        "rare": (10, 14),
-        "epic": (14, 18),
-        "legendary": (14, 18),
-    }
+    art_dir = Path(__file__).resolve().parents[1] / "art"
+    registry = load_all_creatures()
+    missing = [
+        cid for cid in registry
+        if not (art_dir / f"{cid}.png").is_file()
+    ]
+    assert not missing, f"Creatures missing PNG art in {art_dir}: {missing}"
+
+
+def test_every_creature_has_nonempty_ascii_art_fallback():
+    """ascii_art remains the fallback for CreatureImage — must stay non-empty."""
+    from devmon.engine.creature_loader import load_all_creatures
 
     registry = load_all_creatures()
-    failures = []
-    for cid, template in registry.items():
-        min_lines, max_lines = RARITY_LINE_RANGES[template.rarity]
-        line_count = len(template.ascii_art)
-        if not (min_lines <= line_count <= max_lines):
-            failures.append(
-                f"{cid} ({template.rarity}): {line_count} lines, expected {min_lines}-{max_lines}"
-            )
-
-    assert not failures, "Creatures with wrong line counts:\n" + "\n".join(failures)
+    empty = [cid for cid, t in registry.items() if not t.ascii_art]
+    assert not empty, f"Creatures with empty ascii_art fallback: {empty}"
