@@ -357,3 +357,72 @@ def test_app_command_skips_main_startup_processor(tmp_save_dir, monkeypatch):
 
     runner.invoke(main_mod.app, ["status"])
     assert calls["n"] == 1
+
+
+# ---------------------------------------------------------------------------
+# devmon play -- open the app in a SEPARATE terminal window
+# ---------------------------------------------------------------------------
+
+
+def test_play_spawns_new_terminal_window(monkeypatch, tmp_devmon_home):
+    """`devmon play` must launch `devmon app` detached in a NEW terminal
+    window (wt.exe -w new preferred) and return immediately."""
+    import devmon.commands.app as app_cmd_mod
+    from devmon.main import app as main_app
+    from typer.testing import CliRunner
+
+    spawned = {}
+
+    def _fake_popen(argv, **kwargs):
+        spawned["argv"] = argv
+        spawned["kwargs"] = kwargs
+
+        class _P:
+            pid = 12345
+
+        return _P()
+
+    monkeypatch.setattr(app_cmd_mod.subprocess, "Popen", _fake_popen)
+    monkeypatch.setattr(
+        app_cmd_mod.shutil, "which",
+        lambda name: r"C:\fake\wt.exe" if name.startswith("wt")
+        else (r"C:\fake\devmon.exe" if name == "devmon" else None),
+    )
+    monkeypatch.setattr(app_cmd_mod.sys, "platform", "win32")
+
+    result = CliRunner().invoke(main_app, ["play"])
+    assert result.exit_code == 0, result.output
+    assert spawned["argv"][:3] == [r"C:\fake\wt.exe", "-w", "new"]
+    assert spawned["argv"][3:] == [r"C:\fake\devmon.exe", "app"]
+    assert "own terminal window" in result.output
+
+
+def test_play_falls_back_to_new_console_without_wt(monkeypatch, tmp_devmon_home):
+    import devmon.commands.app as app_cmd_mod
+
+    monkeypatch.setattr(
+        app_cmd_mod.shutil, "which",
+        lambda name: None if name.startswith("wt")
+        else (r"C:\fake\powershell.exe" if name == "powershell" else None),
+    )
+    argv, flags = app_cmd_mod._build_play_command()
+    assert argv[0] == r"C:\fake\powershell.exe"
+    assert any("app" in part for part in argv)
+    import subprocess as _sp
+    assert flags == getattr(_sp, "CREATE_NEW_CONSOLE", 0)
+
+
+def test_play_spawn_failure_is_reported(monkeypatch, tmp_devmon_home):
+    import devmon.commands.app as app_cmd_mod
+    from devmon.main import app as main_app
+    from typer.testing import CliRunner
+
+    def _boom(*a, **k):
+        raise OSError("no terminal for you")
+
+    monkeypatch.setattr(app_cmd_mod.subprocess, "Popen", _boom)
+    monkeypatch.setattr(app_cmd_mod.sys, "platform", "win32")
+
+    result = CliRunner().invoke(main_app, ["play"])
+    assert result.exit_code == 1
+    assert "devmon app" in result.output

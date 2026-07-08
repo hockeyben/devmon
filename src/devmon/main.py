@@ -83,6 +83,7 @@ app.add_typer(protocol_cmd.app, name="protocol")
 app.add_typer(skins_cmd.app, name="skins")
 app.command(name="statusline")(statusline_cmd.statusline)
 app.add_typer(app_cmd_mod.app, name="app")
+app.add_typer(app_cmd_mod.play_app, name="play")
 
 
 def _ensure_utf8_stdio() -> None:
