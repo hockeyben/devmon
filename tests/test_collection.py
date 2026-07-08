@@ -373,3 +373,36 @@ def test_show_detail_uses_theme(saved_collection_state, tmp_save_dir, monkeypatc
     _show_detail(saved_collection_state, "Bugbyte", theme)
     output = console.export_text()
     assert "Party slot" in output
+
+
+# ---------------------------------------------------------------------------
+# Responsive art width (999.2): collection detail panel width flows from console
+# ---------------------------------------------------------------------------
+
+def test_show_detail_art_scales_with_wide_console(saved_collection_state, tmp_save_dir, monkeypatch):
+    """_show_detail's panel widens on a wide console — confirms the console
+    passed into render_creature_panel isn't swapped for a smaller one."""
+    from devmon.commands.collection import _show_detail
+    from rich.console import Console
+    import devmon.commands.collection as collection_mod
+
+    console_80 = Console(record=True, width=80)
+    monkeypatch.setattr(collection_mod, "console", console_80)
+    _show_detail(saved_collection_state, "Bugbyte", None)
+    max_len_80 = max(
+        len(line.rstrip()) for line in console_80.export_text().splitlines() if line.strip()
+    )
+
+    console_140 = Console(record=True, width=140)
+    monkeypatch.setattr(collection_mod, "console", console_140)
+    _show_detail(saved_collection_state, "Bugbyte", None)
+    max_len_140 = max(
+        len(line.rstrip()) for line in console_140.export_text().splitlines() if line.strip()
+    )
+
+    assert max_len_140 > max_len_80, (
+        f"Expected wider detail panel at width=140 ({max_len_140}) "
+        f"than width=80 ({max_len_80})"
+    )
+    assert max_len_140 <= 140
+    assert max_len_80 <= 80

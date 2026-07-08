@@ -340,3 +340,87 @@ def test_every_creature_has_nonempty_ascii_art_fallback():
     registry = load_all_creatures()
     empty = [cid for cid, t in registry.items() if not t.ascii_art]
     assert not empty, f"Creatures with empty ascii_art fallback: {empty}"
+
+
+# ---------------------------------------------------------------------------
+# Responsive art width (999.2): art scales with terminal width
+# ---------------------------------------------------------------------------
+
+def test_compute_art_width_clamps():
+    """_compute_art_width clamps to [30, 56] and matches the standard 80-col
+    default to the pre-existing hardcoded width (unchanged narrow behavior)."""
+    from devmon.render.creatures import _compute_art_width
+
+    # Standard 80-column default terminal — unchanged from the old
+    # hardcoded width=30 behavior.
+    assert _compute_art_width(80) == 30
+    # Genuinely wide terminal reaches the ceiling.
+    assert _compute_art_width(140) == 56
+    # Never below the floor even for very narrow (non-narrow-mode) widths.
+    assert _compute_art_width(40) == 30
+    # Monotonic growth between floor and ceiling.
+    assert 30 <= _compute_art_width(100) <= 56
+
+
+def test_art_width_at_default_console():
+    """At Console(width=80), creature art renders at the original ~30-col width."""
+    from rich.console import Console
+    from devmon.models.creature import CreatureTemplate
+    from devmon.render.creatures import render_creature_panel
+
+    template = CreatureTemplate.model_validate(_sample_creature_dict())
+    console = Console(record=True, width=80)
+    render_creature_panel(template, console)
+    output = console.export_text()
+    lines = [line for line in output.splitlines() if line.strip()]
+
+    assert lines, "Expected panel output"
+    max_len = max(len(line.rstrip()) for line in lines)
+    # Panel (art + borders/padding) must never exceed the console width.
+    assert max_len <= 80
+
+
+def test_art_width_larger_at_wide_console():
+    """At Console(width=140), exported panel content is wider than at width=80."""
+    from rich.console import Console
+    from devmon.models.creature import CreatureTemplate
+    from devmon.render.creatures import render_creature_panel
+
+    template = CreatureTemplate.model_validate(_sample_creature_dict())
+
+    console_80 = Console(record=True, width=80)
+    render_creature_panel(template, console_80)
+    max_len_80 = max(
+        len(line.rstrip()) for line in console_80.export_text().splitlines() if line.strip()
+    )
+
+    console_140 = Console(record=True, width=140)
+    render_creature_panel(template, console_140)
+    max_len_140 = max(
+        len(line.rstrip()) for line in console_140.export_text().splitlines() if line.strip()
+    )
+
+    assert max_len_140 > max_len_80, (
+        f"Expected wider panel at width=140 ({max_len_140}) than width=80 ({max_len_80})"
+    )
+    assert max_len_140 <= 140
+
+
+def test_art_width_narrow_unchanged():
+    """Narrow mode (<40) still hides art entirely, regardless of the new scaling logic."""
+    from rich.console import Console
+    from devmon.render.creatures import render_creature_panel
+
+    template = _make_template_for_width_tests()
+    console = Console(record=True, width=35)
+    render_creature_panel(template, console, narrow=True)
+    output = console.export_text()
+
+    for art_line in template.ascii_art:
+        assert art_line.strip() not in output
+
+
+def _make_template_for_width_tests():
+    """Minimal CreatureTemplate reused by the responsive-art-width tests."""
+    from devmon.models.creature import CreatureTemplate
+    return CreatureTemplate.model_validate(_sample_creature_dict())

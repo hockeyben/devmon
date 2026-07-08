@@ -436,6 +436,67 @@ def test_evolution_side_by_side_wide():
     assert shared_rows
 
 
+def test_compute_evolution_art_width_clamps():
+    """_compute_evolution_art_width clamps to [24, 40] per the side-by-side formula."""
+    from devmon.render.evolution import _compute_evolution_art_width
+
+    # width=80 hits the floor exactly — guarantees both panels + arrow fit.
+    assert _compute_evolution_art_width(80) == 24
+    # width=140 hits the ceiling — visibly bigger than at width=80.
+    assert _compute_evolution_art_width(140) == 40
+    assert 24 <= _compute_evolution_art_width(100) <= 40
+
+
+def test_evolution_side_by_side_fits_at_80_and_140():
+    """Side-by-side evolution layout never wraps/garbles borders at 80 or 140
+    columns — every output line must fit within the console width, and the
+    wide-terminal render must be visibly larger than the 80-col render."""
+    from rich.console import Console
+    from devmon.models.creature import CreatureTemplate
+    from devmon.render.evolution import render_evolution_before_after
+
+    def make_template(id_, name):
+        return CreatureTemplate(
+            id=id_, name=name, species="Test Species",
+            rarity="common", type="Fire", level_range=(1, 10),
+            base_hp=30, base_attack=12, base_defense=8, base_speed=15,
+            capture_rate=0.7, flavor_text="Test flavor.", primary_color="bold red",
+            accent_color="yellow", ascii_art=["  ^ ^  ", " (o o) ", "  ---  "],
+        )
+
+    old_t = make_template("ember_fox", "BaseForm")
+    new_t = make_template("ember_kit", "EvolvedForm")
+
+    for width in (80, 140):
+        console = Console(record=True, width=width)
+        render_evolution_before_after(old_t, new_t, console, narrow=False)
+        output = console.export_text()
+        for line in output.splitlines():
+            assert len(line.rstrip()) <= width, (
+                f"Line exceeds console width={width}: {line.rstrip()!r} "
+                f"({len(line.rstrip())} chars)"
+            )
+        assert "BaseForm" in output
+        assert "EvolvedForm" in output
+
+    console_80 = Console(record=True, width=80)
+    render_evolution_before_after(old_t, new_t, console_80, narrow=False)
+    max_len_80 = max(
+        len(line.rstrip()) for line in console_80.export_text().splitlines() if line.strip()
+    )
+
+    console_140 = Console(record=True, width=140)
+    render_evolution_before_after(old_t, new_t, console_140, narrow=False)
+    max_len_140 = max(
+        len(line.rstrip()) for line in console_140.export_text().splitlines() if line.strip()
+    )
+
+    assert max_len_140 > max_len_80, (
+        f"Expected wider evolution layout at width=140 ({max_len_140}) "
+        f"than width=80 ({max_len_80})"
+    )
+
+
 def test_evolution_narrow_fallback():
     """render_evolution_before_after (narrow=True) falls back to vertical
     stacking — no Table.grid side-by-side layout, no crash.

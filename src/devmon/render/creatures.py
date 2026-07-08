@@ -20,6 +20,31 @@ from devmon.render.image import get_sixel_art, render_creature_art
 from devmon.render.sixel import resolve_art_mode
 from devmon.render.themes import RARITY_COLORS, get_theme
 
+# Art source sprites are 64px wide with alpha, supporting up to ~60 columns
+# of half-block detail. Floor of 30 preserves the original hardcoded width
+# (and the narrow-mode behavior/tests built around it); ceiling of 56 stays
+# a hair under that ~60-column detail limit.
+#
+# Margin tuned to 50 (not the illustrative 24 in the original brief): a
+# margin of 24 makes `console.width - margin` hit the 56 ceiling already at
+# width=80 (80-24=56), which is identical to the value at width=140
+# (140-24=116, also clamped to 56) — i.e. no growth between "standard"
+# and "wide" terminals, contradicting the "visibly larger in wide
+# terminals" requirement. Margin=50 makes the floor land exactly at the
+# common 80-column default (80-50=30, unchanged from the old hardcoded
+# behavior) and only grows the art for genuinely wide terminals, reaching
+# the ceiling by ~130 columns. Real Panel border/padding overhead is only
+# ~4 characters, so this margin leaves generous headroom — nothing wraps
+# at any console width, including the width=40 floor of non-narrow mode.
+_ART_WIDTH_FLOOR = 30
+_ART_WIDTH_CEILING = 56
+_ART_WIDTH_MARGIN = 50
+
+
+def _compute_art_width(console_width: int) -> int:
+    """Scale creature art width to the console, clamped to a sane range."""
+    return max(_ART_WIDTH_FLOOR, min(console_width - _ART_WIDTH_MARGIN, _ART_WIDTH_CEILING))
+
 
 def render_creature_panel(
     template: CreatureTemplate,
@@ -57,12 +82,18 @@ def render_creature_panel(
     stats = Text()
 
     if not narrow:
+        # Scale art to the terminal instead of a fixed 30 columns — wide
+        # terminals get visibly larger art, narrow ones fall back to the
+        # original 30-column floor (UI-06 narrow mode is handled separately
+        # above via the `narrow` branch).
+        art_width = _compute_art_width(console.width)
+
         # Art mode resolution (sixel opt-in via DEVMON_ART_MODE=sixel, else
         # half-block — see devmon.render.sixel.resolve_art_mode). Checked
         # against this console's actual output stream so raw escape bytes
         # never leak into a non-TTY / Console(record=True) export.
         art_mode = resolve_art_mode(stream=getattr(console, "file", None))
-        sixel_art = get_sixel_art(template.id, width=30) if art_mode == "sixel" else None
+        sixel_art = get_sixel_art(template.id, width=art_width) if art_mode == "sixel" else None
 
         if sixel_art:
             # Sixel escapes cannot live inside a Rich Panel (Rich would
@@ -74,7 +105,7 @@ def render_creature_panel(
             art = None
         else:
             # Build creature art — prefer PNG image, fall back to ascii_art markup
-            art = render_creature_art(template.id, template.ascii_art, width=30)
+            art = render_creature_art(template.id, template.ascii_art, width=art_width)
 
         # When encounter_level provided, insert LVL row first (UI-SPEC Encounter Level Display)
         if encounter_level is not None:

@@ -30,6 +30,23 @@ if TYPE_CHECKING:
 # wide-terminal side-by-side layout (D-07).
 _EVOLUTION_ARROW = "➜"  # ➜
 
+# Side-by-side layout must fit TWO art panels plus the arrow column, so each
+# panel gets roughly half the width budget of the single-panel case in
+# render/creatures.py. Floor of 24 keeps a legible minimum at width=80 (the
+# narrow<40 fallback stacks vertically and is unaffected); ceiling of 40
+# caps how wide either panel grows so two of them plus the arrow/padding
+# never exceed the console at very wide terminals.
+_EVOLUTION_ART_WIDTH_FLOOR = 24
+_EVOLUTION_ART_WIDTH_CEILING = 40
+
+
+def _compute_evolution_art_width(console_width: int) -> int:
+    """Scale each evolution art panel's width to the console, clamped."""
+    return max(
+        _EVOLUTION_ART_WIDTH_FLOOR,
+        min((console_width - 16) // 2 - 8, _EVOLUTION_ART_WIDTH_CEILING),
+    )
+
 
 def render_evolution_prompt(creature_name: str, evolved_name: str, level: int) -> Panel:
     """Render the evolution confirmation prompt panel.
@@ -59,7 +76,7 @@ def render_evolution_prompt(creature_name: str, evolved_name: str, level: int) -
     )
 
 
-def _build_evolution_art_panel(template: "CreatureTemplate", label: str) -> Panel:
+def _build_evolution_art_panel(template: "CreatureTemplate", label: str, width: int = 30) -> Panel:
     """Build a minimal art-only panel for one side of the evolution display.
 
     Local to this module (not imported from devmon.render.creatures) so the
@@ -70,13 +87,15 @@ def _build_evolution_art_panel(template: "CreatureTemplate", label: str) -> Pane
         template: CreatureTemplate to render art for.
         label: "Before" or "After" \u2014 combined with the creature name in the
             panel title as the transformation indicator (D-07).
+        width: Target art width in character cells \u2014 scaled by the caller to
+            fit two panels side-by-side at the current console width.
 
     Returns:
         Rich Panel containing the creature's art, titled "{label}: {name}".
     """
     from devmon.render.image import render_creature_art
 
-    art = render_creature_art(template.id, template.ascii_art, width=30)
+    art = render_creature_art(template.id, template.ascii_art, width=width)
     color = template.primary_color or "white"
 
     return Panel(
@@ -119,8 +138,9 @@ def render_evolution_before_after(
         console.print(Text("  \u2193  Evolving...  \u2193", style="bold yellow"))
         render_creature_panel(new_template, console, narrow=narrow)
     else:
-        old_panel = _build_evolution_art_panel(old_template, "Before")
-        new_panel = _build_evolution_art_panel(new_template, "After")
+        art_width = _compute_evolution_art_width(console.width)
+        old_panel = _build_evolution_art_panel(old_template, "Before", width=art_width)
+        new_panel = _build_evolution_art_panel(new_template, "After", width=art_width)
 
         grid = Table.grid(expand=False, padding=(0, 2))
         grid.add_column()
