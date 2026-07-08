@@ -74,7 +74,9 @@ def convert_to_candy(state: "GameState", template_id: str, rarity: str, config: 
     Returns:
         The candy amount granted.
     """
-    amount = candy_amount_for_rarity(rarity, config)
+    from devmon.engine.perks import candy_yield_bonus
+
+    amount = candy_amount_for_rarity(rarity, config) + candy_yield_bonus(state)
     add_candy(state, template_id, amount)
     return amount
 
@@ -169,6 +171,8 @@ def feed_candy(
     from devmon.engine.battle_engine import apply_creature_xp
 
     leveled_up = apply_creature_xp(owned, template, total_xp)
+
+    state.player.total_candy_fed += count
 
     prev_fed = owned.candies_fed
     owned.candies_fed = prev_fed + count

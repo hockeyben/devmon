@@ -253,6 +253,8 @@ _DEFAULT_SNAPSHOT = {
     "needed": 1,
     "hidden": False,
     "encounter": False,
+    "badges": 0,
+    "prestige": 0,
 }
 
 
@@ -280,6 +282,8 @@ def read_indicator_snapshot(save_path: Path, config: dict) -> dict:
             "needed": needed,
             "hidden": bool(data.get("indicator_hidden", False)),
             "encounter": data.get("encounter_queue") is not None,
+            "badges": len(data.get("badges_earned") or []),
+            "prestige": int(player.get("prestige_count", 0)),
         }
     except Exception:
         return dict(_DEFAULT_SNAPSHOT)

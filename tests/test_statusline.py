@@ -393,3 +393,66 @@ class TestStatuslineWidthSafeGlyphs:
         for use_emoji in (True, False):
             self._assert_width_safe(_encounter_row(use_emoji))
             self._assert_width_safe(_encounter_row_compact(use_emoji))
+
+    def test_rank_tag_is_width_safe(self):
+        from devmon.commands.statusline import _normal_row, _normal_row_compact
+
+        for use_emoji in (True, False):
+            self._assert_width_safe(_normal_row(20, 40, 100, use_emoji, badge_count=6, prestige_count=1))
+            # Compact variant never gets a rank tag -- still width-safe.
+            self._assert_width_safe(_normal_row_compact(20, 40, 100, use_emoji))
+
+
+class TestStatuslineRankTag:
+    """Phase C: the FULL row variant gets a compact, dim-styled rank tag
+    prepended; the compact/encounter variants stay unchanged."""
+
+    def test_full_row_includes_rank_tag(self):
+        from devmon.commands.statusline import _normal_row
+
+        row = _normal_row(20, 40, 100, use_emoji=False, badge_count=6, prestige_count=0)
+        assert "[Sr]" in _strip(row)
+
+    def test_full_row_intern_tag_by_default(self):
+        from devmon.commands.statusline import _normal_row
+
+        row = _normal_row(1, 0, 100, use_emoji=False)
+        assert "[In]" in _strip(row)
+
+    def test_full_row_rank_tag_gets_prestige_star(self):
+        from devmon.commands.statusline import _normal_row
+
+        row = _normal_row(1, 0, 100, use_emoji=False, badge_count=0, prestige_count=1)
+        assert "[In*]" in _strip(row)
+
+    def test_compact_row_has_no_rank_tag(self):
+        from devmon.commands.statusline import _normal_row_compact
+
+        row = _normal_row_compact(20, 40, 100, use_emoji=False)
+        assert "[" not in _strip(row)
+
+    def test_encounter_row_has_no_rank_tag(self):
+        from devmon.commands.statusline import _encounter_row, _encounter_row_compact
+
+        assert "[Sr]" not in _strip(_encounter_row(False))
+        assert "[Sr]" not in _strip(_encounter_row_compact(False))
+
+    def test_statusline_command_shows_rank_tag_for_badged_player(self, tmp_save_dir):
+        import json
+        from devmon.main import app
+
+        save_path = tmp_save_dir / "save.json"
+        save_path.write_text(
+            json.dumps({
+                "player": {"level": 20, "xp": 40000},
+                "badges_earned": ["a", "b", "c", "d", "e", "f"],
+                "encounter_queue": None,
+                "indicator_hidden": False,
+            }),
+            encoding="utf-8",
+        )
+        from typer.testing import CliRunner
+        runner = CliRunner()
+        result = runner.invoke(app, ["statusline"], input=b"{}")
+        assert result.exit_code == 0
+        assert "[Sr]" in _strip(result.output)

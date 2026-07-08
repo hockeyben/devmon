@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 11
+CURRENT_VERSION = 12
 
 
 def migrate(data: dict) -> dict:
@@ -38,6 +38,7 @@ def migrate(data: dict) -> dict:
         8: _migrate_8_to_9,
         9: _migrate_9_to_10,
         10: _migrate_10_to_11,
+        11: _migrate_11_to_12,
     }
 
     while version < CURRENT_VERSION:
@@ -213,4 +214,40 @@ def _migrate_10_to_11(data: dict) -> dict:
     """Phase 11: Add indicator_hidden field for daemon battle detection."""
     data.setdefault("indicator_hidden", False)
     data["schema_version"] = 11
+    return data
+
+
+def _migrate_11_to_12(data: dict) -> dict:
+    """Version 11 -> 12: Phase C adds trainer ranks/badges, perk tree,
+    legendary quest chains, and prestige fields.
+
+    Uses setdefault() so pre-existing values are never overwritten (same
+    pattern as every migration above). The retroactive perk-point grant is
+    the one field computed rather than defaulted to empty: existing saves
+    get credited (level - 1) points for levels already passed before this
+    field existed -- the level-up hook (engine.progression.
+    check_player_level_up) only grants points going forward. Badge-earned
+    points are deliberately NOT also backfilled here: the normal
+    engine.badges.check_badges() pipeline will grant +1 point per
+    already-qualifying badge the first time it runs post-upgrade, so adding
+    a second badge-based grant here would double-count. `perk_points`'
+    absence from the raw dict IS the field-presence marker -- this branch
+    runs at most once per save (schema_version is 12 from here on).
+    """
+    player = data.setdefault("player", {})
+    if "perk_points" not in player:
+        level = player.get("level", 1)
+        player["perk_points"] = max(0, int(level) - 1)
+    player.setdefault("total_git_commits", 0)
+    player.setdefault("total_test_passes", 0)
+    player.setdefault("total_candy_fed", 0)
+    player.setdefault("prestige_count", 0)
+
+    data.setdefault("badges_earned", [])
+    data.setdefault("pending_badge_unlocks", [])
+    data.setdefault("perks_owned", {})
+    data.setdefault("crafted_items_count", 0)
+    data.setdefault("npc_quests_completed_count", 0)
+    data.setdefault("legendary_chain_progress", {})
+    data["schema_version"] = 12
     return data

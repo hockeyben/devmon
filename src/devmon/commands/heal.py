@@ -137,9 +137,12 @@ def _center_heal(state) -> None:
     from devmon.config.loader import load_config
     from devmon.persistence.save import save
 
+    from devmon.engine.perks import center_cooldown_multiplier
+
     config = load_config()
     cooldown_minutes = config.get("game", {}).get("center_heal_cooldown_minutes", 30)
-    cooldown_seconds = cooldown_minutes * 60
+    # Phase C: center_overclock perk shortens the cooldown per rank.
+    cooldown_seconds = cooldown_minutes * 60 * center_cooldown_multiplier(state)
 
     now = time.time()
     elapsed = now - state.last_center_heal_ts

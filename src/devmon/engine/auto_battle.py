@@ -349,13 +349,20 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
     if is_booster_active(state):
         rewards["player_xp"] = int(rewards["player_xp"] * 1.5)
 
+    from devmon.engine.legendary_quests import record_battle_win_for_chains
+    from devmon.engine.perks import battle_xp_multiplier_bonus
+
     state.player.xp += rewards["player_xp"]
     state.player.currency += rewards["currency"]
     state.player.battles_won += 1
+    record_battle_win_for_chains(state)
     medibot_msg = record_battle_win(state)
     if medibot_msg:
         state.pending_auto_battle_reports.append(medibot_msg)
     check_player_level_up(state.player, config)
+
+    # Phase C: drill_sergeant perk boosts creature XP from battle wins.
+    rewards["creature_xp"] = int(rewards["creature_xp"] * battle_xp_multiplier_bonus(state))
 
     if apply_creature_xp(player_owned, player_template, rewards["creature_xp"]):
         clear_evolution_declined_on_level_up(player_owned)
@@ -371,7 +378,7 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
     loot_suffix = ""
     from devmon.engine.loot import roll_loot
 
-    material_id = roll_loot(rarity)
+    material_id = roll_loot(rarity, state=state)
     if material_id is not None:
         state.inventory[material_id] = state.inventory.get(material_id, 0) + 1
         try:
@@ -419,6 +426,12 @@ def auto_resolve_encounter(state: "GameState", config: dict) -> Optional[str]:
         party lead).
     """
     if state.encounter_queue is None:
+        return None
+
+    # Phase C hard rule: auto-battle NEVER touches a pinned legendary boss
+    # encounter -- it is always left queued for the player's own
+    # `devmon battle` capture attempt.
+    if getattr(state.encounter_queue, "is_boss_pin", False):
         return None
 
     game_cfg = config.get("game", {}) if config else {}

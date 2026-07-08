@@ -15,6 +15,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from devmon.models.badge import BadgeUnlock
 from devmon.models.creature import OwnedCreature
 from devmon.models.encounter import EncounterEntry
 from devmon.models.quest import ActiveQuest, AchievementUnlock, QuestCompletion
@@ -62,6 +63,35 @@ class PlayerProfile(BaseModel):
     whenever an event's hour differs from the bucket's stored hour. See
     `engine.progression.hourly_curve` / `process_events`."""
 
+    # Phase C — trainer ranks, badges, perks, prestige
+    total_git_commits: int = 0
+    """Lifetime count of git_commit shell events (Phase C badge tracking --
+    engine.progression.process_events). Distinct from the per-quest
+    'git_commits' criterion, which resets/refreshes daily."""
+
+    total_test_passes: int = 0
+    """Lifetime count of test_pass shell events (Phase C badge tracking)."""
+
+    total_candy_fed: int = 0
+    """Lifetime count of candy pieces fed across every owned creature (Phase
+    C badge tracking) -- see engine.candy_engine.feed_candy."""
+
+    perk_points: int = 0
+    """Unspent perk points. +1 per player level-up (engine.progression.
+    check_player_level_up) and +1 per badge earned (engine.badges.
+    check_badges). Spent via `devmon perks buy <id>` (engine.perks.buy_perk).
+    Existing pre-Phase-C saves get a one-time retroactive grant of
+    (level - 1) via persistence.migrations._migrate_11_to_12 -- badge-earned
+    points are NOT separately backfilled there since the normal
+    check_badges() pipeline naturally grants them the first time it runs
+    against an already-qualifying save (avoids double-granting)."""
+
+    prestige_count: int = 0
+    """Number of times the player has prestiged (`devmon prestige`, level 50+
+    required). Each prestige grants a permanent +10% all-XP multiplier
+    (stacking additively with itself and engine.perks' xp_tuner perk) and a
+    star suffix on the rank display."""
+
 
 class GameState(BaseModel):
     """Root game state model — all mutable game data.
@@ -71,7 +101,7 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=11, description="Save file schema version for migration support")
+    schema_version: int = Field(default=12, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
@@ -180,6 +210,45 @@ class GameState(BaseModel):
     saves — Pydantic backfills "termina_meadows" for anyone who saved before
     Phase B2 without needing a numbered schema migration (same pattern as
     npc_quest_completions above)."""
+
+    # Phase C — trainer ranks, badges
+    badges_earned: list[str] = Field(default_factory=list)
+    """Badge ids the player has earned (engine.badges.BADGE_CATALOG ids).
+    Permanent once earned, mirrors achievement_state's semantics -- a badge
+    stays earned even if the underlying stat later fluctuates below its
+    requirement (e.g. streak_count resetting after a missed day)."""
+
+    pending_badge_unlocks: list[BadgeUnlock] = Field(default_factory=list)
+    """Badge-earned notifications awaiting display on next invocation
+    (mirrors pending_achievement_unlocks)."""
+
+    # Phase C — perk tree
+    perks_owned: dict[str, int] = Field(default_factory=dict)
+    """Perk rank per perk id: {perk_id: rank (1-3)}. Absence means rank 0
+    (not purchased). See engine.perks.get_perk_rank / buy_perk."""
+
+    # Phase C — crafting/NPC-quest counters (badge tracking; genuinely
+    # missing from the pre-Phase-C engine, added here rather than reusing an
+    # existing field per the roadmap's "add small counters only where
+    # genuinely missing" guidance)
+    crafted_items_count: int = 0
+    """Lifetime count of items produced via `devmon craft` (summed by
+    result_qty across successful crafts) -- see engine.crafting.craft."""
+
+    npc_quests_completed_count: int = 0
+    """Lifetime count of NPC weekly fetch-quest turn-ins (distinct from
+    npc_quest_completions, which is keyed by quest id -> ISO week and
+    overwrites weekly rather than accumulating) -- see
+    engine.npcs.turn_in_quest."""
+
+    # Phase C — legendary quest chains
+    legendary_chain_progress: dict[str, dict] = Field(default_factory=dict)
+    """Per-chain progress keyed by legendary species_id. Each value dict has
+    keys: "step" (int, 1-3 -- the step currently in progress),
+    "battles_in_region" (int, running win count for an active step-1 or a
+    post-failure retry gate), "boss_ready" (bool -- step 3 reached, the boss
+    may be pinned), "completed" (bool -- the boss has been captured). See
+    engine.legendary_quests for the full state machine."""
 
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":

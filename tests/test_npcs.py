@@ -1,7 +1,7 @@
-"""Phase A2: NPC merchant tests.
+"""Phase A2/Phase C: NPC merchant tests.
 
 Covers:
-- NPC catalog loading (4 named merchants, taglines, regions, quests)
+- NPC catalog loading (5 named merchants, taglines, regions, quests)
 - Signature deals genuinely undercut the regular shop price
 - Daily rotation: exactly 2 NPCs in town, date-stable, varies across dates
 - Weekly fetch quest: turn-in consumes materials + grants rewards,
@@ -18,11 +18,11 @@ from datetime import date
 # Catalog
 # ---------------------------------------------------------------------------
 
-def test_npc_catalog_loads_four_named_merchants():
+def test_npc_catalog_loads_five_named_merchants():
     from devmon.engine.npc_loader import load_all_npcs
 
     npcs = load_all_npcs()
-    assert set(npcs.keys()) == {"kip", "voss", "nyx", "the_intern"}
+    assert set(npcs.keys()) == {"kip", "voss", "nyx", "the_intern", "skye"}
     for npc in npcs.values():
         assert npc.name
         assert npc.tagline
@@ -70,7 +70,7 @@ def test_the_intern_sells_root_capsule_at_extreme_price():
 
 def test_npc_regions_are_data_forward():
     """Each NPC carries a region field (for the future travel system) but
-    nothing gates on it yet -- all four must be valid region ids."""
+    nothing gates on it yet -- all five must be valid region ids."""
     from devmon.engine.npc_loader import load_all_npcs
 
     valid_regions = {
@@ -152,16 +152,31 @@ def test_non_resident_slot_still_rotates():
 
 
 def test_region_with_no_resident_npc_falls_back_to_full_rotation():
-    """cloud_reaches has no matching NPC -- npcs_in_town_today must fall back
-    to the original unfiltered rotation rather than granting a phantom slot."""
+    """Phase C gave every one of the five roster regions a resident NPC
+    (cloud_reaches -> skye), so this now exercises the fallback path with a
+    region id that matches no NPC at all -- npcs_in_town_today must fall
+    back to the original unfiltered rotation rather than granting a phantom
+    slot."""
     from devmon.engine.npc_loader import load_all_npcs
     from devmon.engine.npcs import npcs_in_town_today, todays_npc_ids
 
     all_npcs = load_all_npcs()
     day = date(2026, 7, 8)
-    gated = npcs_in_town_today(all_npcs, "cloud_reaches", day)
+    gated = npcs_in_town_today(all_npcs, "nonexistent_region", day)
     ungated = todays_npc_ids(list(all_npcs.keys()), day)
     assert gated == ungated
+
+
+def test_cloud_reaches_has_a_resident_npc():
+    """Phase C: cloud_reaches (previously resident-less) gets skye, an SRE
+    balloonist, as its always-in-town resident."""
+    from devmon.engine.npc_loader import load_all_npcs
+    from devmon.engine.npcs import npcs_in_town_today
+
+    all_npcs = load_all_npcs()
+    for d in range(1, 29):
+        in_town = npcs_in_town_today(all_npcs, "cloud_reaches", date(2026, 3, d))
+        assert "skye" in in_town, f"skye should always be in town on day {d}"
 
 
 def test_different_regions_yield_different_residents():
@@ -175,6 +190,7 @@ def test_different_regions_yield_different_residents():
     assert "kip" in npcs_in_town_today(all_npcs, "kernel_depths", day)
     assert "nyx" in npcs_in_town_today(all_npcs, "compiler_wastes", day)
     assert "the_intern" in npcs_in_town_today(all_npcs, "voidnet", day)
+    assert "skye" in npcs_in_town_today(all_npcs, "cloud_reaches", day)
 
 
 # ---------------------------------------------------------------------------

@@ -115,6 +115,13 @@ DEFAULT_CONFIG: dict = {
         "biome_night_shift_multiplier": 2.0,   # Shadow/Psychic weight 22:00-06:00 local
         "biome_rift_chance": 0.25,             # temporal rift rarity-tier bump chance
         "biome_language_multiplier": 1.5,      # workspace-language type weight boost
+        # Phase C fold-in fix: `devmon battle` used to unconditionally fully
+        # heal the party after every battle outcome. Now that healing is a
+        # real system (potions/Repo Center/Medibot), that free heal is
+        # gated behind this flag -- default False means HP persists between
+        # battles like any other resource. See commands/battle.py's
+        # `_auto_heal` call sites.
+        "full_heal_after_battle": False,
     },
     "ui": {
         "theme": "neon",

@@ -321,6 +321,11 @@ def check_player_level_up(profile: "PlayerProfile", config: dict) -> bool:
     while profile.xp >= xp_for_level(profile.level + 1, config):
         profile.level += 1
     if profile.level > old_level:
+        # Phase C: +1 perk point per level gained (engine.perks spends these
+        # via `devmon perks buy`). Wired here rather than at each of
+        # check_player_level_up's many call sites (battle.py, auto_battle.py,
+        # process_events) since every caller shares this one level-up gate.
+        profile.perk_points += profile.level - old_level
         profile.level_up_pending = True
         profile.pending_level_value = profile.level
         return True
@@ -420,6 +425,15 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
         if event.get("type", "cmd") == "cmd":
             profile.total_commands += 1
 
+        # Phase C badge-tracking counters (lifetime, never reset -- distinct
+        # from the per-quest git_commits/test_passes criteria which refresh
+        # daily). Only counted on successful events, matching total_commands.
+        if event.get("exit", 1) == 0:
+            if event.get("type") == "git_commit":
+                profile.total_git_commits += 1
+            elif event.get("type") == "test_pass":
+                profile.total_test_passes += 1
+
         # Award event XP. ai_code events are routed through the hourly
         # progressive curve (Phase 12) instead of compute_event_xp's flat
         # per-event path: bursts land every few seconds, so knee-ing each
@@ -458,6 +472,13 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     multiplier = streak_multiplier(profile.streak_count, config)
     final_xp = int(total_event_xp * multiplier)
 
+    # Phase C: xp_tuner perk + prestige multiplier, applied to
+    # coding-activity player XP specifically (see engine.perks.
+    # xp_multiplier_bonus's docstring for why this is scoped to this call
+    # site rather than every XP-granting path).
+    from devmon.engine.perks import xp_multiplier_bonus
+    final_xp = int(final_xp * xp_multiplier_bonus(state))
+
     # XP booster multiplier (D-08)
     from devmon.engine.item_engine import is_booster_active
     if is_booster_active(state):
@@ -492,6 +513,14 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     # Check quest completions and achievement unlocks
     check_quest_completions(state, config)
     check_achievements(state)
+
+    # Phase C: badge checks (mirrors check_achievements -- grants perk
+    # points) and legendary quest chain step-2 material-offering auto-advance.
+    from devmon.engine.badges import check_badges
+    from devmon.engine.legendary_quests import advance_material_offerings
+
+    check_badges(state)
+    advance_material_offerings(state)
 
     # Re-check level-up: quest completions, daily bonuses, and achievement
     # tiers above all grant player XP after the first check at line ~274 —

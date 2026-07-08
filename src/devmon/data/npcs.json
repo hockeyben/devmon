@@ -1,5 +1,5 @@
 {
-  "_comment": "Phase A2 NPC merchants. Loaded by engine/npc_loader.py. `region` is data-forward for the upcoming Phase B2 travel system -- NOT gated on it yet, every NPC is reachable regardless of region. Exactly 2 of these 4 are 'in town' on any given day, picked deterministically by engine/npcs.py's date-seeded rotation. Each has a signature_deal_item_id pointing at a stock entry priced below the regular shop, and one repeatable weekly fetch quest.",
+  "_comment": "Phase A2 NPC merchants + Phase C's cloud_reaches resident. Loaded by engine/npc_loader.py. `region` gates residency per Phase B2's engine.npcs.npcs_in_town_today -- the NPC whose region matches the player's current_region is always in town; the remaining daily-rotation slot(s) are filled from the rest. Each has a signature_deal_item_id pointing at a stock entry priced below the regular shop, and one repeatable weekly fetch quest.",
   "npcs": [
     {
       "id": "kip",
@@ -83,6 +83,27 @@
         "reward_item_id": "kernel_fragment",
         "reward_item_qty": 3,
         "description": "Don't ask where these go. Just bring 3 Void Shards."
+      }
+    },
+    {
+      "id": "skye",
+      "name": "Skye",
+      "tagline": "SRE balloonist. Keeps five nines aloft with a wicker basket and a prayer.",
+      "region": "cloud_reaches",
+      "stock": [
+        {"item_id": "great_capsule", "price": 9},
+        {"item_id": "full_potion", "price": 15},
+        {"item_id": "cloud_essence", "price": 20}
+      ],
+      "signature_deal_item_id": "great_capsule",
+      "quest": {
+        "id": "skye_cloud_harvest",
+        "material_id": "cloud_essence",
+        "qty_required": 5,
+        "reward_currency": 65,
+        "reward_item_id": "static_charge",
+        "reward_item_qty": 2,
+        "description": "The availability zone's drifting again. Bring me 5 Cloud Essence and I'll radio back a favor."
       }
     }
   ]

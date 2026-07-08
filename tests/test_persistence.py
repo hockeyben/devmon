@@ -15,7 +15,7 @@ def test_save_persist(tmp_save_dir):
     loaded = load()
     assert loaded is not None
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 11
+    assert loaded.schema_version == 12
 
 
 def test_atomic_write(tmp_save_dir):
@@ -37,7 +37,7 @@ def test_schema_version(tmp_save_dir):
     state = GameState.new_game("Ash")
     save(state)
     data = json_mod.loads((tmp_save_dir / "save.json").read_text(encoding="utf-8"))
-    assert data["schema_version"] == 11
+    assert data["schema_version"] == 12
 
 
 def test_data_dir(tmp_save_dir):
@@ -90,10 +90,10 @@ def test_no_save_returns_none(tmp_save_dir):
 
 
 def test_migration_runner_noop():
-    """SAVE-03: Migration runner handles current version (v11 -> v11) cleanly — no-op."""
+    """SAVE-03: Migration runner handles current version (v12 -> v12) cleanly — no-op."""
     from devmon.persistence.migrations import migrate
     data = {
-        "schema_version": 11,
+        "schema_version": 12,
         "player": {
             "name": "Ash",
             "last_active_date": None,
@@ -126,16 +126,16 @@ def test_migration_runner_noop():
         "indicator_hidden": False,
     }
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
     assert result["player"]["name"] == "Ash"
 
 
 def test_migration_from_v0():
-    """SAVE-03: Save without schema_version (v0) is migrated to current version (v11)."""
+    """SAVE-03: Save without schema_version (v0) is migrated to current version (v12)."""
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
 
 
 def test_migration_unknown_version():
@@ -148,22 +148,22 @@ def test_migration_unknown_version():
 # --- Phase 2 migration and config tests (TRACK-01, TRACK-05, TRACK-06, TRACK-07) ---
 
 def test_migration_v1_to_v2_adds_phase2_fields():
-    """TRACK-01: v1 save dicts gain Phase 2 player fields on migration through v2 to v11."""
+    """TRACK-01: v1 save dicts gain Phase 2 player fields on migration through v2 to v12."""
     from devmon.persistence.migrations import migrate
     data = {"schema_version": 1, "player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
     assert result["player"]["last_active_date"] is None
     assert result["player"]["streak_grace_used"] is False
     assert result["player"]["session_xp_earned"] == 0
 
 
-def test_migration_v0_to_v11_full_path():
-    """TRACK-01: v0 save migrates all the way to v11 via chained migrations."""
+def test_migration_v0_to_v12_full_path():
+    """TRACK-01: v0 save migrates all the way to v12 via chained migrations."""
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
     assert "last_active_date" in result["player"]
     assert "level_up_pending" in result["player"]
     assert "creature_collection" in result
@@ -175,8 +175,8 @@ def test_migration_v0_to_v11_full_path():
     assert "pending_evolution_notifications" in result
 
 
-def test_migration_v2_to_v11_via_chain():
-    """TRACK-01: v2 save dict is migrated to v11 with Phase 3+4+5+6+7+8+9+10+11 fields added."""
+def test_migration_v2_to_v12_via_chain():
+    """TRACK-01: v2 save dict is migrated to v12 with Phase 3+4+5+6+7+8+9+10+11+12 fields added."""
     from devmon.persistence.migrations import migrate
     data = {
         "schema_version": 2,
@@ -188,7 +188,7 @@ def test_migration_v2_to_v11_via_chain():
         }
     }
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
     assert result.get("creature_collection") == []
     assert result.get("encounter_queue") is None
     assert result.get("party") == []
@@ -199,10 +199,10 @@ def test_migration_v2_to_v11_via_chain():
     assert result.get("indicator_hidden") is False
 
 
-def test_current_version_is_11():
-    """TRACK-01: migrations.CURRENT_VERSION equals 11 after Phase 11 bump."""
+def test_current_version_is_12():
+    """TRACK-01: migrations.CURRENT_VERSION equals 12 after Phase C bump."""
     from devmon.persistence.migrations import CURRENT_VERSION
-    assert CURRENT_VERSION == 11
+    assert CURRENT_VERSION == 12
 
 
 def test_migrate_10_to_11():
@@ -210,8 +210,68 @@ def test_migrate_10_to_11():
     from devmon.persistence.migrations import migrate
     data = {"schema_version": 10, "player": {"name": "Test"}}
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
     assert result["indicator_hidden"] is False
+
+
+def test_migrate_11_to_12_adds_phase_c_fields():
+    """Phase C: migration 11->12 adds trainer ranks/badges, perk tree,
+    legendary chains, and prestige fields, all defaulting cleanly."""
+    from devmon.persistence.migrations import _migrate_11_to_12
+    data = {"schema_version": 11, "player": {"name": "Test", "level": 1}}
+    result = _migrate_11_to_12(data)
+    assert result["schema_version"] == 12
+    assert result["badges_earned"] == []
+    assert result["pending_badge_unlocks"] == []
+    assert result["perks_owned"] == {}
+    assert result["crafted_items_count"] == 0
+    assert result["npc_quests_completed_count"] == 0
+    assert result["legendary_chain_progress"] == {}
+    assert result["player"]["total_git_commits"] == 0
+    assert result["player"]["total_test_passes"] == 0
+    assert result["player"]["total_candy_fed"] == 0
+    assert result["player"]["prestige_count"] == 0
+
+
+def test_migrate_11_to_12_grants_retroactive_perk_points():
+    """Existing saves get retroactive perk points = (level - 1), granted
+    once (perk_points' absence from the raw dict IS the marker)."""
+    from devmon.persistence.migrations import _migrate_11_to_12
+    data = {"schema_version": 11, "player": {"name": "Veteran", "level": 26}}
+    result = _migrate_11_to_12(data)
+    assert result["player"]["perk_points"] == 25
+
+
+def test_migrate_11_to_12_retroactive_grant_floors_at_zero():
+    from devmon.persistence.migrations import _migrate_11_to_12
+    data = {"schema_version": 11, "player": {"name": "Fresh", "level": 1}}
+    result = _migrate_11_to_12(data)
+    assert result["player"]["perk_points"] == 0
+
+
+def test_migrate_11_to_12_does_not_regrant_existing_perk_points():
+    """If perk_points is already present (shouldn't normally happen at v11,
+    but defends against a double-migration call), it is left untouched --
+    setdefault-style idempotency, same as every other backfilled field."""
+    from devmon.persistence.migrations import _migrate_11_to_12
+    data = {
+        "schema_version": 11,
+        "player": {"name": "AlreadyMigrated", "level": 10, "perk_points": 999},
+    }
+    result = _migrate_11_to_12(data)
+    assert result["player"]["perk_points"] == 999
+
+
+def test_full_migration_chain_reaches_v12_with_new_fields():
+    """A save from schema_version 0 migrates all the way to 12 and ends up
+    with every Phase C field present."""
+    from devmon.persistence.migrations import migrate
+    data = {"player": {"name": "Ancient", "level": 30}}
+    result = migrate(data)
+    assert result["schema_version"] == 12
+    assert result["player"]["perk_points"] == 29
+    assert "badges_earned" in result
+    assert "legendary_chain_progress" in result
 
 
 def test_migrate_v2_to_v3():
@@ -277,9 +337,9 @@ def test_migrate_backfills_nature_and_ivs_for_old_creature():
 
 
 def test_migrate_does_not_bump_schema_version_for_backfill():
-    """CURRENT_VERSION stays 11 — the nature/IV backfill is not a schema migration."""
+    """CURRENT_VERSION stays 12 — the nature/IV backfill is not a schema migration."""
     from devmon.persistence.migrations import CURRENT_VERSION
-    assert CURRENT_VERSION == 11
+    assert CURRENT_VERSION == 12
 
 
 def test_migrate_preserves_existing_nature_and_ivs():

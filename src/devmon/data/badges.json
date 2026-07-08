@@ -1,0 +1,101 @@
+{
+  "_comment": "Phase C trainer badges. Loaded by engine/badges.py. Each badge is single-tier (earned or not) -- crossing requirement_value on requirement_type permanently earns it, grants +1 perk point, and queues a pending_badge_unlocks notification. requirement_type is resolved by engine.badges._stat_value. Badge board shown by `devmon badges`; rank (engine.badges.compute_rank) is derived from badges_earned count + player level.",
+  "badges": [
+    {
+      "id": "terminal_veteran",
+      "name": "Terminal Veteran",
+      "icon": "$_",
+      "requirement_type": "total_commands",
+      "requirement_value": 500,
+      "flavor": "500 commands deep. The shell knows your name."
+    },
+    {
+      "id": "commit_history",
+      "name": "Commit History",
+      "icon": "@*",
+      "requirement_type": "git_commits",
+      "requirement_value": 50,
+      "flavor": "50 commits. Somewhere, a graph turned green."
+    },
+    {
+      "id": "green_pipeline",
+      "name": "Green Pipeline",
+      "icon": "ok",
+      "requirement_type": "test_passes",
+      "requirement_value": 25,
+      "flavor": "25 passing test runs. CI trusts you now."
+    },
+    {
+      "id": "week_streak",
+      "name": "Week Streak",
+      "icon": "7d",
+      "requirement_type": "streak_days",
+      "requirement_value": 7,
+      "flavor": "Seven days straight. The grace period never even flinched."
+    },
+    {
+      "id": "battle_hardened",
+      "name": "Battle-Hardened",
+      "icon": "><",
+      "requirement_type": "battles_won",
+      "requirement_value": 50,
+      "flavor": "50 wild victories. Your creatures don't flinch anymore."
+    },
+    {
+      "id": "field_researcher",
+      "name": "Field Researcher",
+      "icon": "o.",
+      "requirement_type": "species_discovered",
+      "requirement_value": 15,
+      "flavor": "15 species logged in the codex."
+    },
+    {
+      "id": "master_cataloguer",
+      "name": "Master Cataloguer",
+      "icon": "oO",
+      "requirement_type": "species_discovered",
+      "requirement_value": 40,
+      "flavor": "40 species logged. Half the known world, roughly."
+    },
+    {
+      "id": "world_traveler",
+      "name": "World Traveler",
+      "icon": "->",
+      "requirement_type": "regions_unlocked",
+      "requirement_value": 3,
+      "flavor": "3 regions unlocked. The map keeps getting bigger."
+    },
+    {
+      "id": "workshop_tinkerer",
+      "name": "Workshop Tinkerer",
+      "icon": "[+]",
+      "requirement_type": "items_crafted",
+      "requirement_value": 10,
+      "flavor": "10 items crafted from scavenged materials."
+    },
+    {
+      "id": "favorite_customer",
+      "name": "Favorite Customer",
+      "icon": "$$",
+      "requirement_type": "npc_quests_completed",
+      "requirement_value": 5,
+      "flavor": "5 NPC fetch quests turned in. They remember your face."
+    },
+    {
+      "id": "candy_dealer",
+      "name": "Candy Dealer",
+      "icon": "><>",
+      "requirement_type": "candy_fed",
+      "requirement_value": 50,
+      "flavor": "50 candies fed. Your team never stops growing."
+    },
+    {
+      "id": "twenty_five_club",
+      "name": "Twenty-Five Club",
+      "icon": "25",
+      "requirement_type": "player_level",
+      "requirement_value": 25,
+      "flavor": "Level 25. You've shipped a lot of code to get here."
+    }
+  ]
+}

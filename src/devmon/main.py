@@ -17,12 +17,15 @@ from typing import Optional
 import typer
 
 from devmon import __version__
+from devmon.commands import badges as badges_cmd
 from devmon.commands import battle as battle_cmd
 from devmon.commands import candy as candy_cmd
 from devmon.commands import craft as craft_cmd
 from devmon.commands import npcs as npcs_cmd
 from devmon.commands import heal as heal_cmd
 from devmon.commands import indicator as indicator_cmd
+from devmon.commands import perks as perks_cmd
+from devmon.commands import prestige as prestige_cmd
 from devmon.commands import collection as collection_cmd_mod
 from devmon.commands import party as party_cmd_mod
 from devmon.commands import encounter as encounter_cmd
@@ -70,6 +73,9 @@ app.add_typer(achievements_cmd.app, name="achievements")
 app.add_typer(craft_cmd.app, name="craft")
 app.add_typer(npcs_cmd.app, name="npcs")
 app.add_typer(travel_cmd.app, name="travel")
+app.add_typer(badges_cmd.app, name="badges")
+app.add_typer(perks_cmd.app, name="perks")
+app.add_typer(prestige_cmd.app, name="prestige")
 app.add_typer(indicator_cmd.app, name="indicator")
 app.add_typer(protocol_cmd.app, name="protocol")
 app.command(name="statusline")(statusline_cmd.statusline)
@@ -160,6 +166,15 @@ def _process_event_log_on_startup() -> None:
         # (temporal-rift git_commit detection + workspace language sniff).
         notification_msg = tick_encounter(state, config, events=events)
 
+        # Phase C: pin a legendary quest chain's boss encounter the moment
+        # it's ready and the queue is free (bypasses the normal spawn RNG
+        # entirely — never competes with tick_encounter's own roll above,
+        # since maybe_spawn_boss no-ops whenever encounter_queue is
+        # already occupied).
+        if notification_msg is None:
+            from devmon.engine.legendary_quests import maybe_spawn_boss
+            notification_msg = maybe_spawn_boss(state)
+
         # Auto-fight/auto-skip resolution (engine/auto_battle.py) — resolve
         # BEFORE save_state so the mutation (rewards, encounter clear, etc.)
         # persists in this save. This path is interactive, so the report is
@@ -232,6 +247,21 @@ def _process_event_log_on_startup() -> None:
                 state.pending_achievement_unlocks = []
 
                 # Re-save after clearing pending flags (T-09-08)
+                save_state(state)
+        except Exception:
+            pass  # Never block the user's terminal workflow
+
+        # Phase C: deferred badge-earned notifications (mirrors the
+        # achievement unlock block above).
+        try:
+            if state.pending_badge_unlocks:
+                from devmon.render.badges import render_badge_unlock_panel
+                from devmon.render.themes import get_theme as _get_theme
+
+                theme = _get_theme(config.get("ui", {}).get("theme", "neon"))
+                for unlock in state.pending_badge_unlocks:
+                    console.print(render_badge_unlock_panel(unlock, theme))
+                state.pending_badge_unlocks = []
                 save_state(state)
         except Exception:
             pass  # Never block the user's terminal workflow

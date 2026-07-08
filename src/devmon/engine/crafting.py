@@ -74,4 +74,7 @@ def craft(state: "GameState", recipe: "RecipeDefinition") -> bool:
     state.inventory[recipe.result_item_id] = (
         state.inventory.get(recipe.result_item_id, 0) + recipe.result_qty
     )
+    # Phase C badge tracking (items_crafted) -- lifetime count, summed by
+    # result_qty so a recipe yielding multiple items counts proportionally.
+    state.crafted_items_count += recipe.result_qty
     return True

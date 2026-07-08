@@ -1,0 +1,93 @@
+{
+  "_comment": "Phase C perk tree. Loaded by engine/perks.py. Each perk has 3 ranks, 1 perk point per rank. Numeric tuning per rank lives ONLY in engine/perks.py's modifier helpers (get_perk_rank + the per-perk *_bonus/_multiplier functions) -- rank_effects here are player-facing prose only, kept qualitative for capture_bond per the hard no-capture-percentage rule.",
+  "perks": [
+    {
+      "id": "capture_bond",
+      "name": "Capture Bond",
+      "icon": "()",
+      "description": "Your capsules grip tighter with every rank.",
+      "rank_effects": [
+        "Capsules grip a little tighter.",
+        "Capsules grip noticeably tighter.",
+        "Capsules grip decisively tighter."
+      ]
+    },
+    {
+      "id": "xp_tuner",
+      "name": "XP Tuner",
+      "icon": "^^",
+      "description": "Tunes your coding-activity XP gain upward.",
+      "rank_effects": [
+        "+5% XP from coding activity.",
+        "+10% XP from coding activity.",
+        "+15% XP from coding activity."
+      ]
+    },
+    {
+      "id": "encounter_magnet",
+      "name": "Encounter Magnet",
+      "icon": "<>",
+      "description": "Shortens the wait between wild encounter rolls.",
+      "rank_effects": [
+        "Encounter rolls come around a bit sooner.",
+        "Encounter rolls come around noticeably sooner.",
+        "Encounter rolls come around a lot sooner."
+      ]
+    },
+    {
+      "id": "rift_sensor",
+      "name": "Rift Sensor",
+      "icon": "~~",
+      "description": "Improves your odds of catching a temporal rift after a commit.",
+      "rank_effects": [
+        "Slightly better temporal-rift odds after a commit.",
+        "Better temporal-rift odds after a commit.",
+        "Much better temporal-rift odds after a commit."
+      ]
+    },
+    {
+      "id": "loot_hoarder",
+      "name": "Loot Hoarder",
+      "icon": "[]",
+      "description": "Improves your odds of a material drop after battle wins.",
+      "rank_effects": [
+        "Slightly better material drop odds.",
+        "Better material drop odds.",
+        "Much better material drop odds."
+      ]
+    },
+    {
+      "id": "candy_refiner",
+      "name": "Candy Refiner",
+      "icon": "**",
+      "description": "Refines more candy out of every duplicate you convert.",
+      "rank_effects": [
+        "No extra yield yet.",
+        "+1 candy per conversion.",
+        "+2 candy per conversion."
+      ]
+    },
+    {
+      "id": "drill_sergeant",
+      "name": "Drill Sergeant",
+      "icon": "!!",
+      "description": "Pushes your creatures to earn more XP from every battle win.",
+      "rank_effects": [
+        "+10% creature XP from battle wins.",
+        "+20% creature XP from battle wins.",
+        "+30% creature XP from battle wins."
+      ]
+    },
+    {
+      "id": "center_overclock",
+      "name": "Center Overclock",
+      "icon": "@@",
+      "description": "Shortens the Repo Center's free-heal cooldown.",
+      "rank_effects": [
+        "Repo Center cooldown reduced.",
+        "Repo Center cooldown reduced further.",
+        "Repo Center cooldown reduced substantially."
+      ]
+    }
+  ]
+}

@@ -141,14 +141,45 @@ def _run_chain(chain: str, raw_stdin: bytes) -> list[str]:
     return lines
 
 
-def _normal_row(level: int, earned: int, needed: int, use_emoji: bool) -> str:
+def _rank_tag(level: int, badge_count: int, prestige_count: int) -> str:
+    """Build the compact, width-safe (ord < 0x2600) rank tag prepended to the
+    FULL statusline row only (never the compact variant) -- e.g. "[Sr] " or
+    "[Sr*] " with a prestige star. Uses '*' rather than '★' (U+2605, above
+    the width-safe threshold). Empty badge_count/prestige_count still
+    renders "[In] " (Intern) -- the tag is always present on the full row.
+    Uses the same engine.badges.compute_rank as `devmon status`/`devmon
+    badges` so the abbreviation always matches the full rank name shown
+    elsewhere.
+    """
+    from devmon.engine.badges import compute_rank, rank_abbreviation
+
+    rank_name = compute_rank(level=level, badge_count=badge_count)
+    abbrev = rank_abbreviation(rank_name)
+    star = "*" if prestige_count > 0 else ""
+    return f"[{abbrev}{star}] "
+
+
+def _normal_row(
+    level: int,
+    earned: int,
+    needed: int,
+    use_emoji: bool,
+    badge_count: int = 0,
+    prestige_count: int = 0,
+) -> str:
     """Build the idle Lv./xp-bar row, built locally (not via
     daemon.frames.build_status_strip -- that surface renders the daemon's
     own indicator strip and must stay untouched). Width-safe: only U+25B0/
     U+25B1 bar chars and the U+21AF glyph appear outside ANSI/OSC 8
     wrappers, both unambiguous width-1 codepoints. Segments/fill chars are
     still reused from devmon.daemon.frames so the two surfaces render
-    identical bars."""
+    identical bars.
+
+    Prepends a dim-styled compact rank tag (Phase C -- see _rank_tag), using
+    the same engine.badges.compute_rank(level, badge_count) as `devmon
+    status`/`devmon badges` so the tag always agrees with the full rank name
+    shown elsewhere.
+    """
     from devmon.daemon.frames import (
         compute_bar_progress,
         STRIP_BAR_SEGMENTS,
@@ -160,15 +191,16 @@ def _normal_row(level: int, earned: int, needed: int, use_emoji: bool) -> str:
 
     filled, pct = compute_bar_progress(earned, needed)
     empty = STRIP_BAR_SEGMENTS - filled
+    rank_tag = f"\033[2m{_rank_tag(level, badge_count, prestige_count)}\033[0m"
 
     if use_emoji:
         bar = (STRIP_BAR_FILLED_EMOJI * filled) + (STRIP_BAR_EMPTY_EMOJI * empty)
         glyph = f"{_BRIGHT_YELLOW}{_UP_ARROW}{_RESET}"
-        return f"{glyph} Lv.{level} {bar} {pct}%"
+        return f"{rank_tag}{glyph} Lv.{level} {bar} {pct}%"
 
     bar = (STRIP_BAR_FILLED_ASCII * filled) + (STRIP_BAR_EMPTY_ASCII * empty)
     text = f"DevMon Lv.{level} [{bar}] {pct}%"
-    return f"{_CYAN}{text}{_RESET}"
+    return f"{rank_tag}{_CYAN}{text}{_RESET}"
 
 
 def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
@@ -500,11 +532,13 @@ def statusline(
         level = snapshot.get("level", 1)
         earned = snapshot.get("earned", 0)
         needed = snapshot.get("needed", 1)
+        badge_count = snapshot.get("badges", 0)
+        prestige_count = snapshot.get("prestige", 0)
         if snapshot.get("encounter"):
             candidates = [_encounter_row(use_emoji), _encounter_row_compact(use_emoji)]
         else:
             candidates = [
-                _normal_row(level, earned, needed, use_emoji),
+                _normal_row(level, earned, needed, use_emoji, badge_count, prestige_count),
                 _normal_row_compact(level, earned, needed, use_emoji),
             ]
         lines = _compose_lines(chain_lines, candidates, _effective_cols(config))

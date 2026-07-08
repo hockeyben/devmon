@@ -126,7 +126,7 @@ def test_interactive_win_grants_material_and_narrates_found(tmp_path, monkeypatc
     monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
     monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
     monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
-    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None: "scrap_silicon")
+    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None, state=None: "scrap_silicon")
 
     state = GameState.new_game("TestPlayer")
     state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=5))
@@ -162,7 +162,7 @@ def test_interactive_win_no_drop_prints_nothing(tmp_path, monkeypatch):
     monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
     monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
     monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
-    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None: None)
+    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None, state=None: None)
 
     state = GameState.new_game("TestPlayer")
     state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=5))
@@ -201,7 +201,7 @@ def test_auto_battle_win_report_includes_found_material(tmp_path, monkeypatch):
     monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
     monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
     monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
-    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None: "copper_trace")
+    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None, state=None: "copper_trace")
 
     state = GameState.new_game("AutoTester")
     state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=10))
@@ -233,7 +233,7 @@ def test_auto_battle_win_report_omits_found_when_no_drop(tmp_path, monkeypatch):
     monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
     monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
     monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
-    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None: None)
+    monkeypatch.setattr(loot, "roll_loot", lambda rarity, rng=None, state=None: None)
 
     state = GameState.new_game("AutoTester")
     state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=10))

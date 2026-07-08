@@ -117,6 +117,7 @@ def maybe_bump_rarity(
     available_rarities: set[str],
     events: Optional[list[dict]],
     config: dict,
+    chance_bonus: float = 0.0,
 ) -> str:
     """Temporal rift (D-XX, biomes): a git_commit in the current batch gives
     the next spawn a 25%-default chance to roll up one rarity tier (e.g.
@@ -132,6 +133,9 @@ def maybe_bump_rarity(
             possibly-out-of-region creature.
         events: The event batch being processed this tick.
         config: DevMon config dict (game.biomes_enabled, game.biome_rift_chance).
+        chance_bonus: Additive bonus to the rift chance (Phase C's
+            rift_sensor perk -- see engine.perks.rift_chance_bonus). 0.0
+            (the default) preserves the pre-Phase-C behavior exactly.
 
     Returns:
         The (possibly bumped) rarity string.
@@ -142,7 +146,7 @@ def maybe_bump_rarity(
     if not had_recent_git_commit(events):
         return rarity
 
-    chance = game_cfg.get("biome_rift_chance", 0.25)
+    chance = min(1.0, game_cfg.get("biome_rift_chance", 0.25) + chance_bonus)
     if random.random() >= chance:
         return rarity
 

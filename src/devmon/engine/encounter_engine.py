@@ -391,8 +391,13 @@ def tick_encounter(
     notification: str | None = None
 
     # ----- Normal timer logic (D-01, D-02) -----
+    # Phase C: encounter_magnet perk shortens the tick interval per rank
+    # (engine.perks.encounter_interval_seconds; no-op at rank 0).
+    from devmon.engine.perks import encounter_interval_seconds
+
     cooldown_ok = now >= state.encounter_cooldown_until
-    tick_ok = now >= state.last_encounter_time + ENCOUNTER_TICK_INTERVAL_SECONDS
+    tick_interval = encounter_interval_seconds(state, ENCOUNTER_TICK_INTERVAL_SECONDS)
+    tick_ok = now >= state.last_encounter_time + tick_interval
 
     if cooldown_ok and tick_ok:
         chance = ENCOUNTER_BASE_CHANCE + (state.encounter_roll_count * ENCOUNTER_CHANCE_ESCALATION)
@@ -461,9 +466,14 @@ def _spawn_encounter(
     region_id = getattr(state, "current_region", None) or DEFAULT_REGION_ID
     pool_registry = region_candidate_registry(region_id, registry)
 
+    from devmon.engine.perks import rift_chance_bonus
+
     rolled_rarity = roll_encounter_rarity()
     available_rarities = region_available_rarities(region_id, registry)
-    rolled_rarity = maybe_bump_rarity(rolled_rarity, available_rarities, events, config)
+    rolled_rarity = maybe_bump_rarity(
+        rolled_rarity, available_rarities, events, config,
+        chance_bonus=rift_chance_bonus(state),
+    )
 
     type_weights = type_weight_multipliers(config, now=now, events=events)
     creature_id = select_creature_for_rarity(pool_registry, rolled_rarity, type_weights=type_weights)

@@ -76,3 +76,15 @@ class EncounterEntry(BaseModel):
     Prevents duplicate notifications across multiple preexec hook firings
     before the player runs `devmon encounter` (Pattern 8).
     """
+
+    is_boss_pin: bool = False
+    """True for a legendary quest chain's pinned boss encounter (Phase C --
+    see engine.legendary_quests.spawn_boss_encounter). Bypasses the normal
+    spawn RNG entirely and is NEVER touched by auto-battle (see
+    engine.auto_battle.auto_resolve_encounter's guard). Missing in old saves
+    defaults cleanly to False (field-presence-safe, no migration needed)."""
+
+    stat_multiplier: float = 1.0
+    """Stat bonus applied to the wild creature's base stats for a pinned
+    boss encounter (Phase C, e.g. 1.15 for +15%). 1.0 (no-op) for every
+    ordinary encounter. See engine.legendary_quests.apply_boss_stat_bonus."""

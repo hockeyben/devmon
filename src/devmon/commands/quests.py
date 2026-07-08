@@ -33,3 +33,21 @@ def quests_command() -> None:
     console = Console()
     panel = render_quest_list(state.active_quests, theme)
     console.print(panel)
+
+    # Phase C: legendary quest chain section (only for the player's
+    # unlocked regions -- locked-region chains render as "???" teasers).
+    from devmon.engine.legendary_quests import chain_catalog
+    from devmon.engine.regions import is_region_unlocked, load_all_regions
+    from devmon.render.legendary import render_legendary_section
+
+    all_regions = load_all_regions()
+    unlocked_regions = {
+        rid for rid in all_regions if is_region_unlocked(rid, state.player.level)
+    }
+    region_names = {rid: r.name for rid, r in all_regions.items()}
+    progress_by_species = dict(state.legendary_chain_progress)
+
+    legendary_panel = render_legendary_section(
+        chain_catalog(), progress_by_species, unlocked_regions, region_names, theme
+    )
+    console.print(legendary_panel)

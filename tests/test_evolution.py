@@ -150,8 +150,8 @@ def test_current_version_matches_schema():
     assert CURRENT_VERSION == default_version
 
 
-def test_migrate_v9_save_to_v11():
-    """Loading a v9 save dict through migrate() produces schema_version=11."""
+def test_migrate_v9_save_to_v12():
+    """Loading a v9 save dict through migrate() produces schema_version=12."""
     from devmon.persistence.migrations import migrate
 
     data = {
@@ -159,7 +159,7 @@ def test_migrate_v9_save_to_v11():
         "player": {"name": "Ash"},
     }
     result = migrate(data)
-    assert result["schema_version"] == 11
+    assert result["schema_version"] == 12
     assert "pending_evolution_notifications" in result
 
 

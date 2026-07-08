@@ -550,6 +550,11 @@ def battle_cmd() -> None:
 
     # --- Step 3: Set up wild creature state ---
     wild_template = get_creature(entry.template_id)
+    # Phase C: a pinned legendary boss encounter scales its base stats up
+    # (see engine.legendary_quests.apply_boss_stat_bonus -- a no-op copy
+    # when stat_multiplier is 1.0, i.e. every ordinary encounter).
+    from devmon.engine.legendary_quests import apply_boss_stat_bonus
+    wild_template = apply_boss_stat_bonus(wild_template, entry.stat_multiplier)
     wild_level = entry.encounter_level
     wild_max_hp = compute_max_hp(wild_template, wild_level)
 
@@ -736,6 +741,10 @@ def battle_cmd() -> None:
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
+                    from devmon.engine.legendary_quests import record_battle_win_for_chains
+                    from devmon.engine.perks import battle_xp_multiplier_bonus
+                    record_battle_win_for_chains(state)
+                    rewards["creature_xp"] = int(rewards["creature_xp"] * battle_xp_multiplier_bonus(state))
                     medibot_msg = record_battle_win(state)
                     loot_msg = _roll_and_apply_loot(state, wild.rarity)
                     config = load_config()
@@ -922,6 +931,10 @@ def battle_cmd() -> None:
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
+                    from devmon.engine.legendary_quests import record_battle_win_for_chains
+                    from devmon.engine.perks import battle_xp_multiplier_bonus
+                    record_battle_win_for_chains(state)
+                    rewards["creature_xp"] = int(rewards["creature_xp"] * battle_xp_multiplier_bonus(state))
                     medibot_msg = record_battle_win(state)
                     loot_msg = _roll_and_apply_loot(state, wild.rarity)
                     config = load_config()
@@ -1060,9 +1073,16 @@ def battle_cmd() -> None:
                     success = True
                 else:
                     hp_percent = wild.current_hp / wild.max_hp if wild.max_hp > 0 else 0.01
+                    # Phase C: capture_bond perk multiplies the capsule's own
+                    # capture_multiplier ("capsules grip tighter" -- never
+                    # surfaced as a number, per the hard no-capture-% rule).
+                    from devmon.engine.perks import capture_multiplier_bonus
+                    effective_capture_multiplier = (
+                        selected_capsule.capture_multiplier * capture_multiplier_bonus(state)
+                    )
                     # Compute capture chance — capture_rate NEVER shown to player (T-06-06, D-15)
                     capture_chance = compute_capture_chance(
-                        wild_template.capture_rate, hp_percent, selected_capsule.capture_multiplier
+                        wild_template.capture_rate, hp_percent, effective_capture_multiplier
                     )
                     success = attempt_capture(capture_chance)
 
@@ -1467,6 +1487,20 @@ def battle_cmd() -> None:
     except Exception:
         pass
 
+    # Phase C: reconcile legendary quest chain progress for a pinned boss
+    # encounter, whatever the outcome (win/loss/flee/capture success or
+    # failure). Placed once here, after the entire turn loop, rather than
+    # threaded through each of the loop's many outcome branches above --
+    # `entry` still holds the pre-battle encounter_queue snapshot even
+    # though state.encounter_queue has since been cleared by every exit
+    # path.
+    try:
+        from devmon.engine.legendary_quests import reconcile_boss_resolution
+        reconcile_boss_resolution(state, entry)
+        save(state)
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Loot helper: material drops on battle wins (Phase A2)
@@ -1485,7 +1519,7 @@ def _roll_and_apply_loot(state, rarity: str) -> Optional[str]:
     from devmon.engine.loot import roll_loot
     from devmon.engine.item_loader import load_all_items
 
-    material_id = roll_loot(rarity)
+    material_id = roll_loot(rarity, state=state)
     if material_id is None:
         return None
 
@@ -1502,14 +1536,31 @@ def _roll_and_apply_loot(state, rarity: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 def _auto_heal(state) -> None:
-    """Auto-heal all party creatures to full HP after any battle outcome.
+    """Auto-heal all party creatures to full HP after any battle outcome --
+    ONLY if game.full_heal_after_battle is explicitly enabled (default
+    False).
 
-    Sets current_hp to None (meaning full HP) and is_fainted to False for
-    all owned creatures. This is the MVP healing mechanism.
+    Historically this ran unconditionally as the MVP healing mechanism.
+    Healing is now a real system (potions, the Repo Center free heal, and
+    the Medibot Module's win-streak trigger -- see commands/heal.py and
+    engine/medibot.py), so the free full-team heal after every battle is
+    gated behind opt-in config instead of being the default: HP now
+    persists between battles like any other resource.
 
     Args:
-        state: GameState instance (mutated in-place).
+        state: GameState instance (mutated in-place, only if enabled).
     """
+    from devmon.config.loader import load_config
+
+    try:
+        config = load_config()
+    except Exception:
+        from devmon.config.defaults import DEFAULT_CONFIG
+        config = DEFAULT_CONFIG
+
+    if not config.get("game", {}).get("full_heal_after_battle", False):
+        return
+
     for owned in state.creature_collection:
         owned.current_hp = None
         owned.is_fainted = False

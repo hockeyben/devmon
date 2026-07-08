@@ -170,4 +170,7 @@ def turn_in_quest(
         reward_parts.append(f"+{quest.reward_item_qty} {quest.reward_item_id}")
 
     state.npc_quest_completions[quest.id] = week_key(today)
+    # Phase C badge tracking (npc_quests_completed) -- lifetime count,
+    # distinct from npc_quest_completions' weekly-overwrite dict above.
+    state.npc_quests_completed_count += 1
     return True, f"Quest complete! {npc.name} pays you: {', '.join(reward_parts)}."

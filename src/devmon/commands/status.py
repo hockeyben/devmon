@@ -87,6 +87,12 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
     identity_grid.add_row(Text("Level"), Text(str(p.level), style=theme["level"]))
     identity_grid.add_row(Text("Currency"), Text(f"{p.currency} Bits", style="gold1"))
 
+    from devmon.engine.badges import rank_for_state
+    rank_text = rank_for_state(state)
+    if p.prestige_count > 0:
+        rank_text = f"{rank_text} ★ ({p.prestige_count})"
+    identity_grid.add_row(Text("Rank"), Text(rank_text, style=theme["level"]))
+
     from devmon.engine.regions import get_region
     try:
         region_name = get_region(state.current_region).name

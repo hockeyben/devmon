@@ -14,7 +14,10 @@ is only ever narrated qualitatively ("found X!" / nothing at all).
 from __future__ import annotations
 
 import random as _random_module
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from devmon.models.state import GameState
 
 # Chance (0.0-1.0) that a battle win drops any material at all, by wild rarity.
 # Never shown to the player -- internal tuning only.
@@ -61,7 +64,11 @@ DROP_POOL: dict[str, list[tuple[str, int]]] = {
 }
 
 
-def roll_loot(rarity: str, rng: Optional[_random_module.Random] = None) -> Optional[str]:
+def roll_loot(
+    rarity: str,
+    rng: Optional[_random_module.Random] = None,
+    state: "Optional[GameState]" = None,
+) -> Optional[str]:
     """Roll for a material drop after a battle win.
 
     Args:
@@ -69,12 +76,18 @@ def roll_loot(rarity: str, rng: Optional[_random_module.Random] = None) -> Optio
         rng: Optional random.Random instance for deterministic testing.
             Defaults to the stdlib `random` module (module-level functions
             share the exact same API surface used here).
+        state: Optional GameState -- when given, engine.perks'
+            loot_hoarder perk bonus is added to the drop chance (Phase C).
+            None (the default) preserves the pre-Phase-C behavior exactly.
 
     Returns:
         A material item id if a drop occurred, None otherwise.
     """
     rng_source = rng if rng is not None else _random_module
     chance = DROP_CHANCE.get(rarity, DROP_CHANCE["common"])
+    if state is not None:
+        from devmon.engine.perks import loot_chance_bonus
+        chance = min(1.0, chance + loot_chance_bonus(state))
     if rng_source.random() >= chance:
         return None
 

@@ -1,0 +1,97 @@
+{
+  "_comment": "Phase C legendary quest chains -- one 3-step chain per legendary species currently in the roster (grep rarity==legendary: null_terminator, segmentation_lord, void_leviathan, thorn_ancient -- all four currently live in the Voidnet per data/regions.json). Loaded by engine/legendary_quests.py. Step 3 is always a pinned boss_battle: the legendary spawns at the top of its species level_range with stat_multiplier applied, bypassing normal spawn RNG. Victory does NOT auto-capture -- the normal capture flow (devmon battle choice [3]) still applies. `devmon quests` shows chains only for the player's unlocked regions; locked-region chains show as '???' teasers.",
+  "chains": [
+    {
+      "species_id": "void_leviathan",
+      "region": "voidnet",
+      "name": "The Null Abyss",
+      "retry_battles_required": 3,
+      "steps": [
+        {
+          "type": "battles_in_region",
+          "description": "Win 10 battles in the Voidnet to draw its attention.",
+          "target": 10
+        },
+        {
+          "type": "possess_materials",
+          "description": "Offer 5 Void Shards to the space between commits.",
+          "materials": {"void_shard": 5}
+        },
+        {
+          "type": "boss_battle",
+          "description": "VoidLeviathan surfaces from the unfinished feature branch. Confront it.",
+          "stat_multiplier": 1.15
+        }
+      ]
+    },
+    {
+      "species_id": "thorn_ancient",
+      "region": "voidnet",
+      "name": "Roots Older Than Version Control",
+      "retry_battles_required": 3,
+      "steps": [
+        {
+          "type": "battles_in_region",
+          "description": "Win 10 battles in the Voidnet to prove your persistence.",
+          "target": 10
+        },
+        {
+          "type": "possess_materials",
+          "description": "Offer 2 units of Root of All at its base.",
+          "materials": {"root_of_all": 2}
+        },
+        {
+          "type": "boss_battle",
+          "description": "ThornAncient's roots finally part. Confront the primordial trunk.",
+          "stat_multiplier": 1.15
+        }
+      ]
+    },
+    {
+      "species_id": "null_terminator",
+      "region": "voidnet",
+      "name": "End of Every Buffer",
+      "retry_battles_required": 3,
+      "steps": [
+        {
+          "type": "battles_in_region",
+          "description": "Win 10 battles in the Voidnet without a single crash.",
+          "target": 10
+        },
+        {
+          "type": "possess_materials",
+          "description": "Offer 6 Kernel Fragments at the edge of the routing table.",
+          "materials": {"kernel_fragment": 6}
+        },
+        {
+          "type": "boss_battle",
+          "description": "NullTerminator marks the true end of the buffer. Confront it.",
+          "stat_multiplier": 1.15
+        }
+      ]
+    },
+    {
+      "species_id": "segmentation_lord",
+      "region": "voidnet",
+      "name": "Fault of All Faults",
+      "retry_battles_required": 3,
+      "steps": [
+        {
+          "type": "battles_in_region",
+          "description": "Win 10 battles in the Voidnet and survive every one.",
+          "target": 10
+        },
+        {
+          "type": "possess_materials",
+          "description": "Offer 3 Void Shards and 3 Kernel Fragments to every discarded crash report.",
+          "materials": {"void_shard": 3, "kernel_fragment": 3}
+        },
+        {
+          "type": "boss_battle",
+          "description": "SegmentationLord remembers every fault. Confront it.",
+          "stat_multiplier": 1.15
+        }
+      ]
+    }
+  ]
+}
