@@ -374,6 +374,12 @@ def run_indicator_daemon(
     # Terminal width -- updated each tick + SIGWINCH (RESEARCH.md Pattern 2)
     _cols = get_terminal_cols()
 
+    # Width of the most recently rendered strip. clear_indicator's default
+    # width (3) was sized for the legacy walking-glyph frames; the status
+    # strip is 19-33 cols wide, so clearing must use the rendered width or
+    # it leaves strip residue on screen when hiding.
+    _last_render_width = 3
+
     if sys.platform != "win32":
         def _resize_handler(sig, frame):
             nonlocal _cols
@@ -382,7 +388,7 @@ def run_indicator_daemon(
         def _exit_handler(sig, frame):
             # Clear indicator on exit, then clean up
             try:
-                write_to_terminal(clear_indicator(_cols))
+                write_to_terminal(clear_indicator(_cols, _last_render_width))
             except Exception:
                 pass
             remove_pid(pf)
@@ -438,7 +444,7 @@ def run_indicator_daemon(
                     if cur_y != _last_y:
                         # New line — clear indicator on old line and reset
                         if not was_hidden:
-                            write_to_terminal(clear_indicator(_cols))
+                            write_to_terminal(clear_indicator(_cols, _last_render_width))
                             was_hidden = True
                         _last_y = cur_y
                         _last_x = cur_x
@@ -453,7 +459,7 @@ def run_indicator_daemon(
                         _stable_ticks = 0
                         # Cursor moved horizontally — user typing, hide immediately
                         if not was_hidden:
-                            write_to_terminal(clear_indicator(_cols))
+                            write_to_terminal(clear_indicator(_cols, _last_render_width))
                             was_hidden = True
                         time.sleep(0.1)
                         _render_counter += 1
@@ -469,7 +475,7 @@ def run_indicator_daemon(
                         if cur_x > _prompt_x:
                             # Text on command line — stay hidden
                             if not was_hidden:
-                                write_to_terminal(clear_indicator(_cols))
+                                write_to_terminal(clear_indicator(_cols, _last_render_width))
                                 was_hidden = True
                             time.sleep(0.1)
                             _render_counter += 1
@@ -498,7 +504,7 @@ def run_indicator_daemon(
                 # Battle screen (Rich Live) always wins -- indicator stays hidden.
                 if _snapshot["hidden"]:
                     if not was_hidden:
-                        write_to_terminal(clear_indicator(_cols))
+                        write_to_terminal(clear_indicator(_cols, _last_render_width))
                         was_hidden = True
                     time.sleep(0.1)
                     _render_counter += 1
@@ -509,7 +515,7 @@ def run_indicator_daemon(
                 # skips this gate entirely -- always-on by default.
                 if mode == "flash" and not should_show(sf):
                     if not was_hidden:
-                        write_to_terminal(clear_indicator(_cols))
+                        write_to_terminal(clear_indicator(_cols, _last_render_width))
                         was_hidden = True
                     time.sleep(0.1)
                     _render_counter += 1
@@ -531,6 +537,7 @@ def run_indicator_daemon(
 
                 output = render_indicator(text, width, _cols)
                 write_to_terminal(output)
+                _last_render_width = width
                 frame_idx = (frame_idx + 1) % 4
 
             time.sleep(0.1)
@@ -540,7 +547,7 @@ def run_indicator_daemon(
     finally:
         # Clear indicator and remove PID on any exit
         try:
-            write_to_terminal(clear_indicator(_cols))
+            write_to_terminal(clear_indicator(_cols, _last_render_width))
         except Exception:
             pass
         remove_pid(pf)

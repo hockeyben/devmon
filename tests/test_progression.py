@@ -127,3 +127,46 @@ def test_reward_xp_from_quests_achievements_levels_up():
     assert state.player.level >= 2, (
         "reward XP crossed the threshold but the level never advanced"
     )
+
+
+# --- Claude statusline XP bridge: ai_code event type -----------------------
+
+
+def test_ai_code_zero_lines_generates_no_xp():
+    """0 changed lines -> 0 XP (no reward for a no-op diff)."""
+    from devmon.engine.progression import compute_event_xp
+    from devmon.config.defaults import DEFAULT_CONFIG
+    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 0}
+    assert compute_event_xp(event, DEFAULT_CONFIG) == 0
+
+
+def test_ai_code_three_lines_generates_one_xp():
+    """xp_ai_lines_per_xp default is 3 -> 3 lines = 1 XP."""
+    from devmon.engine.progression import compute_event_xp
+    from devmon.config.defaults import DEFAULT_CONFIG
+    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 3}
+    assert compute_event_xp(event, DEFAULT_CONFIG) == 1
+
+
+def test_ai_code_xp_capped_at_forty():
+    """xp_ai_lines_cap default is 40 -- 300 lines would be 100 XP uncapped,
+    must clamp to 40."""
+    from devmon.engine.progression import compute_event_xp
+    from devmon.config.defaults import DEFAULT_CONFIG
+    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 300}
+    assert compute_event_xp(event, DEFAULT_CONFIG) == 40
+
+
+def test_ai_code_does_not_increment_total_commands():
+    """ai_code events must not count toward total_commands -- only type=="cmd"
+    does (process_events)."""
+    from devmon.engine.progression import process_events
+    from devmon.models.state import GameState
+    from devmon.config.defaults import DEFAULT_CONFIG
+
+    state = GameState.new_game("Tester")
+    before = state.player.total_commands
+    events = [{"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 9}]
+    process_events(state, events, DEFAULT_CONFIG)
+    assert state.player.total_commands == before
+    assert state.player.xp > 0  # XP was still awarded

@@ -17,6 +17,13 @@ import re
 # same convention as the legacy SEARCH_FRAMES_ASCII/ALERT_FRAMES_ASCII frames.
 _ANSI_RE = re.compile(r"\033\[[0-9;]*m")
 
+# OSC 8 hyperlink wrapper sequences -- e.g. `\033]8;;URL\033\\` (ST-terminated)
+# or `\033]8;;URL\a` (BEL-terminated), and the empty-URL close sequence
+# `\033]8;;\033\\` / `\033]8;;\a`. Only the escape wrapper is stripped; the
+# link's visible label text (e.g. "battle" in the statusline's clickable
+# `devmon://battle` link) remains and counts normally toward width.
+_OSC8_RE = re.compile(r"\033\]8;[^;\a]*;[^\a\033]*(?:\033\\|\a)")
+
 
 def _char_width(ch: str) -> int:
     """Return the terminal column width of a single character.
@@ -39,8 +46,10 @@ def _char_width(ch: str) -> int:
 
 
 def visible_width(text: str) -> int:
-    """Return the display width of *text*, excluding ANSI SGR codes."""
+    """Return the display width of *text*, excluding ANSI SGR codes and OSC 8
+    hyperlink wrapper sequences (statusline clickable-link support)."""
     stripped = _ANSI_RE.sub("", text)
+    stripped = _OSC8_RE.sub("", stripped)
     return sum(_char_width(ch) for ch in stripped)
 
 # --- Searching State ---

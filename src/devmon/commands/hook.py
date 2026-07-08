@@ -147,6 +147,31 @@ track_app = typer.Typer(
 )
 
 
+def resolve_event_log_path(config: dict) -> Path:
+    """Resolve the event log path, preferring a real user config override
+    over the stale import-time DEFAULT_CONFIG value.
+
+    DEFAULT_CONFIG["shell"]["event_log"] is computed once at import time from
+    whatever DEVMON_HOME was set to then, which goes stale across test
+    fixtures (and any long-lived process) that change DEVMON_HOME later.
+    `_default_event_log()` re-resolves DEVMON_HOME at call time, so this
+    treats `configured_log` as a genuine override only when it differs from
+    both the stale default AND the freshly-resolved default.
+
+    Shared by `devmon track test-pass` (this module) and `devmon
+    statusline`'s XP bridge (commands/statusline.py) -- both must land
+    events in the exact same log file the backlog processor reads from.
+    """
+    from devmon.config.defaults import DEFAULT_CONFIG, _default_event_log
+
+    dynamic_default = _default_event_log()
+    shell_cfg = config.get("shell", {})
+    configured_log = shell_cfg.get("event_log", dynamic_default)
+    if configured_log == DEFAULT_CONFIG["shell"]["event_log"] and configured_log != dynamic_default:
+        return Path(dynamic_default)
+    return Path(configured_log)
+
+
 @track_app.command("test-pass")
 def track_test_pass() -> None:
     """Record a test suite pass event for bonus XP.
@@ -165,19 +190,7 @@ def track_test_pass() -> None:
         from devmon.config.defaults import DEFAULT_CONFIG
         config = DEFAULT_CONFIG
 
-    # Resolve event log path dynamically — _default_event_log() reads DEVMON_HOME at call time
-    from devmon.config.defaults import _default_event_log
-    dynamic_default = _default_event_log()
-    shell_cfg = config.get("shell", {})
-    configured_log = shell_cfg.get("event_log", dynamic_default)
-
-    # Use configured_log only if it's a real user override (not the stale import-time default)
-    from devmon.config.defaults import DEFAULT_CONFIG as _DC
-    if configured_log == _DC["shell"]["event_log"] and configured_log != dynamic_default:
-        log_path = Path(dynamic_default)
-    else:
-        log_path = Path(configured_log)
-
+    log_path = resolve_event_log_path(config)
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     event = {

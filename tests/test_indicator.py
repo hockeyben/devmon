@@ -210,6 +210,29 @@ class TestStatusStrip:
         from devmon.daemon.frames import visible_width
         assert visible_width("⚡") == 2
 
+    def test_osc8_link_wrapper_excluded_from_width(self):
+        """OSC 8 hyperlink escape sequences (statusline's clickable
+        devmon://battle link) must not count toward display width -- only
+        the visible label text does."""
+        from devmon.daemon.frames import visible_width
+        linked = "\033]8;;devmon://battle\033\\battle\033]8;;\033\\"
+        assert visible_width(linked) == len("battle")
+
+    def test_osc8_link_bel_terminated_excluded_from_width(self):
+        """BEL-terminated OSC 8 form (`\\a` instead of ST `\\033\\\\`) --
+        both the open (with URL) and close (empty URL) wrappers use `\\a`."""
+        from devmon.daemon.frames import visible_width
+        linked = "\033]8;;devmon://battle\a battle\033]8;;\a"
+        assert visible_width(linked) == len(" battle")
+
+    def test_osc8_link_with_emoji_and_ansi_color_combined(self):
+        """Emoji glyph (2 cols) + ANSI SGR color + OSC 8 link wrapper, all in
+        one string -- only the emoji + link label text should count."""
+        from devmon.daemon.frames import visible_width
+        text = "⚠ " + "\033[1;33m" + "\033]8;;devmon://battle\033\\⚔ battle\033]8;;\033\\" + "\033[0m"
+        # "⚠ " = 2 (wide) + 1 (space) = 3; "⚔ battle" = 2 (wide) + 1 (space) + 6 ("battle") = 9
+        assert visible_width(text) == 3 + 9
+
 
 class TestXpBarMath:
     """XP bar math (Phase 11.1 requirement 6): 0%, 41%, 99%, level boundary."""
@@ -439,3 +462,105 @@ class TestShellHookIntegration:
         assert "indicator.pid" in POWERSHELL_HOOK_SNIPPET
         assert "devmon" in POWERSHELL_HOOK_SNIPPET
         assert "indicator" in POWERSHELL_HOOK_SNIPPET
+
+    def test_powershell_autostart_shares_console(self):
+        """Auto-start must keep the daemon attached to the user's console.
+
+        The daemon renders via CONOUT$ ("the console attached to this
+        process"). Start-Process -WindowStyle Hidden creates a NEW hidden
+        console, so the strip would draw into an invisible window. Only
+        -NoNewWindow shares the current terminal's console.
+        """
+        from devmon.shell.hooks import POWERSHELL_HOOK_SNIPPET
+        assert "-NoNewWindow" in POWERSHELL_HOOK_SNIPPET
+        assert "-WindowStyle Hidden" not in POWERSHELL_HOOK_SNIPPET
+        # Hook auto-start must be silent — no "Indicator started" noise at
+        # the prompt.
+        assert "'--quiet'" in POWERSHELL_HOOK_SNIPPET
+
+    def test_powershell_checks_indicator_disabled_marker(self):
+        """When ui.indicator_mode = off, `devmon indicator start` touches
+        indicator.disabled instead of spawning. The hook must check for that
+        marker so it stops re-spawning a starter process every prompt."""
+        from devmon.shell.hooks import POWERSHELL_HOOK_SNIPPET
+        assert "indicator.disabled" in POWERSHELL_HOOK_SNIPPET
+        assert "-not (Test-Path $disabledFile)" in POWERSHELL_HOOK_SNIPPET
+
+
+class TestIndicatorOffMode:
+    """Phase 11.1 requirement 5: `devmon indicator start` in off mode."""
+
+    def test_start_off_mode_creates_marker_and_spawns_nothing(self, tmp_path, monkeypatch):
+        import subprocess
+        from typer.testing import CliRunner
+        from devmon.commands.indicator import app
+
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        (tmp_path / "config.toml").write_text(
+            '[ui]\nindicator_mode = "off"\n', encoding="utf-8"
+        )
+
+        def _fail_popen(*args, **kwargs):
+            raise AssertionError("subprocess.Popen must not be called in off mode")
+
+        monkeypatch.setattr(subprocess, "Popen", _fail_popen)
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["start"])
+
+        assert result.exit_code == 0
+        assert "disabled" in result.output.lower()
+        assert (tmp_path / "indicator.disabled").exists()
+
+    def test_start_off_mode_quiet_suppresses_output(self, tmp_path, monkeypatch):
+        import subprocess
+        from typer.testing import CliRunner
+        from devmon.commands.indicator import app
+
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        (tmp_path / "config.toml").write_text(
+            '[ui]\nindicator_mode = "off"\n', encoding="utf-8"
+        )
+        monkeypatch.setattr(
+            subprocess, "Popen",
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not spawn")),
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["start", "--quiet"])
+
+        assert result.exit_code == 0
+        assert result.output.strip() == ""
+        assert (tmp_path / "indicator.disabled").exists()
+
+    def test_start_persistent_mode_removes_stale_disabled_marker(self, tmp_path, monkeypatch):
+        from typer.testing import CliRunner
+        from devmon.commands.indicator import app
+        from devmon.daemon import pid as pid_mod
+
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        # Default config -> persistent mode (no config.toml written).
+        marker = tmp_path / "indicator.disabled"
+        marker.touch()
+        assert marker.exists()
+
+        monkeypatch.setattr(pid_mod, "is_alive", lambda *a, **k: False)
+
+        spawned = {"called": False}
+
+        class _FakeProc:
+            pass
+
+        def _record_popen(*args, **kwargs):
+            spawned["called"] = True
+            return _FakeProc()
+
+        import subprocess
+        monkeypatch.setattr(subprocess, "Popen", _record_popen)
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["start", "--quiet"])
+
+        assert result.exit_code == 0
+        assert not marker.exists()
+        assert spawned["called"] is True

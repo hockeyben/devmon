@@ -93,13 +93,19 @@ function _DevmonPrePrompt {
         try { New-Item -ItemType Directory -Path $runtimeDir -Force -ErrorAction SilentlyContinue | Out-Null; [System.IO.File]::WriteAllText($showFile, '') } catch {}
         # Indicator daemon auto-start (Phase 11)
         $pidFile = Join-Path $runtimeDir 'indicator.pid'
+        $disabledFile = Join-Path $runtimeDir 'indicator.disabled'
         $daemonAlive = $false
         if (Test-Path $pidFile) {
             $pidVal = Get-Content $pidFile -ErrorAction SilentlyContinue
             if ($pidVal) { try { Get-Process -Id $pidVal -ErrorAction Stop | Out-Null; $daemonAlive = $true } catch {} }
         }
-        if (-not $daemonAlive) {
-            try { Start-Process -FilePath 'devmon' -ArgumentList 'indicator','start' -WindowStyle Hidden -ErrorAction SilentlyContinue } catch {}
+        if (-not $daemonAlive -and -not (Test-Path $disabledFile)) {
+            # -NoNewWindow is load-bearing: the daemon draws via CONOUT$, which
+            # means "the console attached to this process". A hidden-window
+            # spawn would give devmon (and the daemon it spawns) a NEW
+            # invisible console, so the status strip would render somewhere
+            # no one can see. -NoNewWindow keeps the daemon on THIS terminal.
+            try { Start-Process -FilePath 'devmon' -ArgumentList 'indicator','start','--quiet' -NoNewWindow -ErrorAction SilentlyContinue } catch {}
         }
     } finally {
         $script:_devmon_in_hook = $false

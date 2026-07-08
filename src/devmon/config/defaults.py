@@ -58,6 +58,10 @@ DEFAULT_CONFIG: dict = {
         # Streak multiplier (D-10, Pattern 8):
         "streak_xp_bonus_per_day": 0.05,  # +5% per consecutive day
         "streak_multiplier_cap": 2.0,     # max streak multiplier at 20 days
+        # Claude statusline XP bridge (ai_code events -- lines diffed from
+        # Claude Code's cost.total_lines_added/removed, see engine/progression.py):
+        "xp_ai_lines_per_xp": 3,           # 1 XP per this many changed lines
+        "xp_ai_lines_cap": 40,             # max XP awarded per ai_code event
     },
     "ui": {
         "theme": "neon",
@@ -72,6 +76,10 @@ DEFAULT_CONFIG: dict = {
         #     (indicator.show signal + DISPLAY_TIMEOUT), then auto-hides.
         #   "off"        — daemon never renders and exits immediately.
         "indicator_mode": "persistent",
+        # Claude statusline throttled quiet sync (min seconds between
+        # devmon.engine.sync.sync_game_state() runs triggered by `devmon
+        # statusline`, lockfile-guarded -- see commands/statusline.py).
+        "statusline_sync_seconds": 30,
     },
     "shell": {
         "event_log": _default_event_log(),

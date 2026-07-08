@@ -25,9 +25,11 @@ from devmon.commands import encounter as encounter_cmd
 from devmon.commands import hook as hook_cmd
 from devmon.commands import items as items_cmd
 from devmon.commands import prompt as prompt_cmd
+from devmon.commands import protocol as protocol_cmd
 from devmon.commands import settings as settings_cmd
 from devmon.commands import shop as shop_cmd
 from devmon.commands import status as status_cmd
+from devmon.commands import statusline as statusline_cmd
 from devmon.commands import quests as quests_cmd
 from devmon.commands import achievements as achievements_cmd
 from devmon.commands.hook import track_app
@@ -59,6 +61,8 @@ app.add_typer(items_cmd.app, name="items")
 app.add_typer(quests_cmd.app, name="quests")
 app.add_typer(achievements_cmd.app, name="achievements")
 app.add_typer(indicator_cmd.app, name="indicator")
+app.add_typer(protocol_cmd.app, name="protocol")
+app.command(name="statusline")(statusline_cmd.statusline)
 
 
 def _ensure_utf8_stdio() -> None:
@@ -205,6 +209,7 @@ def _process_event_log_on_startup() -> None:
 
 @app.callback()
 def main(
+    ctx: typer.Context,
     version: Optional[bool] = typer.Option(
         None,
         "--version",
@@ -216,4 +221,9 @@ def main(
 ) -> None:
     """DevMon CLI — gamified terminal RPG powered by coding activity."""
     _ensure_utf8_stdio()
-    _process_event_log_on_startup()
+    # `devmon statusline` runs on every Claude Code statusline refresh (every
+    # few seconds) and must print exactly one plain row -- never Rich panels,
+    # never a save-file write on the hot path. Backlog processing for that
+    # subcommand instead runs quietly/throttled via engine/sync.py.
+    if ctx.invoked_subcommand != "statusline":
+        _process_event_log_on_startup()

@@ -13,13 +13,39 @@ app = typer.Typer()
 
 
 @app.command()
-def start() -> None:
+def start(
+    quiet: bool = typer.Option(
+        False, "--quiet", help="Suppress output (used by shell hook auto-start)."
+    ),
+) -> None:
     """Start the indicator daemon as a background process."""
-    from devmon.daemon.pid import is_alive, read_pid
+    from devmon.daemon.indicator import resolve_indicator_mode
+    from devmon.daemon.pid import is_alive, pid_file_path, read_pid
+
+    # Resolve persistence mode FIRST -- "off" must never spawn a process,
+    # regardless of whether a (stale) daemon happens to already be alive.
+    mode = resolve_indicator_mode()
+    disabled_marker = pid_file_path().parent / "indicator.disabled"
+
+    if mode == "off":
+        disabled_marker.parent.mkdir(parents=True, exist_ok=True)
+        disabled_marker.touch()
+        if not quiet:
+            typer.echo("Indicator disabled (ui.indicator_mode = off)")
+        raise typer.Exit()
+
+    # Any other mode: clear a stale disabled marker (re-enable path) before
+    # proceeding with normal spawn logic.
+    if disabled_marker.exists():
+        try:
+            disabled_marker.unlink()
+        except OSError:
+            pass
 
     if is_alive():
-        pid = read_pid()
-        typer.echo(f"Indicator already running (PID {pid})")
+        if not quiet:
+            pid = read_pid()
+            typer.echo(f"Indicator already running (PID {pid})")
         raise typer.Exit()
 
     # Launch daemon as a background process.
@@ -54,8 +80,9 @@ def start() -> None:
     # Brief wait to let daemon write PID file
     import time
     time.sleep(0.3)
-    pid = read_pid()
-    typer.echo(f"Indicator started (PID {pid})")
+    if not quiet:
+        pid = read_pid()
+        typer.echo(f"Indicator started (PID {pid})")
 
 
 @app.command()

@@ -54,6 +54,16 @@ def compute_event_xp(event: dict, config: dict) -> int:
         return int(game_cfg.get("xp_git_commit", 50))
     elif event_type == "test_pass":
         return int(game_cfg.get("xp_test_pass", 75))
+    elif event_type == "ai_code":
+        # Claude statusline XP bridge (commands/statusline.py): "lines" is a
+        # diffed count of Claude's own added+removed lines since the last
+        # sync. 1 XP per xp_ai_lines_per_xp lines, capped at xp_ai_lines_cap
+        # per event -- does NOT increment total_commands (process_events only
+        # counts type=="cmd" toward that).
+        lines = max(0, int(event.get("lines", 0)))
+        per = max(1, int(game_cfg.get("xp_ai_lines_per_xp", 3)))
+        cap = int(game_cfg.get("xp_ai_lines_cap", 40))
+        return min(cap, max(1, lines // per)) if lines else 0
     else:
         # Plain successful command: 1 XP base
         return _CMD_BASE_XP
