@@ -160,3 +160,5 @@ None yet.
 Last session: 2026-04-07T06:52:17.306Z
 Stopped at: Phase 999.1 paused — art rendering approach TBD
 Resume file: .planning/phases/999.1-improve-ascii-art-for-all-25-creatures/999.1-CONTEXT.md
+
+- [art-v4 2026-07-07]: Roster art switched to hand-crafted Tuxemon sprites (CC BY-SA; per-monster credits in art/CREDITS.md; mapping chosen by hand from the 411-monster catalog — scratchpad devmon_tuxemon_map.json). Back-view sprites in art/back/ enable future player-side battle rendering. AI-generation pipeline (ComfyUI+FLUX+LoRA) remains available for bespoke additions.
