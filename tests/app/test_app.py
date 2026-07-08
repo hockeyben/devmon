@@ -74,6 +74,7 @@ async def test_pilot_navigation_reaches_every_screen(tmp_save_dir, app_factory):
             "tab-economy": "economy-screen",
             "tab-world": "world-screen",
             "tab-progression": "progression-screen",
+            "tab-quests": "quests-screen",
             "tab-settings": "settings-screen",
         }
         for tab_id, screen_id in expected_screens.items():
@@ -580,3 +581,32 @@ def test_play_spawn_failure_is_reported(monkeypatch, tmp_devmon_home):
     result = CliRunner().invoke(main_app, ["play"])
     assert result.exit_code == 1
     assert "devmon app" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Quests panel lists available and active storyline quests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_quests_panel_lists_available_and_active(tmp_save_dir, app_factory):
+    from textual.widgets import DataTable, TabbedContent
+
+    state = _seeded_state(level=1)
+    state.quest_log = {}
+    save_state(state)
+
+    app = app_factory()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#main-tabs", TabbedContent).active = "tab-quests"
+        await pilot.pause()
+
+        table = app.query_one("#quests-table", DataTable)
+        assert table.row_count > 0
+
+        row_texts = []
+        for row_key in table.rows:
+            row = table.get_row(row_key)
+            row_texts.append(" ".join(str(cell) for cell in row))
+        assert any("First Compile" in text for text in row_texts)

@@ -40,6 +40,7 @@ from devmon.app.screens.collection import CollectionScreen
 from devmon.app.screens.dashboard import DashboardScreen
 from devmon.app.screens.economy import EconomyScreen
 from devmon.app.screens.progression import ProgressionScreen
+from devmon.app.screens.quests import QuestsScreen
 from devmon.app.screens.settings import SettingsScreen
 from devmon.app.screens.world import WorldScreen
 from devmon.config.loader import load_config
@@ -209,6 +210,8 @@ class DevMonApp(App):
                 yield WorldScreen(id="world-screen")
             with TabPane("Progression", id="tab-progression"):
                 yield ProgressionScreen(id="progression-screen")
+            with TabPane("Quests", id="tab-quests"):
+                yield QuestsScreen(id="quests-screen")
             with TabPane("Settings", id="tab-settings"):
                 yield SettingsScreen(id="settings-screen")
         yield Footer()
@@ -262,6 +265,7 @@ class DevMonApp(App):
             "#economy-screen",
             "#world-screen",
             "#progression-screen",
+            "#quests-screen",
             "#settings-screen",
         ):
             try:
