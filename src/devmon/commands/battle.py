@@ -184,7 +184,9 @@ def _run_evolution_checks(state, participated: set, prev_levels: dict, console) 
                 if answer == "y":
                     old_template = t
                     apply_evolution(owned_c, t.evolves_to)
-                    render_evolution_before_after(old_template, evolved_template, console, narrow=narrow)
+                    render_evolution_before_after(
+                        old_template, evolved_template, console, narrow=console.width < 40
+                    )
                 else:
                     owned_c.evolution_declined = True
                     console.print(
