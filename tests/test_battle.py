@@ -141,6 +141,111 @@ def test_battle_screen_renders_hp_bars_and_art():
 
 
 # ---------------------------------------------------------------------------
+# Battle art: back-view player sprite + adaptive width + row cap
+# ---------------------------------------------------------------------------
+
+
+def _real_battle_template():
+    """A lightweight stand-in template pointing at a creature with real
+    front AND back PNGs on disk, so render_creature_art actually returns a
+    CreatureImage instead of falling back to ascii_art."""
+    from unittest.mock import MagicMock
+
+    template = MagicMock()
+    template.id = "bugbyte"
+    template.type = "Bug"
+    template.ascii_art = ["fallback"]
+    return template
+
+
+def test_your_panel_uses_back_view_art():
+    """prefix='YOUR' (the player's own creature) renders from the back
+    sprite; prefix='WILD' keeps the front sprite — authentic monster-tamer
+    framing (player sees their creature's back, faces the wild opponent)."""
+    from devmon.render.battle import render_battle_creature_panel
+    from devmon.render.image import CreatureImage
+
+    template = _real_battle_template()
+
+    your_panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="YOUR", rarity="common",
+    )
+    wild_panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="WILD", rarity="common",
+    )
+
+    your_art = your_panel.renderable.renderables[0]
+    wild_art = wild_panel.renderable.renderables[0]
+
+    assert isinstance(your_art, CreatureImage) and your_art.view == "back"
+    assert isinstance(wild_art, CreatureImage) and wild_art.view == "front"
+
+
+def test_battle_panel_art_caps_rows_at_battle_art_max_rows():
+    """The art embedded in a battle panel always carries the shared
+    BATTLE_ART_MAX_ROWS cap, regardless of prefix."""
+    from devmon.render.battle import BATTLE_ART_MAX_ROWS, render_battle_creature_panel
+    from devmon.render.image import CreatureImage
+
+    template = _real_battle_template()
+    panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="YOUR", rarity="common",
+    )
+    art = panel.renderable.renderables[0]
+    assert isinstance(art, CreatureImage)
+    assert art.max_rows == BATTLE_ART_MAX_ROWS
+    assert len(art.get_rows()) <= BATTLE_ART_MAX_ROWS
+
+
+def test_resolve_battle_art_width_narrow_console_stays_at_floor():
+    """Below the wide-terminal threshold, width stays at the original
+    fixed value (25) — byte-identical to pre-adaptive-width behavior."""
+    from devmon.render.battle import resolve_battle_art_width
+    assert resolve_battle_art_width(80) == 25
+
+
+def test_resolve_battle_art_width_wide_console_scales_up():
+    """A wide terminal (>= 100 cols) gets larger art, capped at 34."""
+    from devmon.render.battle import resolve_battle_art_width
+    width = resolve_battle_art_width(120)
+    assert width > 25
+    assert width <= 34
+
+
+def test_render_battle_creature_panel_console_width_none_is_unchanged():
+    """Omitting console_width (every pre-existing call site) reproduces the
+    original fixed width=25 exactly — a pure no-op."""
+    from devmon.render.battle import render_battle_creature_panel
+    from devmon.render.image import CreatureImage
+
+    template = _real_battle_template()
+    panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="WILD", rarity="common",
+    )
+    art = panel.renderable.renderables[0]
+    assert isinstance(art, CreatureImage)
+    assert art.requested_width == 25
+
+
+def test_render_battle_creature_panel_wide_console_width_increases_art_width():
+    from devmon.render.battle import render_battle_creature_panel
+    from devmon.render.image import CreatureImage
+
+    template = _real_battle_template()
+    panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="WILD", rarity="common", console_width=120,
+    )
+    art = panel.renderable.renderables[0]
+    assert isinstance(art, CreatureImage)
+    assert art.requested_width > 25
+
+
+# ---------------------------------------------------------------------------
 # BATL-06: Battle rewards
 # ---------------------------------------------------------------------------
 

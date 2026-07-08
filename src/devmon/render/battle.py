@@ -31,6 +31,47 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
+# Adaptive battle art sizing
+# ---------------------------------------------------------------------------
+
+# Battle art width bounds. Below the "wide" threshold, art stays at the
+# original fixed floor width (25) — this preserves byte-identical output on
+# every console width the feature previously shipped at. At/above the
+# threshold, width scales up with the console, capped at the ceiling so the
+# art never dominates the panel over the HP/stat block beneath it.
+_BATTLE_ART_WIDTH_FLOOR = 25
+_BATTLE_ART_WIDTH_CEILING = 34
+_BATTLE_ART_WIDE_THRESHOLD = 100
+# Fixed overhead subtracted from console width before clamping — accounts
+# for panel borders/padding/title text and leaves headroom so the art isn't
+# sized as if it alone owned the full terminal width. The battle screen
+# stacks the wild and player panels vertically (not side-by-side, see
+# build_battle_renderable), so there's no need to reserve half the console
+# width for a second panel the way a side-by-side layout would.
+_BATTLE_ART_WIDTH_MARGIN = 70
+
+# Battle panels stack vertically (wild, then player) — an unbounded art
+# height would push the action menu and narration off-screen on tall
+# sprites. Rows beyond this cap are handled by CreatureImage's max_rows
+# (proportional width shrink, falling back to bottom-row trim only for
+# extreme aspect ratios — see devmon.render.image.CreatureImage._resolve).
+BATTLE_ART_MAX_ROWS = 20
+
+
+def resolve_battle_art_width(console_width: int) -> int:
+    """Compute the adaptive battle art width for a given console width.
+
+    Narrow-mode art suppression (console_width < 40) is handled by the
+    `narrow` parameter of `render_battle_creature_panel` — this function is
+    only about scaling width when art *is* shown.
+    """
+    if console_width < _BATTLE_ART_WIDE_THRESHOLD:
+        return _BATTLE_ART_WIDTH_FLOOR
+    available = console_width - _BATTLE_ART_WIDTH_MARGIN
+    return min(_BATTLE_ART_WIDTH_CEILING, max(_BATTLE_ART_WIDTH_FLOOR, available))
+
+
+# ---------------------------------------------------------------------------
 # HP Bar
 # ---------------------------------------------------------------------------
 
@@ -80,6 +121,7 @@ def render_battle_creature_panel(
     xp_threshold: int | None = None,
     narrow: bool = False,
     console: Console | None = None,
+    console_width: int | None = None,
 ) -> Panel:
     """Render a compact creature panel for the battle screen.
 
@@ -92,7 +134,12 @@ def render_battle_creature_panel(
         current_hp: Current HP for the HP bar.
         max_hp: Max HP (used for percentage + bar calculation).
         level: Current level to display.
-        prefix: Panel label prefix — "WILD" or "YOUR".
+        prefix: Panel label prefix — "WILD" or "YOUR". Also selects the art
+            view: "YOUR" renders the player's creature from behind (its
+            art/back/{id}.png sprite, falling back to the front sprite if no
+            back art exists), while any other prefix (e.g. "WILD") renders
+            the standard front view — authentic monster-tamer framing where
+            you see your own creature's back facing the wild opponent.
         rarity: Rarity string key for RARITY_COLORS lookup.
         xp: Current XP of the creature (optional, shown only on player panel).
         xp_threshold: XP needed to reach next level (optional, shown with xp).
@@ -107,11 +154,23 @@ def render_battle_creature_panel(
             body. Passing a console is what actually opts a call site into
             sixel rendering; resolving "sixel" mode with no console passed
             still safely falls back to half-block (no blank-art regression).
+        console_width: Optional actual terminal width, used only to scale
+            art width adaptively (see `resolve_battle_art_width`) and to
+            size the sixel fallback identically. None (the default — the
+            behavior every existing call site keeps) reproduces the
+            original fixed width=25 exactly, so omitting it is a pure
+            no-op.
 
     Returns:
         Rich Panel ready to be rendered.
     """
     rarity_color = RARITY_COLORS.get(rarity, "white")
+    art_width = (
+        resolve_battle_art_width(console_width)
+        if console_width is not None
+        else _BATTLE_ART_WIDTH_FLOOR
+    )
+    art_view = "back" if prefix == "YOUR" else "front"
 
     # HP bar — compressed to width=10 in narrow mode
     hp_bar = render_hp_bar(current_hp, max_hp, width=10 if narrow else 20)
@@ -146,7 +205,7 @@ def render_battle_creature_panel(
             # for every call site that hasn't opted in yet.
             art_mode = resolve_art_mode(stream=getattr(console, "file", None))
             if art_mode == "sixel":
-                sixel_art = get_sixel_art(template.id, width=25)
+                sixel_art = get_sixel_art(template.id, width=art_width)
 
         if sixel_art:
             # Sixel escapes cannot live inside a Rich Panel (Rich would
@@ -156,7 +215,13 @@ def render_battle_creature_panel(
             console.file.flush()
             body = stats_block
         else:
-            art = render_creature_art(template.id, template.ascii_art, width=25)
+            art = render_creature_art(
+                template.id,
+                template.ascii_art,
+                width=art_width,
+                view=art_view,
+                max_rows=BATTLE_ART_MAX_ROWS,
+            )
             body = Group(art, stats_block)
     else:
         body = stats_block

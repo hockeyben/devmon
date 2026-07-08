@@ -358,6 +358,12 @@ def get_sixel_art(creature_id: str, width: int = 30) -> str | None:
     return _render_sixel(str(png_path), pixel_width)
 
 
+# Minimum width the row-cap shrink loop (see CreatureImage._resolve) will
+# ever downscale to — a floor that keeps very tall/portrait sprites legible
+# rather than shrinking toward a sliver while chasing an unreachable row cap.
+_MIN_BATTLE_ART_WIDTH = 8
+
+
 class CreatureImage:
     """Rich renderable that displays a creature PNG as half-block terminal art.
 
@@ -366,17 +372,82 @@ class CreatureImage:
         console.print(img)
         # Or embed in a Panel:
         Panel(Group(img, stats_text), ...)
+
+    Args:
+        creature_id: The creature's id (matches PNG filename stem).
+        width: Target character-cell width for rendering.
+        view: "front" (default) renders art/{creature_id}.png. "back"
+            renders art/back/{creature_id}.png (the player-side battle
+            sprite) and transparently falls back to the front PNG — and
+            ultimately to no art at all — when no back sprite exists for
+            this creature, so callers never need to branch on availability.
+        max_rows: When set, caps the number of rendered half-block rows.
+            Tall/portrait sprites that would exceed the cap at `width` are
+            re-rendered at a proportionally smaller width (preserving
+            aspect ratio and the full silhouette) rather than having their
+            bottom rows chopped off; only if the cap still can't be met at
+            `_MIN_BATTLE_ART_WIDTH` are the excess bottom rows trimmed as a
+            last resort. `width` (see property below) reflects whatever
+            width was actually used after this adjustment, so Rich layout
+            (Panel/Group sizing) and animation frames built from the same
+            parameters always agree on dimensions. None (default) disables
+            the cap entirely and is a zero-cost no-op — identical to the
+            pre-cap behavior.
     """
 
-    def __init__(self, creature_id: str, width: int = 30) -> None:
+    def __init__(
+        self,
+        creature_id: str,
+        width: int = 30,
+        view: str = "front",
+        max_rows: int | None = None,
+    ) -> None:
         self.creature_id = creature_id
-        self.width = width
-        self._png_path = _find_art_dir() / f"{creature_id}.png"
+        self.requested_width = width
+        self.view = view
+        self.max_rows = max_rows
+
+        art_dir = _find_art_dir()
+        front_path = art_dir / f"{creature_id}.png"
+        if view == "back":
+            back_path = art_dir / "back" / f"{creature_id}.png"
+            self._png_path = back_path if back_path.is_file() else front_path
+        else:
+            self._png_path = front_path
 
     @property
     def available(self) -> bool:
-        """True if the PNG file exists for this creature."""
+        """True if the resolved PNG file exists for this creature/view."""
         return self._png_path.is_file()
+
+    def _resolve(self) -> tuple[list[list[tuple[str, Style | None]]], int]:
+        """Return (rows, effective_width), applying the max_rows cap if set.
+
+        Cheap to call repeatedly: the underlying half-block conversion is
+        cached by (path, width) via `_render_halfblocks`'s lru_cache, so
+        re-resolving (e.g. from both `width` and `get_rows()`) is just
+        cache lookups after the first real computation.
+        """
+        if not self.available:
+            return [], self.requested_width
+
+        width = self.requested_width
+        rows = _render_halfblocks(str(self._png_path), width)
+
+        if self.max_rows is not None:
+            while len(rows) > self.max_rows and width > _MIN_BATTLE_ART_WIDTH:
+                scale = self.max_rows / len(rows)
+                new_width = max(_MIN_BATTLE_ART_WIDTH, min(width - 1, int(width * scale)))
+                if new_width >= width:
+                    break
+                width = new_width
+                rows = _render_halfblocks(str(self._png_path), width)
+            if len(rows) > self.max_rows:
+                # Extreme aspect ratio even at the width floor — trim the
+                # excess bottom rows rather than looping forever.
+                rows = rows[: self.max_rows]
+
+        return rows, width
 
     def get_rows(self) -> list[list[tuple[str, Style | None]]]:
         """Return the raw half-block row data (char, Style) for this creature.
@@ -387,9 +458,22 @@ class CreatureImage:
         rather than consume a Segment stream. Does not change any existing
         rendering behavior.
         """
-        if not self.available:
-            return []
-        return _render_halfblocks(str(self._png_path), self.width)
+        rows, _ = self._resolve()
+        return rows
+
+    @property
+    def width(self) -> int:
+        """Effective render width — the requested width unless max_rows
+
+        triggered a proportional shrink, in which case this reflects the
+        actual width the rows were rendered at (see `_resolve`). When
+        `max_rows` is None this is always exactly the requested width, at
+        zero extra cost — the pre-cap behavior is unchanged.
+        """
+        if self.max_rows is None:
+            return self.requested_width
+        _, width = self._resolve()
+        return width
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         """Yield Segments for Rich rendering."""
@@ -397,7 +481,7 @@ class CreatureImage:
             yield Segment("(no image)\n")
             return
 
-        rows = _render_halfblocks(str(self._png_path), self.width)
+        rows, _ = self._resolve()
         for row in rows:
             for char, style in row:
                 yield Segment(char, style)
@@ -409,7 +493,13 @@ class CreatureImage:
         return Measurement(self.width, self.width)
 
 
-def render_creature_art(creature_id: str, ascii_art: list[str], width: int = 30) -> object:
+def render_creature_art(
+    creature_id: str,
+    ascii_art: list[str],
+    width: int = 30,
+    view: str = "front",
+    max_rows: int | None = None,
+) -> object:
     """Return a Rich renderable for the creature's art.
 
     Prefers PNG image if available, falls back to ascii_art markup.
@@ -418,11 +508,13 @@ def render_creature_art(creature_id: str, ascii_art: list[str], width: int = 30)
         creature_id: The creature's id (matches PNG filename stem).
         ascii_art: Fallback Rich-markup art lines from the creature template.
         width: Target character width for PNG rendering.
+        view: "front" (default) or "back" — see CreatureImage.
+        max_rows: Optional row cap — see CreatureImage.
 
     Returns:
         A Rich renderable (CreatureImage or Text).
     """
-    img = CreatureImage(creature_id, width=width)
+    img = CreatureImage(creature_id, width=width, view=view, max_rows=max_rows)
     if img.available:
         return img
 

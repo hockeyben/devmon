@@ -223,17 +223,29 @@ def _panel_with_art(panel, art_frame) -> object:
     )
 
 
-def _animate_wild_entrance(live, turn, last_narration, menu, wild_panel, player_panel, wild_template) -> None:
+def _animate_wild_entrance(
+    live, turn, last_narration, menu, wild_panel, player_panel, wild_template, art_width
+) -> None:
     """Play the bottom-up reveal animation for the wild creature panel.
 
     Called once, right when the battle screen first renders. No-op (and no
     Live updates/sleeps) if the creature has no PNG art to animate.
+
+    `art_width` must match the width `_build_wild_panel` used to build
+    `wild_panel` (see `resolve_battle_art_width`) — otherwise the animated
+    frame and the static panel it swaps into would disagree on art
+    dimensions, causing the panel to visibly resize when the intro ends.
+    The wild creature always renders front-view (view="front" — only the
+    player's own creature shows its back, see render_battle_creature_panel).
     """
     from devmon.render.animation import entrance_frames, play
-    from devmon.render.battle import build_battle_renderable
+    from devmon.render.battle import BATTLE_ART_MAX_ROWS, build_battle_renderable
     from devmon.render.image import CreatureImage
 
-    frames = entrance_frames(CreatureImage(wild_template.id, width=25), steps=4)
+    frames = entrance_frames(
+        CreatureImage(wild_template.id, width=art_width, view="front", max_rows=BATTLE_ART_MAX_ROWS),
+        steps=4,
+    )
     if not frames:
         return
     play(
@@ -257,6 +269,7 @@ def _animate_attack_exchange(
     player_template,
     attacker: str,
     attack_fn,
+    art_width: int,
 ):
     """Play a lunge (attacker) + shake/flash (defender) animation around one attack.
 
@@ -265,12 +278,19 @@ def _animate_attack_exchange(
     value (fainted: bool) is passed straight through. When `anim_enabled` is
     False this is a pure passthrough — zero Live updates, zero sleeps,
     identical to calling `attack_fn()` directly.
+
+    `art_width` must match the width used by `build_wild_panel`/
+    `build_player_panel` (see `resolve_battle_art_width`) so animated frames
+    never mismatch the static panel dimensions. The player's creature always
+    animates from its back-view sprite (view="back") and the wild creature
+    from its front-view sprite (view="front"), regardless of which side is
+    currently attacking or defending — matching render_battle_creature_panel.
     """
     if not anim_enabled:
         return attack_fn()
 
     from devmon.render.animation import flash_frames, lunge_frames, play, shake_frames
-    from devmon.render.battle import build_battle_renderable
+    from devmon.render.battle import BATTLE_ART_MAX_ROWS, build_battle_renderable
     from devmon.render.image import CreatureImage
 
     wild_panel = build_wild_panel()
@@ -281,9 +301,14 @@ def _animate_attack_exchange(
 
     attacker_template = player_template if attacker == "player" else wild_template
     attacker_panel = player_panel if attacker == "player" else wild_panel
+    attacker_view = "back" if attacker == "player" else "front"
     direction = 1 if attacker == "player" else -1
 
-    lunge = lunge_frames(CreatureImage(attacker_template.id, width=25), direction=direction, amplitude=2)
+    lunge = lunge_frames(
+        CreatureImage(attacker_template.id, width=art_width, view=attacker_view, max_rows=BATTLE_ART_MAX_ROWS),
+        direction=direction,
+        amplitude=2,
+    )
     if lunge:
         if attacker == "player":
             play(live, lambda f: _screen(wild_panel, _panel_with_art(attacker_panel, f)), lunge)
@@ -295,15 +320,19 @@ def _animate_attack_exchange(
     if attacker == "player":
         defender_panel = build_wild_panel()
         defender_template = wild_template
+        defender_view = "front"
     else:
         defender_panel = build_player_panel()
         defender_template = player_template
+        defender_view = "back"
 
     # Attacker settles back to its normal (post-lunge) panel while the
     # defender shakes/flashes with its post-damage HP.
     settled_attacker_panel = build_player_panel() if attacker == "player" else build_wild_panel()
 
-    defender_image = CreatureImage(defender_template.id, width=25)
+    defender_image = CreatureImage(
+        defender_template.id, width=art_width, view=defender_view, max_rows=BATTLE_ART_MAX_ROWS
+    )
     for frames in (shake_frames(defender_image, amplitude=1, cycles=2), flash_frames(defender_image, pulses=1)):
         if not frames:
             continue
@@ -372,11 +401,17 @@ def battle_cmd() -> None:
         render_flee_message,
         render_victory_screen,
         render_wild_fled_message,
+        resolve_battle_art_width,
         run_capture_animation,
     )
 
     console = Console()
     narrow = console.width < 40
+    # Adaptive battle art width (wide terminals get bigger art, capped) —
+    # computed once and threaded through every panel/animation build below
+    # so the static panel and any animated frame swapped into it always
+    # agree on dimensions (see resolve_battle_art_width, BATTLE_ART_MAX_ROWS).
+    art_width = resolve_battle_art_width(console.width)
 
     # Gate for procedural creature animations (entrance/lunge/shake/flash) —
     # off in narrow mode, non-terminal output (e.g. CliRunner tests), or when
@@ -471,6 +506,7 @@ def battle_cmd() -> None:
                     "WILD",
                     _wild.rarity,
                     narrow=_narrow,
+                    console_width=console.width,
                 )
 
             def _build_player_panel(
@@ -489,6 +525,7 @@ def battle_cmd() -> None:
                     xp=_player_owned.xp,
                     xp_threshold=_player_owned.level * 50,
                     narrow=_narrow,
+                    console_width=console.width,
                 )
 
             # Build renderable
@@ -508,7 +545,7 @@ def battle_cmd() -> None:
             if not intro_played:
                 if anim_enabled:
                     _animate_wild_entrance(
-                        live, turn, last_narration, menu, wild_panel, player_panel, wild_template
+                        live, turn, last_narration, menu, wild_panel, player_panel, wild_template, art_width
                     )
                 intro_played = True
 
@@ -569,25 +606,25 @@ def battle_cmd() -> None:
                     wild_fainted = _animate_attack_exchange(
                         live, anim_enabled, turn, last_narration, menu,
                         _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "player", _player_attacks,
+                        wild_template, player_template, "player", _player_attacks, art_width,
                     )
                     if not wild_fainted:
                         player_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
-                            wild_template, player_template, "wild", _wild_attacks,
+                            wild_template, player_template, "wild", _wild_attacks, art_width,
                         )
                 else:
                     player_fainted = _animate_attack_exchange(
                         live, anim_enabled, turn, last_narration, menu,
                         _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "wild", _wild_attacks,
+                        wild_template, player_template, "wild", _wild_attacks, art_width,
                     )
                     if not player_fainted:
                         wild_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
-                            wild_template, player_template, "player", _player_attacks,
+                            wild_template, player_template, "player", _player_attacks, art_width,
                         )
 
                 last_narration = " | ".join(narration_parts)
@@ -647,8 +684,8 @@ def battle_cmd() -> None:
                 if player_fainted:
                     apply_faint(player_owned)
                     live.update(build_battle_renderable(
-                        render_battle_creature_panel(wild_template, wild.current_hp, wild.max_hp, wild.level, "WILD", wild.rarity, narrow=narrow),
-                        render_battle_creature_panel(player_template, 0, player_max_hp, player_owned.level, "YOUR", player_template.rarity, narrow=narrow),
+                        render_battle_creature_panel(wild_template, wild.current_hp, wild.max_hp, wild.level, "WILD", wild.rarity, narrow=narrow, console_width=console.width),
+                        render_battle_creature_panel(player_template, 0, player_max_hp, player_owned.level, "YOUR", player_template.rarity, narrow=narrow, console_width=console.width),
                         turn, last_narration,
                         render_action_menu(ability_name, False, turn),
                     ))
@@ -746,25 +783,25 @@ def battle_cmd() -> None:
                     wild_fainted = _animate_attack_exchange(
                         live, anim_enabled, turn, last_narration, menu,
                         _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "player", _player_special,
+                        wild_template, player_template, "player", _player_special, art_width,
                     )
                     if not wild_fainted:
                         player_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
-                            wild_template, player_template, "wild", _wild_attacks_special,
+                            wild_template, player_template, "wild", _wild_attacks_special, art_width,
                         )
                 else:
                     player_fainted = _animate_attack_exchange(
                         live, anim_enabled, turn, last_narration, menu,
                         _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "wild", _wild_attacks_special,
+                        wild_template, player_template, "wild", _wild_attacks_special, art_width,
                     )
                     if not player_fainted:
                         wild_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
-                            wild_template, player_template, "player", _player_special,
+                            wild_template, player_template, "player", _player_special, art_width,
                         )
 
                 last_narration = " | ".join(narration_parts)
