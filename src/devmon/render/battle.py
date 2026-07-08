@@ -31,6 +31,21 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
+# Phase D — status tag display strings. Duplicated (not imported) from
+# devmon.engine.status_effects.STATUS_TAGS -- render/ must not import
+# engine/ (see module docstring). Keep the two in sync by hand; both are
+# small, stable, ASCII-only (width-safe, < U+2600) lookup tables.
+# ---------------------------------------------------------------------------
+
+_STATUS_TAGS: dict[str, str] = {
+    "burn": "[BRN]",
+    "static": "[STC]",
+    "chill": "[CHL]",
+    "corrupt": "[COR]",
+}
+
+
+# ---------------------------------------------------------------------------
 # Adaptive battle art sizing
 # ---------------------------------------------------------------------------
 
@@ -75,7 +90,7 @@ def resolve_battle_art_width(console_width: int) -> int:
 # HP Bar
 # ---------------------------------------------------------------------------
 
-def render_hp_bar(current: int, max_hp: int, width: int = 20) -> Text:
+def render_hp_bar(current: int, max_hp: int, width: int = 20, status_tag: str | None = None) -> Text:
     """Render an HP bar as a Rich Text object.
 
     Color thresholds (D-17, UI-SPEC):
@@ -103,6 +118,8 @@ def render_hp_bar(current: int, max_hp: int, width: int = 20) -> Text:
     bar.append("\u2588" * filled, style=color)        # █ filled blocks
     bar.append("\u2591" * empty, style="dim white")   # ░ empty blocks
     bar.append(f" {current}/{max_hp}", style=color)
+    if status_tag:
+        bar.append(f" {status_tag}", style="bold magenta")
     return bar
 
 
@@ -122,6 +139,9 @@ def render_battle_creature_panel(
     narrow: bool = False,
     console: Console | None = None,
     console_width: int | None = None,
+    energy: int | None = None,
+    energy_max: int | None = None,
+    status: str | None = None,
 ) -> Panel:
     """Render a compact creature panel for the battle screen.
 
@@ -160,6 +180,15 @@ def render_battle_creature_panel(
             behavior every existing call site keeps) reproduces the
             original fixed width=25 exactly, so omitting it is a pure
             no-op.
+        energy: Optional current ability-energy pool value (Phase D). None
+            (the default) omits the energy row entirely -- a pure no-op for
+            every pre-Phase-D call site and for callers with
+            game.energy_enabled False.
+        energy_max: Ability-energy pool ceiling, shown alongside `energy`.
+            Ignored if `energy` is None.
+        status: Optional in-battle status effect name (e.g. "burn" -- see
+            devmon.engine.status_effects.STATUS_TAGS). None (the default)
+            omits the status tag entirely.
 
     Returns:
         Rich Panel ready to be rendered.
@@ -172,8 +201,11 @@ def render_battle_creature_panel(
     )
     art_view = "back" if prefix == "YOUR" else "front"
 
-    # HP bar — compressed to width=10 in narrow mode
-    hp_bar = render_hp_bar(current_hp, max_hp, width=10 if narrow else 20)
+    # HP bar — compressed to width=10 in narrow mode. Status tag (Phase D)
+    # rendered inline right after the numeric HP value when present.
+    hp_bar = render_hp_bar(
+        current_hp, max_hp, width=10 if narrow else 20, status_tag=_STATUS_TAGS.get(status, "") if status else ""
+    )
 
     # LVL/Type stat row
     stat_row = Text()
@@ -194,6 +226,13 @@ def render_battle_creature_panel(
         xp_row.append("XP  ", style="dim cyan")
         xp_row.append(f"{xp}/{xp_threshold}", style="white")
         stats_block.append_text(xp_row)
+
+    if energy is not None and energy_max is not None:
+        stats_block.append("\n")
+        nrg_row = Text()
+        nrg_row.append("NRG ", style="dim cyan")
+        nrg_row.append(f"{energy}/{energy_max}", style="cyan")
+        stats_block.append_text(nrg_row)
 
     # Combine into panel body
     if not narrow:
@@ -296,12 +335,16 @@ def render_action_menu(
     ability_name: str | None,
     can_switch: bool,
     turn_number: int,
+    ability_cost: int | None = None,
+    player_energy: int | None = None,
+    energy_enabled: bool = True,
 ) -> Text:
     """Render the 6-item battle action menu as Rich Text.
 
     Items:
       [1] Attack                  — always active
-      [2] Special Ability (name)  — dim white if no ability
+      [2] Special Ability (name)  — dim white if no ability, or if the
+          player can't currently afford its energy cost (Phase D)
       [3] Capture                 — always active
       [4] Switch Creature         — dim if can_switch is False
       [5] Items                   — always active
@@ -311,6 +354,14 @@ def render_action_menu(
         ability_name: Name of the learned special ability, or None.
         can_switch: False when player has no other live party members.
         turn_number: Unused — reserved for future conditional rendering.
+        ability_cost: The learned ability's energy cost (Phase D). None
+            (the default -- every pre-Phase-D call site, and callers with
+            game.energy_enabled False) omits the cost/afford display
+            entirely, reproducing the exact pre-Phase-D menu text.
+        player_energy: The player's current energy pool, used only to
+            decide whether to gray out choice [2] as unaffordable.
+        energy_enabled: Master switch (game.energy_enabled). False (or
+            ability_cost=None) skips the cost/afford display entirely.
 
     Returns:
         Rich Text block for the action menu.
@@ -325,8 +376,19 @@ def render_action_menu(
     menu.append("  [1] Attack\n", style="white")
 
     # [2] Special Ability
+    show_cost = energy_enabled and ability_cost is not None
+    unaffordable = show_cost and player_energy is not None and player_energy < ability_cost
     if ability_name is None:
         menu.append("  [2] Special Ability  (none yet)\n", style="dim white")
+    elif unaffordable:
+        menu.append(
+            f"  [2] Special Ability  ({ability_name}, cost {ability_cost} -- not enough energy)\n",
+            style="dim white",
+        )
+    elif show_cost:
+        menu.append("  [2] Special Ability  (", style="white")
+        menu.append(ability_name, style="dim white")
+        menu.append(f", cost {ability_cost})\n", style="white")
     else:
         menu.append("  [2] Special Ability  (", style="white")
         menu.append(ability_name, style="dim white")

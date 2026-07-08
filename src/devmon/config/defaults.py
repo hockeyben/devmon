@@ -122,6 +122,26 @@ DEFAULT_CONFIG: dict = {
         # battles like any other resource. See commands/battle.py's
         # `_auto_heal` call sites.
         "full_heal_after_battle": False,
+        # Phase D — battle depth: status effects + ability energy. Master
+        # switches default True; flipping either OFF restores pre-Phase-D
+        # behavior exactly (see engine/status_effects.py, engine/ability_energy.py,
+        # and the regression-pair tests in tests/test_status_effects.py /
+        # tests/test_ability_energy.py).
+        "status_effects_enabled": True,
+        "energy_enabled": True,
+        # Status effect tuning (engine/status_effects.py):
+        "status_burn_chip_denom": 16,             # burn chip = max(1, max_hp // this)
+        "status_corrupt_chip_denom": 20,          # corrupt chip = max(1, max_hp // this)
+        "status_burn_attack_mult": 0.85,          # burned combatant's own damage x this
+        "status_static_turn_loss_chance": 0.20,   # static: chance to lose the turn
+        "status_static_speed_mult": 0.75,         # static: speed x this (turn order only)
+        "status_chill_turn_loss_chance": 0.10,    # chill: chance to lose the turn
+        "status_chill_speed_mult": 0.6,           # chill: speed x this (turn order only)
+        "status_corrupt_energy_surcharge": 0.25,  # corrupt: +this fraction to own ability costs
+        # Ability energy tuning (engine/ability_energy.py):
+        "energy_max": 100,
+        "energy_regen_per_turn": 15,
+        "energy_cost_scale": 12,                  # ability cost = int(damage_multiplier * this)
     },
     "ui": {
         "theme": "neon",

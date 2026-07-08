@@ -38,13 +38,15 @@
       "name": "Socket Zap",
       "damage_multiplier": 1.3,
       "type": "Electric",
-      "learn_level": 1
+      "learn_level": 1,
+      "status_chance": 0.15
     },
     {
       "name": "Websocket Shock",
       "damage_multiplier": 1.7,
       "type": "Electric",
-      "learn_level": 5
+      "learn_level": 5,
+      "status_chance": 0.2
     },
     {
       "name": "Pipe Surge",
@@ -56,7 +58,8 @@
       "name": "Grid Overload",
       "damage_multiplier": 2.2,
       "type": "Electric",
-      "learn_level": 15
+      "learn_level": 15,
+      "status_chance": 0.3
     }
   ]
 }

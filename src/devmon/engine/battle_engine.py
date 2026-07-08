@@ -390,19 +390,48 @@ def get_available_abilities(
 # Wild creature AI
 # ---------------------------------------------------------------------------
 
-def wild_creature_ai(available_abilities: "list[Ability]") -> str:
+def wild_creature_ai(
+    available_abilities: "list[Ability]",
+    *,
+    energy: "int | None" = None,
+    status: "str | None" = None,
+    game_cfg: "dict | None" = None,
+    energy_enabled: bool = False,
+) -> str:
     """Determine the wild creature's action for its turn.
 
-    If abilities are available: 40% chance to use a random ability (returns name),
-    60% chance to use a normal attack (returns "attack").
-    If no abilities available: always returns "attack".
+    Two policies, selected by `energy_enabled`:
+
+    - Energy-aware (Phase D, `energy_enabled=True` and `energy` provided):
+      picks the strongest AFFORDABLE ability (highest damage_multiplier
+      among those it can pay for), else falls back to "attack". This is
+      the real in-game behavior whenever game.energy_enabled is True (the
+      default) -- see commands/battle.py and engine/auto_battle.py, both of
+      which pass energy=/status=/game_cfg=/energy_enabled=True.
+    - Legacy (default, `energy_enabled=False` or `energy=None`): the
+      original random policy -- 40% chance to use a random ability, 60%
+      chance to attack. Preserved unchanged (including its exact keyword-
+      free call signature) so every pre-Phase-D direct caller and test
+      keeps its old behavior, and so flipping game.energy_enabled OFF
+      restores this exact pre-Phase-D distribution.
 
     Args:
         available_abilities: List of abilities the creature can use.
+        energy: The wild creature's current energy pool (None = legacy policy).
+        status: The wild creature's own current status (affects its own
+            ability costs via corrupt's surcharge -- see engine.ability_energy).
+        game_cfg: Optional game config dict for tunable energy knobs.
+        energy_enabled: Master switch for the energy-aware policy.
 
     Returns:
         "attack" or ability name string.
     """
+    if energy_enabled and energy is not None:
+        from devmon.engine.ability_energy import pick_strongest_affordable
+
+        best = pick_strongest_affordable(available_abilities, energy, status, game_cfg)
+        return best.name if best is not None else "attack"
+
     if available_abilities and random.random() < 0.40:
         return random.choice(available_abilities).name
     return "attack"

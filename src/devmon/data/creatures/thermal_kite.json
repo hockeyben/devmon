@@ -37,13 +37,15 @@
       "name": "Ping Jolt",
       "damage_multiplier": 1.3,
       "type": "Electric",
-      "learn_level": 35
+      "learn_level": 35,
+      "status_chance": 0.15
     },
     {
       "name": "Voltage Spike",
       "damage_multiplier": 1.6,
       "type": "Electric",
-      "learn_level": 37
+      "learn_level": 37,
+      "status_chance": 0.2
     },
     {
       "name": "Pipe Surge",
@@ -55,13 +57,15 @@
       "name": "Short Circuit",
       "damage_multiplier": 1.9,
       "type": "Electric",
-      "learn_level": 42
+      "learn_level": 42,
+      "status_chance": 0.2
     },
     {
       "name": "Grid Overload",
       "damage_multiplier": 2.2,
       "type": "Electric",
-      "learn_level": 45
+      "learn_level": 45,
+      "status_chance": 0.3
     }
   ]
 }

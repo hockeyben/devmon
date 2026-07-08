@@ -37,13 +37,15 @@
       "name": "Null Reference",
       "damage_multiplier": 1.3,
       "type": "Shadow",
-      "learn_level": 80
+      "learn_level": 80,
+      "status_chance": 0.15
     },
     {
       "name": "Silent Failure",
       "damage_multiplier": 1.6,
       "type": "Shadow",
-      "learn_level": 85
+      "learn_level": 85,
+      "status_chance": 0.2
     },
     {
       "name": "Heisenbug Flicker",
@@ -55,13 +57,15 @@
       "name": "Orphaned Process",
       "damage_multiplier": 1.9,
       "type": "Shadow",
-      "learn_level": 95
+      "learn_level": 95,
+      "status_chance": 0.2
     },
     {
       "name": "Zombie Thread Strike",
       "damage_multiplier": 2.2,
       "type": "Shadow",
-      "learn_level": 99
+      "learn_level": 99,
+      "status_chance": 0.3
     }
   ]
 }

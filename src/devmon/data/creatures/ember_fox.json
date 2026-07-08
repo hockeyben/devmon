@@ -36,31 +36,36 @@
       "name": "Docker Melt",
       "damage_multiplier": 1.5,
       "type": "Fire",
-      "learn_level": 1
+      "learn_level": 1,
+      "status_chance": 0.15
     },
     {
       "name": "Container Scorch",
       "damage_multiplier": 2.0,
       "type": "Fire",
-      "learn_level": 5
+      "learn_level": 5,
+      "status_chance": 0.2
     },
     {
       "name": "Image Incinerate",
       "damage_multiplier": 2.5,
       "type": "Fire",
-      "learn_level": 10
+      "learn_level": 10,
+      "status_chance": 0.2
     },
     {
       "name": "Silent Failure",
       "damage_multiplier": 1.6,
       "type": "Shadow",
-      "learn_level": 15
+      "learn_level": 15,
+      "status_chance": 0.15
     },
     {
       "name": "Segfault Blaze",
       "damage_multiplier": 2.2,
       "type": "Fire",
-      "learn_level": 20
+      "learn_level": 20,
+      "status_chance": 0.3
     }
   ]
 }

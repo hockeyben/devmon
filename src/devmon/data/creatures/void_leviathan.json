@@ -35,19 +35,22 @@
       "name": "Abyss Gaze",
       "damage_multiplier": 1.5,
       "type": "Shadow",
-      "learn_level": 1
+      "learn_level": 1,
+      "status_chance": 0.15
     },
     {
       "name": "Feature Creep",
       "damage_multiplier": 2.0,
       "type": "Shadow",
-      "learn_level": 5
+      "learn_level": 5,
+      "status_chance": 0.2
     },
     {
       "name": "Null Annihilation",
       "damage_multiplier": 2.5,
       "type": "Shadow",
-      "learn_level": 10
+      "learn_level": 10,
+      "status_chance": 0.2
     },
     {
       "name": "Heisenbug Flicker",
@@ -59,7 +62,8 @@
       "name": "Zombie Thread Strike",
       "damage_multiplier": 2.2,
       "type": "Shadow",
-      "learn_level": 20
+      "learn_level": 20,
+      "status_chance": 0.3
     }
   ]
 }

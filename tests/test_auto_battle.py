@@ -767,3 +767,179 @@ def test_settings_auto_fight_and_off_together_rejected(runner, tmp_devmon_home):
 
     result = runner.invoke(app, ["settings", "auto-fight", "--on", "--off"])
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# Phase D — simulate_battle: status effects + ability energy integration
+# ---------------------------------------------------------------------------
+
+def test_simulate_battle_status_flavor_empty_when_disabled():
+    from devmon.engine.auto_battle import simulate_battle
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+    )
+    cfg = _config(status_effects_enabled=False, energy_enabled=False)
+    result = simulate_battle(state, cfg)
+
+    assert result["outcome"] in ("win", "loss", "cap")
+    assert result["status_flavor"] == ""
+
+
+def test_simulate_battle_returns_status_flavor_key_always_present():
+    from devmon.engine.auto_battle import simulate_battle
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+    )
+    result = simulate_battle(state, _config())
+    assert "status_flavor" in result
+
+
+def test_simulate_battle_determinism_under_seed():
+    """Same RNG seed + same fresh state -> byte-identical outcome (Phase D
+    status rolls and energy costs must not introduce nondeterminism)."""
+    import random
+
+    from devmon.engine.auto_battle import simulate_battle
+
+    def _run():
+        state = _state_with_encounter(
+            lead_id="bugbyte", lead_level=8, wild_id="cyber_beetle", wild_level=8,
+        )
+        random.seed(12345)
+        return simulate_battle(state, _config())
+
+    result_a = _run()
+    result_b = _run()
+
+    assert result_a["outcome"] == result_b["outcome"]
+    assert result_a["turns"] == result_b["turns"]
+    assert result_a["wild_current_hp"] == result_b["wild_current_hp"]
+    assert result_a["status_flavor"] == result_b["status_flavor"]
+    assert result_a["player_owned"].current_hp == result_b["player_owned"].current_hp
+
+
+def test_simulate_battle_master_switches_off_restores_pre_phase_d_policy(monkeypatch):
+    """Regression pair: with game.energy_enabled False, the player-side
+    policy reverts to the exact pre-Phase-D behavior -- the strongest
+    LEARNED ability is always used regardless of cost. Proven here by
+    setting energy_max artificially low (below the strongest ability's
+    cost) so the energy-aware policy (energy_enabled=True) is FORCED to
+    fall back to a weaker plain attack every turn, while the legacy policy
+    (energy_enabled=False) keeps using the strong ability every turn --
+    the two configs must therefore take a different number of turns to
+    defeat the same wild creature.
+    """
+    import devmon.engine.battle_engine as battle_engine
+
+    # Fixed 10 damage per hit (before any ability multiplier is applied) on
+    # both sides, and the player always acts first -- isolates the
+    # difference in turn count entirely to whether the ability multiplier
+    # (2.2x, from bugbyte's "Stack Overflow") gets applied or not.
+    monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 10)
+    monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
+
+    from devmon.engine.auto_battle import simulate_battle
+
+    def _run(energy_enabled: bool):
+        state = _state_with_encounter(
+            lead_id="bugbyte", lead_level=19, wild_id="stack_kitten", wild_level=1,
+        )
+        cfg = _config(energy_enabled=energy_enabled, energy_max=20, energy_cost_scale=12)
+        return simulate_battle(state, cfg)
+
+    legacy_result = _run(energy_enabled=False)   # cost ignored -> always 2.2x
+    energy_result = _run(energy_enabled=True)    # cost 26 > energy_max 20 -> never affordable
+
+    assert legacy_result["outcome"] == "win"
+    assert energy_result["outcome"] == "win"
+    # Stronger per-hit damage (ability always applied) finishes strictly
+    # faster than being locked out of the ability every turn.
+    assert legacy_result["turns"] < energy_result["turns"]
+
+
+def test_simulate_battle_master_switch_off_never_produces_a_status():
+    """Regression: game.status_effects_enabled False means no status is ever
+    inflicted -- provable indirectly via status_flavor always being empty
+    across a long, close-fought battle where status effects (if enabled)
+    would very likely have fired at least once."""
+    from devmon.engine.auto_battle import simulate_battle
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=6, wild_id="cyber_beetle", wild_level=6,
+    )
+    cfg = _config(status_effects_enabled=False)
+    result = simulate_battle(state, cfg)
+    assert result["status_flavor"] == ""
+
+
+# ---------------------------------------------------------------------------
+# Phase D — auto-fight report flavor clause
+# ---------------------------------------------------------------------------
+
+def test_auto_fight_win_report_appends_status_flavor_when_present(monkeypatch):
+    from devmon.engine import auto_battle
+
+    original_simulate = auto_battle.simulate_battle
+
+    def _patched(state, config):
+        result = original_simulate(state, config)
+        result["outcome"] = "win"
+        result["status_flavor"] = "Burn chipped it down."
+        return result
+
+    monkeypatch.setattr(auto_battle, "simulate_battle", _patched)
+
+    from devmon.engine.auto_battle import auto_resolve_encounter
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+        rarity="common",
+    )
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["common"])
+    result = auto_resolve_encounter(state, cfg)
+
+    assert result is not None
+    assert "Burn chipped it down." in result
+
+
+def test_auto_fight_loss_report_appends_status_flavor_when_present(monkeypatch):
+    from devmon.engine import auto_battle
+
+    original_simulate = auto_battle.simulate_battle
+
+    def _patched(state, config):
+        result = original_simulate(state, config)
+        result["outcome"] = "loss"
+        result["status_flavor"] = "Static cost the fight."
+        return result
+
+    monkeypatch.setattr(auto_battle, "simulate_battle", _patched)
+
+    from devmon.engine.auto_battle import auto_resolve_encounter
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=1, wild_id="cyber_beetle", wild_level=100,
+        rarity="uncommon",
+    )
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["uncommon"])
+    result = auto_resolve_encounter(state, cfg)
+
+    assert result is not None
+    assert "Static cost the fight." in result
+
+
+def test_auto_fight_report_no_flavor_suffix_when_flavor_empty():
+    from devmon.engine.auto_battle import auto_resolve_encounter
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+        rarity="common",
+    )
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["common"])
+    result = auto_resolve_encounter(state, cfg)
+
+    assert result is not None
+    # No trailing " — " artifact when there's no flavor clause to append.
+    assert not result.rstrip().endswith("—")

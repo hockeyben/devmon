@@ -929,3 +929,140 @@ def test_battle_items_branch_does_not_freeze_subsequent_turn_output(monkeypatch,
     # directly anywhere else in the flow.
     assert "restored" in result.output
     assert "You fled from Pebblite" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Phase D — battle depth: status effects + ability energy (interactive loop)
+# ---------------------------------------------------------------------------
+
+def _phase_d_state_with_encounter(tmp_path, monkeypatch):
+    """A fresh state with a resolvable lead + queued encounter, matching the
+    setup pattern of the other interactive battle tests in this file."""
+    import os
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+
+    state = GameState.new_game("TestPlayer")
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=5))
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+    return state
+
+
+def test_interactive_battle_shows_energy_row_by_default(tmp_path, monkeypatch):
+    """game.energy_enabled defaults True -- the NRG row should render for
+    both panels on the very first turn."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+
+    _phase_d_state_with_encounter(tmp_path, monkeypatch)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "NRG" in result.output
+    assert "100/100" in result.output
+
+
+def test_interactive_special_ability_menu_shows_energy_cost(tmp_path, monkeypatch):
+    """The Special Ability menu line shows the ability's energy cost
+    (Phase D UI requirement) when game.energy_enabled is True (default)."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+
+    _phase_d_state_with_encounter(tmp_path, monkeypatch)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "cost" in result.output.lower()
+
+
+def test_interactive_battle_status_tag_appears_after_ability_inflicts_it(tmp_path, monkeypatch):
+    """Using Special Ability can inflict a status on the wild creature;
+    the following turn's panel must show its width-safe tag next to HP."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import status_effects
+
+    _phase_d_state_with_encounter(tmp_path, monkeypatch)
+    # Force infliction deterministically -- the roll/type-matching logic
+    # itself is covered exhaustively in tests/test_status_effects.py; this
+    # test only proves the UI actually surfaces an inflicted status.
+    monkeypatch.setattr(status_effects, "roll_status_inflict", lambda *a, **k: "burn")
+
+    runner = CliRunner()
+    # [2] Special Ability (inflicts burn on the wild) -> next turn's panel
+    # render carries the tag -> [6] Flee ends the battle so that render
+    # flushes to captured output (mirrors the Bug-A Live-flush pattern used
+    # by the Items-branch regression test above).
+    result = runner.invoke(battle_app, input="2\n6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "[BRN]" in result.output
+
+
+def test_interactive_battle_master_switches_off_hide_energy_and_status_ui(tmp_path, monkeypatch):
+    """Regression pair: flipping both game.status_effects_enabled and
+    game.energy_enabled OFF restores the exact pre-Phase-D battle screen --
+    no NRG row, no cost text, no status tag possible."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.config.loader import load_config, save_config
+    from devmon.engine import status_effects
+
+    _phase_d_state_with_encounter(tmp_path, monkeypatch)
+    cfg = load_config()
+    cfg["game"]["status_effects_enabled"] = False
+    cfg["game"]["energy_enabled"] = False
+    save_config(cfg)
+
+    # Even with a "would always succeed" infliction roll, the master switch
+    # must prevent any status from ever being surfaced.
+    monkeypatch.setattr(status_effects, "roll_status_inflict", lambda *a, **k: "burn")
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="2\n6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "NRG" not in result.output
+    assert "[BRN]" not in result.output
+    assert "cost" not in result.output.lower()
+
+
+def test_interactive_battle_unaffordable_ability_is_grayed_out_and_uncallable(tmp_path, monkeypatch):
+    """When energy is too low to afford the learned ability, choosing [2]
+    must not consume a turn (matches the existing "no ability learned"
+    continue pattern) and the menu communicates the shortfall."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.config.loader import load_config, save_config
+
+    _phase_d_state_with_encounter(tmp_path, monkeypatch)
+    cfg = load_config()
+    # bugbyte's level-5 ability is "Memory Leak" (damage_multiplier 1.8,
+    # cost int(1.8*12)=21 by default) -- an energy_max below that guarantees
+    # it's unaffordable from turn 1 (energy starts full at energy_max).
+    cfg["game"]["energy_max"] = 10
+    save_config(cfg)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="2\n6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "not enough energy" in result.output.lower()
+    assert "You fled from Pebblite" in result.output

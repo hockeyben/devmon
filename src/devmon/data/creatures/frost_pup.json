@@ -38,13 +38,15 @@
       "name": "Cache Bite",
       "damage_multiplier": 1.3,
       "type": "Ice",
-      "learn_level": 1
+      "learn_level": 1,
+      "status_chance": 0.15
     },
     {
       "name": "Pipeline Freeze",
       "damage_multiplier": 1.7,
       "type": "Ice",
-      "learn_level": 5
+      "learn_level": 5,
+      "status_chance": 0.2
     },
     {
       "name": "Heisenbug Flicker",
@@ -56,7 +58,8 @@
       "name": "Glacial Lockout",
       "damage_multiplier": 2.2,
       "type": "Ice",
-      "learn_level": 15
+      "learn_level": 15,
+      "status_chance": 0.3
     }
   ]
 }

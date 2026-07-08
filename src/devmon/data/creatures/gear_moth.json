@@ -49,7 +49,8 @@
       "name": "Hot Reload",
       "damage_multiplier": 1.6,
       "type": "Fire",
-      "learn_level": 25
+      "learn_level": 25,
+      "status_chance": 0.15
     },
     {
       "name": "Monolith Drop",

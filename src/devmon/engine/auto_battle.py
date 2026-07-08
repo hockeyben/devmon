@@ -123,11 +123,21 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     `apply_faint` on a loss.
 
     Player-side policy (Claude's discretion, documented here since there is
-    no human at the keyboard): always use the strongest learned ability
-    (highest `damage_multiplier`) if any ability is available at the lead's
-    level, otherwise a plain attack. This is a simple, deterministic-ish
-    "best damage" heuristic -- it does not attempt optimal type-matchup
-    play.
+    no human at the keyboard): with game.energy_enabled True (the default),
+    always use the strongest AFFORDABLE learned ability (highest
+    `damage_multiplier` among those the player's current energy pool can
+    pay for -- Phase D), otherwise a plain attack. With energy disabled,
+    the pre-Phase-D policy is used unchanged: the strongest learned ability
+    regardless of cost, computed once up front. This is a simple,
+    deterministic-ish "best damage" heuristic -- it does not attempt
+    optimal type-matchup play.
+
+    Phase D also layers in in-battle status effects (burn/static/chill/
+    corrupt, see engine.status_effects) and the ability energy pool (see
+    engine.ability_energy) exactly the way commands/battle.py's interactive
+    loop does, gated by game.status_effects_enabled / game.energy_enabled
+    (both default True; either OFF reproduces the exact pre-Phase-D
+    behavior this function shipped with).
 
     No item usage. No capture attempts. No switching -- if the lead faints,
     the simulation ends in a loss immediately (auto-battle never manages a
@@ -137,13 +147,16 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     exactly as it would be by a real battle, and `apply_faint` is called on
     the lead if it loses. The wild creature has no persistent state to
     mutate -- callers read the returned dict for its final HP/outcome.
+    Status effects and energy pools are purely local to this call (never
+    persisted -- cleared the instant the function returns).
 
     Args:
         state: GameState with a queued encounter (`state.encounter_queue`)
             and a resolvable party lead.
-        config: Game config dict. Not currently consulted (kept for
-            signature symmetry with other engine entry points and to allow
-            future balance tuning without a signature change).
+        config: Game config dict. Consulted for game.status_effects_enabled,
+            game.energy_enabled, and their tunable knobs (Phase D). Safe to
+            omit game.* keys entirely -- every knob falls back to
+            config.defaults.DEFAULT_CONFIG's values.
 
     Returns:
         Dict with keys:
@@ -158,6 +171,9 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
             "wild_current_hp": int (final HP when the fight ended)
             "player_owned": the OwnedCreature that fought (the party lead)
             "turns": int (number of turns simulated)
+            "status_flavor": str (Phase D) -- a short terse clause (e.g.
+                "Static sealed it.") when a status effect meaningfully
+                decided the win/loss outcome, else "".
     """
     entry = state.encounter_queue
     if entry is None:
@@ -167,6 +183,8 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     if player_owned is None:
         return {"outcome": "no_lead"}
 
+    from devmon.engine.ability_energy import energy_max as _energy_max
+    from devmon.engine.ability_energy import pick_strongest_affordable, regen_energy
     from devmon.engine.battle_engine import (
         apply_faint,
         compute_damage,
@@ -180,10 +198,23 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     )
     from devmon.engine.creature_loader import get_creature
     from devmon.engine.natures import effective_max_hp, effective_stat
+    from devmon.engine.status_effects import (
+        STATUS_LABELS,
+        roll_status_inflict,
+        roll_turn_lost,
+        status_attack_multiplier,
+        status_chip_damage,
+        status_speed_multiplier,
+    )
+
+    game_cfg = (config or {}).get("game", {}) if config else {}
+    status_enabled = bool(game_cfg.get("status_effects_enabled", True))
+    energy_enabled = bool(game_cfg.get("energy_enabled", True))
 
     player_template = get_creature(player_owned.template_id)
     wild_template = get_creature(entry.template_id)
     wild_level = entry.encounter_level
+    lead_name = player_owned.nickname or player_template.name
 
     player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
     if player_owned.current_hp is None:
@@ -193,37 +224,75 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     wild_hp = wild_max_hp
 
     player_abilities = get_available_abilities(player_template.abilities, player_owned.level)
-    # "Best damage" policy: the ability with the highest damage_multiplier,
-    # or None to fall back to a plain attack.
+    # Pre-Phase-D / energy-disabled policy: the ability with the highest
+    # damage_multiplier, computed once, regardless of cost.
     best_ability = (
         max(player_abilities, key=lambda a: a.damage_multiplier) if player_abilities else None
     )
 
+    # In-battle-only status + energy state (never persisted, dropped on return).
+    player_status: str | None = None
+    wild_status: str | None = None
+    player_energy = _energy_max(game_cfg)
+    wild_energy = _energy_max(game_cfg)
+    player_turns_lost = 0
+    wild_turns_lost = 0
+    status_flavor = ""
+
     def _player_turn() -> bool:
         """Execute one player action. Returns True if the wild creature fainted."""
-        nonlocal wild_hp
+        nonlocal wild_hp, wild_status, player_energy, player_turns_lost
+
+        if roll_turn_lost(player_status, enabled=status_enabled, game_cfg=game_cfg):
+            player_turns_lost += 1
+            return False
+
         p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
         w_def = compute_stat(wild_template.base_defense, wild_level)
         p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
-        if best_ability is not None:
-            effectiveness = get_type_effectiveness(best_ability.type, wild_template.type)
+
+        ability = best_ability
+        if energy_enabled:
+            ability = pick_strongest_affordable(player_abilities, player_energy, player_status, game_cfg) if player_abilities else None
+
+        if ability is not None:
+            effectiveness = get_type_effectiveness(ability.type, wild_template.type)
             crit = roll_crit(p_spd)
             base_dmg = compute_damage(p_atk, player_owned.level, p_spd, w_def, effectiveness, crit)
-            dmg = max(1, int(base_dmg * best_ability.damage_multiplier))
+            dmg = max(1, int(base_dmg * ability.damage_multiplier))
+            if energy_enabled:
+                from devmon.engine.ability_energy import ability_energy_cost
+                player_energy -= ability_energy_cost(ability.damage_multiplier, player_status, game_cfg)
+            if status_enabled:
+                wild_status = roll_status_inflict(
+                    wild_status, ability.type, ability.status_chance, enabled=status_enabled
+                )
         else:
             effectiveness = get_type_effectiveness(player_template.type, wild_template.type)
             crit = roll_crit(p_spd)
             dmg = compute_damage(p_atk, player_owned.level, p_spd, w_def, effectiveness, crit)
+
+        if status_enabled:
+            dmg = max(1, int(dmg * status_attack_multiplier(player_status, game_cfg)))
+
         wild_hp = max(0, wild_hp - dmg)
         return wild_hp <= 0
 
     def _wild_turn() -> bool:
         """Execute one wild action. Returns True if the player's lead fainted."""
+        nonlocal player_status, wild_energy, wild_turns_lost
+
+        if roll_turn_lost(wild_status, enabled=status_enabled, game_cfg=game_cfg):
+            wild_turns_lost += 1
+            return False
+
         w_abilities = get_available_abilities(wild_template.abilities, wild_level)
         w_atk = compute_stat(wild_template.base_attack, wild_level)
         p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
         w_spd = compute_stat(wild_template.base_speed, wild_level)
-        wild_action = wild_creature_ai(w_abilities)
+        wild_action = wild_creature_ai(
+            w_abilities, energy=wild_energy, status=wild_status, game_cfg=game_cfg, energy_enabled=energy_enabled,
+        )
         w_ability = None
         if wild_action != "attack":
             w_ability = next((a for a in w_abilities if a.name == wild_action), None)
@@ -232,10 +301,21 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
             crit = roll_crit(w_spd)
             base_dmg = compute_damage(w_atk, wild_level, w_spd, p_def, effectiveness, crit)
             dmg = max(1, int(base_dmg * w_ability.damage_multiplier))
+            if energy_enabled:
+                from devmon.engine.ability_energy import ability_energy_cost
+                wild_energy -= ability_energy_cost(w_ability.damage_multiplier, wild_status, game_cfg)
+            if status_enabled:
+                player_status = roll_status_inflict(
+                    player_status, w_ability.type, w_ability.status_chance, enabled=status_enabled
+                )
         else:
             effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
             crit = roll_crit(w_spd)
             dmg = compute_damage(w_atk, wild_level, w_spd, p_def, effectiveness, crit)
+
+        if status_enabled:
+            dmg = max(1, int(dmg * status_attack_multiplier(wild_status, game_cfg)))
+
         player_owned.current_hp = max(0, (player_owned.current_hp or player_max_hp) - dmg)
         return player_owned.current_hp <= 0
 
@@ -243,8 +323,33 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     turns = 0
     while turns < SIMULATION_TURN_CAP:
         turns += 1
+
+        if energy_enabled:
+            player_energy = regen_energy(player_energy, game_cfg)
+            wild_energy = regen_energy(wild_energy, game_cfg)
+
+        if status_enabled:
+            if player_status in ("burn", "corrupt"):
+                chip = status_chip_damage(player_status, player_max_hp, game_cfg)
+                player_owned.current_hp = max(0, (player_owned.current_hp or player_max_hp) - chip)
+                if player_owned.current_hp <= 0:
+                    apply_faint(player_owned)
+                    outcome = "loss"
+                    status_flavor = f"{STATUS_LABELS[player_status]} chipped {lead_name} down."
+                    break
+            if wild_status in ("burn", "corrupt"):
+                chip = status_chip_damage(wild_status, wild_max_hp, game_cfg)
+                wild_hp = max(0, wild_hp - chip)
+                if wild_hp <= 0:
+                    outcome = "win"
+                    status_flavor = f"{STATUS_LABELS[wild_status]} chipped it down."
+                    break
+
         player_speed = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
         wild_speed = compute_stat(wild_template.base_speed, wild_level)
+        if status_enabled:
+            player_speed = player_speed * status_speed_multiplier(player_status, game_cfg)
+            wild_speed = wild_speed * status_speed_multiplier(wild_status, game_cfg)
         turn_order = determine_turn_order(player_speed, wild_speed)
 
         wild_fainted = False
@@ -267,6 +372,12 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
             outcome = "loss"
             break
 
+    if status_enabled and not status_flavor:
+        if outcome == "win" and wild_turns_lost >= 2 and wild_status:
+            status_flavor = f"{STATUS_LABELS[wild_status]} sealed it."
+        elif outcome == "loss" and player_turns_lost >= 2 and player_status:
+            status_flavor = f"{STATUS_LABELS[player_status]} cost {lead_name} the fight."
+
     return {
         "outcome": outcome,
         "wild_level": wild_level,
@@ -277,6 +388,7 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
         "wild_current_hp": wild_hp,
         "player_owned": player_owned,
         "turns": turns,
+        "status_flavor": status_flavor,
     }
 
 
@@ -339,9 +451,11 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
     if outcome == "loss":
         state.encounter_queue = None
         record_battle_loss(state)
+        flavor = result.get("status_flavor", "")
+        flavor_suffix = f" — {flavor}" if flavor else ""
         return (
             f"Auto-battle: {lead_name} was defeated by wild {wild_template.name} "
-            f"({rarity}). No rewards."
+            f"({rarity}). No rewards.{flavor_suffix}"
         )
 
     # Win: mirror commands/battle.py's victory mutations.
@@ -390,9 +504,11 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
 
     state.encounter_queue = None
 
+    flavor = result.get("status_flavor", "")
+    flavor_suffix = f" — {flavor}" if flavor else ""
     return (
         f"Auto-battle: {lead_name} defeated wild {wild_template.name} ({rarity}) "
-        f"— +{rewards['player_xp']} XP, +{rewards['currency']} bits.{loot_suffix}"
+        f"— +{rewards['player_xp']} XP, +{rewards['currency']} bits.{loot_suffix}{flavor_suffix}"
     )
 
 

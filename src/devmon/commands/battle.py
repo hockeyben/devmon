@@ -29,6 +29,13 @@ class WildBattleState:
     max_hp: int
     encounter_type: str
     rarity: str
+    status: Optional[str] = None
+    """In-battle-only status effect (Phase D — see engine.status_effects).
+    Never persisted; simply discarded when the WildBattleState goes out of
+    scope at the end of the battle."""
+    energy: int = 100
+    """In-battle-only ability energy pool (Phase D — see
+    engine.ability_energy). Never persisted."""
 
 
 # ---------------------------------------------------------------------------
@@ -461,6 +468,11 @@ def battle_cmd() -> None:
         get_type_effectiveness,
         roll_crit,
     )
+    from devmon.engine.ability_energy import (
+        ability_energy_cost,
+        energy_max,
+        regen_energy,
+    )
     from devmon.engine.creature_loader import get_creature
     from devmon.engine.item_engine import (
         activate_booster,
@@ -472,6 +484,14 @@ def battle_cmd() -> None:
     from devmon.engine.medibot import record_battle_loss, record_battle_win
     from devmon.engine.natures import effective_max_hp, effective_stat
     from devmon.engine.progression import check_player_level_up
+    from devmon.engine.status_effects import (
+        STATUS_LABELS,
+        roll_status_inflict,
+        roll_turn_lost,
+        status_attack_multiplier,
+        status_chip_damage,
+        status_speed_multiplier,
+    )
     from devmon.config.loader import load_config
     from devmon.persistence.save import load, save
     from devmon.render.animation import animations_enabled
@@ -558,6 +578,17 @@ def battle_cmd() -> None:
     wild_level = entry.encounter_level
     wild_max_hp = compute_max_hp(wild_template, wild_level)
 
+    # Phase D — master switches + tunable knobs, resolved once per battle
+    # session. Flipping either OFF restores the exact pre-Phase-D behavior
+    # (see engine/status_effects.py, engine/ability_energy.py).
+    try:
+        _battle_game_cfg = load_config().get("game", {})
+    except Exception:
+        _battle_game_cfg = {}
+    status_enabled = bool(_battle_game_cfg.get("status_effects_enabled", True))
+    energy_enabled = bool(_battle_game_cfg.get("energy_enabled", True))
+    battle_energy_max = energy_max(_battle_game_cfg)
+
     wild = WildBattleState(
         template_id=entry.template_id,
         level=wild_level,
@@ -565,12 +596,20 @@ def battle_cmd() -> None:
         max_hp=wild_max_hp,
         encounter_type=entry.encounter_type,
         rarity=entry.rarity,
+        status=None,
+        energy=battle_energy_max,
     )
 
     # --- Step 4: Resolve player creature HP (Pitfall 5) ---
     player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
     if player_owned.current_hp is None:
         player_owned.current_hp = player_max_hp
+
+    # Phase D — in-battle-only status + energy state for the player's active
+    # creature. Never persisted; reset to a fresh state whenever a new
+    # creature becomes active (see the switch-in reset points below).
+    player_status: Optional[str] = None
+    player_energy: int = battle_energy_max
 
     # --- Step 5: Battle loop ---
     battle_active = True
@@ -609,6 +648,9 @@ def battle_cmd() -> None:
                     _wild.rarity,
                     narrow=_narrow,
                     console_width=console.width,
+                    energy=_wild.energy if energy_enabled else None,
+                    energy_max=battle_energy_max if energy_enabled else None,
+                    status=_wild.status if status_enabled else None,
                 )
 
             def _build_player_panel(
@@ -628,6 +670,9 @@ def battle_cmd() -> None:
                     xp_threshold=_player_owned.level * 50,
                     narrow=_narrow,
                     console_width=console.width,
+                    energy=player_energy if energy_enabled else None,
+                    energy_max=battle_energy_max if energy_enabled else None,
+                    status=player_status if status_enabled else None,
                 )
 
             # Build renderable
@@ -636,11 +681,20 @@ def battle_cmd() -> None:
 
             abilities = get_available_abilities(player_template.abilities, player_owned.level)
             ability_name = abilities[-1].name if abilities else None
+            ability_cost = (
+                ability_energy_cost(abilities[-1].damage_multiplier, player_status, _battle_game_cfg)
+                if (abilities and energy_enabled) else None
+            )
             can_switch = bool(
                 _get_switchable_creatures(state, player_owned.template_id)
             )
 
-            menu = render_action_menu(ability_name, can_switch, turn)
+            menu = render_action_menu(
+                ability_name, can_switch, turn,
+                ability_cost=ability_cost,
+                player_energy=player_energy if energy_enabled else None,
+                energy_enabled=energy_enabled,
+            )
 
             # Wild-encounter intro: bottom-up reveal, played once, right when
             # the battle screen first renders (T-anim-01).
@@ -666,19 +720,54 @@ def battle_cmd() -> None:
             if choice == "1":
                 player_speed = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                 wild_speed = compute_stat(wild_template.base_speed, wild.level)
-                turn_order = determine_turn_order(player_speed, wild_speed)
+                # Phase D: static/chill slow a combatant for TURN ORDER only
+                # (crit/damage speed bonuses stay on the raw effective stat).
+                order_player_speed = player_speed * status_speed_multiplier(player_status, _battle_game_cfg) if status_enabled else player_speed
+                order_wild_speed = wild_speed * status_speed_multiplier(wild.status, _battle_game_cfg) if status_enabled else wild_speed
+                turn_order = determine_turn_order(order_player_speed, order_wild_speed)
 
                 narration_parts = []
+                wild_fainted = False
+                player_fainted = False
+
+                # Phase D: burn/corrupt chip tick (self-damage) once per round,
+                # before either side acts -- and energy regen for both sides
+                # at the start of their turn. Plain Attack never spends/costs
+                # energy (cost 0) and never inflicts a NEW status (that's an
+                # ability-only effect) -- but an already-inflicted status's
+                # passive effects (chip, attack penalty, turn-loss, speed)
+                # still apply every round regardless of which menu choice is used.
+                if status_enabled:
+                    if player_status in ("burn", "corrupt"):
+                        chip = status_chip_damage(player_status, player_max_hp, _battle_game_cfg)
+                        player_owned.current_hp = max(0, (player_owned.current_hp or player_max_hp) - chip)
+                        narration_parts.append(f"{STATUS_LABELS[player_status]} chips {player_template.name} for {chip}")
+                        if player_owned.current_hp <= 0:
+                            player_fainted = True
+                    if wild.status in ("burn", "corrupt") and not player_fainted:
+                        chip = status_chip_damage(wild.status, wild.max_hp, _battle_game_cfg)
+                        wild.current_hp = max(0, wild.current_hp - chip)
+                        narration_parts.append(f"{STATUS_LABELS[wild.status]} chips {wild_template.name} for {chip}")
+                        if wild.current_hp <= 0:
+                            wild_fainted = True
+                if energy_enabled:
+                    player_energy = regen_energy(player_energy, _battle_game_cfg)
+                    wild.energy = regen_energy(wild.energy, _battle_game_cfg)
 
                 def _player_attacks() -> bool:
                     """Execute player attack. Returns True if wild fainted."""
                     nonlocal wild
+                    if roll_turn_lost(player_status, enabled=status_enabled, game_cfg=_battle_game_cfg):
+                        narration_parts.append(f"{player_template.name} is locked up by {STATUS_LABELS[player_status]}!")
+                        return False
                     p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
                     w_def = compute_stat(wild_template.base_defense, wild.level)
                     p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                     effectiveness = get_type_effectiveness(player_template.type, wild_template.type)
                     crit = roll_crit(p_spd)
                     dmg = compute_damage(p_atk, player_owned.level, p_spd, w_def, effectiveness, crit)
+                    if status_enabled:
+                        dmg = max(1, int(dmg * status_attack_multiplier(player_status, _battle_game_cfg)))
                     wild.current_hp = max(0, wild.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
@@ -688,12 +777,17 @@ def battle_cmd() -> None:
 
                 def _wild_attacks() -> bool:
                     """Execute wild attack. Returns True if player creature fainted."""
+                    if roll_turn_lost(wild.status, enabled=status_enabled, game_cfg=_battle_game_cfg):
+                        narration_parts.append(f"{wild_template.name} is locked up by {STATUS_LABELS[wild.status]}!")
+                        return False
                     w_atk = compute_stat(wild_template.base_attack, wild.level)
                     p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                     w_spd = compute_stat(wild_template.base_speed, wild.level)
                     effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                     crit = roll_crit(w_spd)
                     dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                    if status_enabled:
+                        dmg = max(1, int(dmg * status_attack_multiplier(wild.status, _battle_game_cfg)))
                     player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
@@ -701,33 +795,31 @@ def battle_cmd() -> None:
                     )
                     return player_owned.current_hp <= 0
 
-                wild_fainted = False
-                player_fainted = False
-
-                if turn_order == "player":
-                    wild_fainted = _animate_attack_exchange(
-                        live, anim_enabled, turn, last_narration, menu,
-                        _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "player", _player_attacks, art_width,
-                    )
-                    if not wild_fainted:
-                        player_fainted = _animate_attack_exchange(
-                            live, anim_enabled, turn, last_narration, menu,
-                            _build_wild_panel, _build_player_panel,
-                            wild_template, player_template, "wild", _wild_attacks, art_width,
-                        )
-                else:
-                    player_fainted = _animate_attack_exchange(
-                        live, anim_enabled, turn, last_narration, menu,
-                        _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "wild", _wild_attacks, art_width,
-                    )
-                    if not player_fainted:
+                if not wild_fainted and not player_fainted:
+                    if turn_order == "player":
                         wild_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
                             wild_template, player_template, "player", _player_attacks, art_width,
                         )
+                        if not wild_fainted:
+                            player_fainted = _animate_attack_exchange(
+                                live, anim_enabled, turn, last_narration, menu,
+                                _build_wild_panel, _build_player_panel,
+                                wild_template, player_template, "wild", _wild_attacks, art_width,
+                            )
+                    else:
+                        player_fainted = _animate_attack_exchange(
+                            live, anim_enabled, turn, last_narration, menu,
+                            _build_wild_panel, _build_player_panel,
+                            wild_template, player_template, "wild", _wild_attacks, art_width,
+                        )
+                        if not player_fainted:
+                            wild_fainted = _animate_attack_exchange(
+                                live, anim_enabled, turn, last_narration, menu,
+                                _build_wild_panel, _build_player_panel,
+                                wild_template, player_template, "player", _player_attacks, art_width,
+                            )
 
                 last_narration = " | ".join(narration_parts)
                 turn += 1
@@ -811,6 +903,11 @@ def battle_cmd() -> None:
                     next_creature = _resolve_party_lead(state)
                     if next_creature is not None:
                         player_owned = next_creature
+                        # Phase D: a freshly-active creature starts with a
+                        # clean status/energy slate -- status/energy belong
+                        # to whichever creature is currently on the field.
+                        player_status = None
+                        player_energy = battle_energy_max
                         participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
                         player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
@@ -841,14 +938,49 @@ def battle_cmd() -> None:
                     continue
 
                 ability = abilities[-1]
+                # Phase D: an unaffordable ability is unavailable that turn --
+                # mirrors the "no ability learned" continue above (no turn cost).
+                if energy_enabled:
+                    ability_cost_now = ability_energy_cost(ability.damage_multiplier, player_status, _battle_game_cfg)
+                    if player_energy < ability_cost_now:
+                        last_narration = f"Not enough energy for {ability.name}! ({player_energy}/{ability_cost_now})"
+                        continue
+
                 player_speed = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                 wild_speed = compute_stat(wild_template.base_speed, wild.level)
-                turn_order = determine_turn_order(player_speed, wild_speed)
+                order_player_speed = player_speed * status_speed_multiplier(player_status, _battle_game_cfg) if status_enabled else player_speed
+                order_wild_speed = wild_speed * status_speed_multiplier(wild.status, _battle_game_cfg) if status_enabled else wild_speed
+                turn_order = determine_turn_order(order_player_speed, order_wild_speed)
 
                 narration_parts = []
+                wild_fainted = False
+                player_fainted = False
+
+                # Phase D: burn/corrupt chip tick + energy regen, once per
+                # round (see the identical block in the Attack branch above).
+                if status_enabled:
+                    if player_status in ("burn", "corrupt"):
+                        chip = status_chip_damage(player_status, player_max_hp, _battle_game_cfg)
+                        player_owned.current_hp = max(0, (player_owned.current_hp or player_max_hp) - chip)
+                        narration_parts.append(f"{STATUS_LABELS[player_status]} chips {player_template.name} for {chip}")
+                        if player_owned.current_hp <= 0:
+                            player_fainted = True
+                    if wild.status in ("burn", "corrupt") and not player_fainted:
+                        chip = status_chip_damage(wild.status, wild.max_hp, _battle_game_cfg)
+                        wild.current_hp = max(0, wild.current_hp - chip)
+                        narration_parts.append(f"{STATUS_LABELS[wild.status]} chips {wild_template.name} for {chip}")
+                        if wild.current_hp <= 0:
+                            wild_fainted = True
+                if energy_enabled:
+                    player_energy = regen_energy(player_energy, _battle_game_cfg)
+                    wild.energy = regen_energy(wild.energy, _battle_game_cfg)
 
                 def _player_special() -> bool:
                     """Execute player special ability. Returns True if wild fainted."""
+                    nonlocal wild, player_energy
+                    if roll_turn_lost(player_status, enabled=status_enabled, game_cfg=_battle_game_cfg):
+                        narration_parts.append(f"{player_template.name} is locked up by {STATUS_LABELS[player_status]}!")
+                        return False
                     p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
                     w_def = compute_stat(wild_template.base_defense, wild.level)
                     p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
@@ -856,6 +988,14 @@ def battle_cmd() -> None:
                     crit = roll_crit(p_spd)
                     base_dmg = compute_damage(p_atk, player_owned.level, p_spd, w_def, effectiveness, crit)
                     dmg = max(1, int(base_dmg * ability.damage_multiplier))
+                    if status_enabled:
+                        dmg = max(1, int(dmg * status_attack_multiplier(player_status, _battle_game_cfg)))
+                    if energy_enabled:
+                        player_energy -= ability_energy_cost(ability.damage_multiplier, player_status, _battle_game_cfg)
+                    if status_enabled:
+                        wild.status = roll_status_inflict(
+                            wild.status, ability.type, ability.status_chance, enabled=status_enabled
+                        )
                     wild.current_hp = max(0, wild.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
@@ -865,26 +1005,38 @@ def battle_cmd() -> None:
 
                 def _wild_attacks_special() -> bool:
                     """Execute wild attack. Returns True if player creature fainted."""
+                    nonlocal player_status
+                    if roll_turn_lost(wild.status, enabled=status_enabled, game_cfg=_battle_game_cfg):
+                        narration_parts.append(f"{wild_template.name} is locked up by {STATUS_LABELS[wild.status]}!")
+                        return False
                     w_abilities = get_available_abilities(wild_template.abilities, wild.level)
                     w_atk = compute_stat(wild_template.base_attack, wild.level)
                     p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                     w_spd = compute_stat(wild_template.base_speed, wild.level)
-                    wild_action = wild_creature_ai(w_abilities)
+                    wild_action = wild_creature_ai(
+                        w_abilities, energy=wild.energy, status=wild.status,
+                        game_cfg=_battle_game_cfg, energy_enabled=energy_enabled,
+                    )
+                    w_ability = None
                     if wild_action != "attack":
                         w_ability = next((a for a in w_abilities if a.name == wild_action), None)
-                        if w_ability:
-                            effectiveness = get_type_effectiveness(w_ability.type, player_template.type)
-                            crit = roll_crit(w_spd)
-                            base_dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
-                            dmg = max(1, int(base_dmg * w_ability.damage_multiplier))
-                        else:
-                            effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
-                            crit = roll_crit(w_spd)
-                            dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                    if w_ability is not None:
+                        effectiveness = get_type_effectiveness(w_ability.type, player_template.type)
+                        crit = roll_crit(w_spd)
+                        base_dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                        dmg = max(1, int(base_dmg * w_ability.damage_multiplier))
+                        if energy_enabled:
+                            wild.energy -= ability_energy_cost(w_ability.damage_multiplier, wild.status, _battle_game_cfg)
+                        if status_enabled:
+                            player_status = roll_status_inflict(
+                                player_status, w_ability.type, w_ability.status_chance, enabled=status_enabled
+                            )
                     else:
                         effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                         crit = roll_crit(w_spd)
                         dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                    if status_enabled:
+                        dmg = max(1, int(dmg * status_attack_multiplier(wild.status, _battle_game_cfg)))
                     player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     narration_parts.append(
@@ -892,33 +1044,31 @@ def battle_cmd() -> None:
                     )
                     return player_owned.current_hp <= 0
 
-                wild_fainted = False
-                player_fainted = False
-
-                if turn_order == "player":
-                    wild_fainted = _animate_attack_exchange(
-                        live, anim_enabled, turn, last_narration, menu,
-                        _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "player", _player_special, art_width,
-                    )
-                    if not wild_fainted:
-                        player_fainted = _animate_attack_exchange(
-                            live, anim_enabled, turn, last_narration, menu,
-                            _build_wild_panel, _build_player_panel,
-                            wild_template, player_template, "wild", _wild_attacks_special, art_width,
-                        )
-                else:
-                    player_fainted = _animate_attack_exchange(
-                        live, anim_enabled, turn, last_narration, menu,
-                        _build_wild_panel, _build_player_panel,
-                        wild_template, player_template, "wild", _wild_attacks_special, art_width,
-                    )
-                    if not player_fainted:
+                if not wild_fainted and not player_fainted:
+                    if turn_order == "player":
                         wild_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
                             wild_template, player_template, "player", _player_special, art_width,
                         )
+                        if not wild_fainted:
+                            player_fainted = _animate_attack_exchange(
+                                live, anim_enabled, turn, last_narration, menu,
+                                _build_wild_panel, _build_player_panel,
+                                wild_template, player_template, "wild", _wild_attacks_special, art_width,
+                            )
+                    else:
+                        player_fainted = _animate_attack_exchange(
+                            live, anim_enabled, turn, last_narration, menu,
+                            _build_wild_panel, _build_player_panel,
+                            wild_template, player_template, "wild", _wild_attacks_special, art_width,
+                        )
+                        if not player_fainted:
+                            wild_fainted = _animate_attack_exchange(
+                                live, anim_enabled, turn, last_narration, menu,
+                                _build_wild_panel, _build_player_panel,
+                                wild_template, player_template, "player", _player_special, art_width,
+                            )
 
                 last_narration = " | ".join(narration_parts)
                 turn += 1
@@ -991,6 +1141,11 @@ def battle_cmd() -> None:
                     next_creature = _resolve_party_lead(state)
                     if next_creature is not None:
                         player_owned = next_creature
+                        # Phase D: a freshly-active creature starts with a
+                        # clean status/energy slate -- status/energy belong
+                        # to whichever creature is currently on the field.
+                        player_status = None
+                        player_energy = battle_energy_max
                         participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
                         player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
@@ -1186,6 +1341,8 @@ def battle_cmd() -> None:
                         effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                         crit = roll_crit(w_spd)
                         dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                        if status_enabled:
+                            dmg = max(1, int(dmg * status_attack_multiplier(wild.status, _battle_game_cfg)))
                         player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                         suffix = _type_suffix(effectiveness, crit)
                         last_narration = (
@@ -1200,6 +1357,8 @@ def battle_cmd() -> None:
                             next_creature = _resolve_party_lead(state)
                             if next_creature is not None:
                                 player_owned = next_creature
+                                player_status = None
+                                player_energy = battle_energy_max
                                 participated.add(player_owned.template_id)
                                 player_template = get_creature(player_owned.template_id)
                                 player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
@@ -1253,6 +1412,8 @@ def battle_cmd() -> None:
 
                 if 1 <= idx <= len(switchable):
                     player_owned = switchable[idx - 1]
+                    player_status = None
+                    player_energy = battle_energy_max
                     participated.add(player_owned.template_id)
                     player_template = get_creature(player_owned.template_id)
                     player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
@@ -1267,6 +1428,8 @@ def battle_cmd() -> None:
                     effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                     crit = roll_crit(w_spd)
                     dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                    if status_enabled:
+                        dmg = max(1, int(dmg * status_attack_multiplier(wild.status, _battle_game_cfg)))
                     player_owned.current_hp = max(0, player_owned.current_hp - dmg)
                     suffix = _type_suffix(effectiveness, crit)
                     last_narration = (
@@ -1281,6 +1444,8 @@ def battle_cmd() -> None:
                         next_creature = _resolve_party_lead(state)
                         if next_creature is not None:
                             player_owned = next_creature
+                            player_status = None
+                            player_energy = battle_energy_max
                             participated.add(player_owned.template_id)
                             player_template = get_creature(player_owned.template_id)
                             player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
@@ -1414,6 +1579,8 @@ def battle_cmd() -> None:
                 effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                 crit = roll_crit(w_spd)
                 dmg = compute_damage(w_atk, wild.level, w_spd, p_def, effectiveness, crit)
+                if status_enabled:
+                    dmg = max(1, int(dmg * status_attack_multiplier(wild.status, _battle_game_cfg)))
                 player_owned.current_hp = max(0, (player_owned.current_hp or player_max_hp) - dmg)
                 suffix = _type_suffix(effectiveness, crit)
                 last_narration = (
@@ -1427,6 +1594,11 @@ def battle_cmd() -> None:
                     next_creature = _resolve_party_lead(state)
                     if next_creature is not None:
                         player_owned = next_creature
+                        # Phase D: a freshly-active creature starts with a
+                        # clean status/energy slate -- status/energy belong
+                        # to whichever creature is currently on the field.
+                        player_status = None
+                        player_energy = battle_energy_max
                         participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
                         player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)

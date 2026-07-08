@@ -50,7 +50,8 @@
       "name": "Hot Reload",
       "damage_multiplier": 1.6,
       "type": "Fire",
-      "learn_level": 10
+      "learn_level": 10,
+      "status_chance": 0.15
     },
     {
       "name": "Bedrock Fracture",

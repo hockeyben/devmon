@@ -37,13 +37,15 @@
       "name": "Cold Cache",
       "damage_multiplier": 1.3,
       "type": "Ice",
-      "learn_level": 38
+      "learn_level": 38,
+      "status_chance": 0.15
     },
     {
       "name": "Frozen Pipeline",
       "damage_multiplier": 1.6,
       "type": "Ice",
-      "learn_level": 41
+      "learn_level": 41,
+      "status_chance": 0.2
     },
     {
       "name": "Heisenbug Flicker",
@@ -55,13 +57,15 @@
       "name": "Deep Freeze Deploy",
       "damage_multiplier": 1.9,
       "type": "Ice",
-      "learn_level": 46
+      "learn_level": 46,
+      "status_chance": 0.2
     },
     {
       "name": "Glacial Lockout",
       "damage_multiplier": 2.2,
       "type": "Ice",
-      "learn_level": 49
+      "learn_level": 49,
+      "status_chance": 0.3
     }
   ]
 }

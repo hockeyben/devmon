@@ -37,25 +37,29 @@
       "name": "Compile Flare",
       "damage_multiplier": 1.3,
       "type": "Fire",
-      "learn_level": 17
+      "learn_level": 17,
+      "status_chance": 0.15
     },
     {
       "name": "Hot Reload",
       "damage_multiplier": 1.6,
       "type": "Fire",
-      "learn_level": 18
+      "learn_level": 18,
+      "status_chance": 0.2
     },
     {
       "name": "Silent Failure",
       "damage_multiplier": 1.6,
       "type": "Shadow",
-      "learn_level": 20
+      "learn_level": 20,
+      "status_chance": 0.15
     },
     {
       "name": "Thermal Throttle",
       "damage_multiplier": 1.9,
       "type": "Fire",
-      "learn_level": 21
+      "learn_level": 21,
+      "status_chance": 0.3
     }
   ]
 }

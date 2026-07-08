@@ -50,7 +50,8 @@
       "name": "Voltage Spike",
       "damage_multiplier": 1.6,
       "type": "Electric",
-      "learn_level": 10
+      "learn_level": 10,
+      "status_chance": 0.15
     },
     {
       "name": "Overflow Tide",

@@ -35,19 +35,22 @@
       "name": "CPU Frost",
       "damage_multiplier": 1.5,
       "type": "Ice",
-      "learn_level": 1
+      "learn_level": 1,
+      "status_chance": 0.15
     },
     {
       "name": "Build Blizzard",
       "damage_multiplier": 1.9,
       "type": "Ice",
-      "learn_level": 5
+      "learn_level": 5,
+      "status_chance": 0.2
     },
     {
       "name": "Server Room Glacier",
       "damage_multiplier": 2.4,
       "type": "Ice",
-      "learn_level": 10
+      "learn_level": 10,
+      "status_chance": 0.2
     },
     {
       "name": "Heisenbug Flicker",
@@ -59,7 +62,8 @@
       "name": "Glacial Lockout",
       "damage_multiplier": 2.2,
       "type": "Ice",
-      "learn_level": 20
+      "learn_level": 20,
+      "status_chance": 0.3
     }
   ]
 }

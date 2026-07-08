@@ -49,7 +49,8 @@
       "name": "Silent Failure",
       "damage_multiplier": 1.6,
       "type": "Shadow",
-      "learn_level": 36
+      "learn_level": 36,
+      "status_chance": 0.15
     },
     {
       "name": "Recursive Loop",

@@ -35,19 +35,22 @@
       "name": "Race Condition Bite",
       "damage_multiplier": 1.4,
       "type": "Electric",
-      "learn_level": 1
+      "learn_level": 1,
+      "status_chance": 0.15
     },
     {
       "name": "USB Arc",
       "damage_multiplier": 1.8,
       "type": "Electric",
-      "learn_level": 5
+      "learn_level": 5,
+      "status_chance": 0.2
     },
     {
       "name": "Thread Frenzy",
       "damage_multiplier": 2.3,
       "type": "Electric",
-      "learn_level": 10
+      "learn_level": 10,
+      "status_chance": 0.2
     },
     {
       "name": "Pipe Surge",
@@ -59,7 +62,8 @@
       "name": "Grid Overload",
       "damage_multiplier": 2.2,
       "type": "Electric",
-      "learn_level": 20
+      "learn_level": 20,
+      "status_chance": 0.3
     }
   ]
 }

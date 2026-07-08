@@ -54,6 +54,17 @@ class Ability(BaseModel):
     learn_level: int = Field(ge=1)
     """Minimum creature level required to use this ability (must be >= 1)."""
 
+    status_chance: float = Field(default=0.0, ge=0.0, le=0.5)
+    """Chance (0.0-0.5) this ability inflicts its type's in-battle status
+    effect on the defender when used (Phase D — engine.status_effects).
+    Only meaningful when `type` is one of the four effect-bearing types
+    (Fire->burn, Electric->static, Ice->chill, Shadow->corrupt); abilities
+    of other types should leave this at the default 0.0. Data-integrity
+    enforced by tests/test_status_effects.py's data-pass test, not by a
+    validator here (an off-type ability with a nonzero chance is simply
+    inert -- engine.status_effects.roll_status_inflict looks up the status
+    for the ability's own type and no-ops if there isn't one)."""
+
 
 # ---------------------------------------------------------------------------
 # CreatureTemplate: static species definition loaded from JSON
