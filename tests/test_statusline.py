@@ -269,6 +269,65 @@ class TestStatuslineXpBridge:
         assert state["lines_added"] == 25
         assert state["lines_removed"] == 5
 
+    def test_output_tokens_and_api_time_drive_events(self, tmp_save_dir, monkeypatch):
+        """Token/API-time growth alone (no line edits) still earns: 2500
+        output tokens -> 10 XP-worth burst -> one ai_code event."""
+        import devmon.commands.statusline as statusline_mod
+        monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)
+
+        from devmon.main import app
+        runner = CliRunner()
+
+        payload = json.dumps({
+            "session_id": "sess-tok",
+            "context_window": {"total_output_tokens": 2500},
+            "cost": {"total_api_duration_ms": 90_000},
+        }).encode("utf-8")
+        result = runner.invoke(app, ["statusline"], input=payload)
+        assert result.exit_code == 0
+
+        log_path = tmp_save_dir / "events.log"
+        events = [
+            json.loads(l) for l in log_path.read_text(encoding="utf-8").splitlines() if l.strip()
+        ]
+        assert len(events) == 1
+        assert events[0]["type"] == "ai_code"
+        assert events[0]["tokens"] == 2500
+        assert events[0]["api_ms"] == 90_000
+        assert events[0]["lines"] == 0
+
+    def test_small_deltas_bank_until_worth_min_burst(self, tmp_save_dir, monkeypatch):
+        """Tiny per-refresh deltas (< xp_ai_min_burst XP) must not emit a
+        0-XP event and get lost -- the state file only advances on emission,
+        so crumbs accrue across refreshes."""
+        import devmon.commands.statusline as statusline_mod
+        monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)
+
+        from devmon.main import app
+        runner = CliRunner()
+        log_path = tmp_save_dir / "events.log"
+
+        # 2 lines = 1 XP-worth < min burst (3) -> banked, nothing emitted.
+        p1 = json.dumps({
+            "session_id": "sess-bank",
+            "cost": {"total_lines_added": 2, "total_lines_removed": 0},
+        }).encode("utf-8")
+        assert runner.invoke(app, ["statusline"], input=p1).exit_code == 0
+        assert not log_path.exists() or log_path.read_text(encoding="utf-8").strip() == ""
+
+        # Cumulative 8 lines: banked delta is now 8 (state never advanced)
+        # -> 4 XP-worth -> one event carrying the FULL banked delta.
+        p2 = json.dumps({
+            "session_id": "sess-bank",
+            "cost": {"total_lines_added": 8, "total_lines_removed": 0},
+        }).encode("utf-8")
+        assert runner.invoke(app, ["statusline"], input=p2).exit_code == 0
+        events = [
+            json.loads(l) for l in log_path.read_text(encoding="utf-8").splitlines() if l.strip()
+        ]
+        assert len(events) == 1
+        assert events[0]["lines"] == 8
+
     def test_missing_session_id_skips_bridge_entirely(self, tmp_save_dir, monkeypatch):
         import devmon.commands.statusline as statusline_mod
         monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)

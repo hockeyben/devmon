@@ -58,10 +58,16 @@ DEFAULT_CONFIG: dict = {
         # Streak multiplier (D-10, Pattern 8):
         "streak_xp_bonus_per_day": 0.05,  # +5% per consecutive day
         "streak_multiplier_cap": 2.0,     # max streak multiplier at 20 days
-        # Claude statusline XP bridge (ai_code events -- lines diffed from
-        # Claude Code's cost.total_lines_added/removed, see engine/progression.py):
-        "xp_ai_lines_per_xp": 3,           # 1 XP per this many changed lines
-        "xp_ai_lines_cap": 40,             # max XP awarded per ai_code event
+        # Claude statusline XP bridge (ai_code events -- metrics diffed from
+        # Claude Code's statusline payload, see engine/progression.py).
+        # Progressive with NO hard cap: linear up to xp_ai_burst_knee raw XP
+        # per burst, then knee + 2*sqrt(excess) -- every token counts, but a
+        # mega-burst can't power-level.
+        "xp_ai_lines_per_xp": 2,             # 1 XP per this many changed lines
+        "xp_ai_tokens_per_xp": 250,          # 1 XP per this many output tokens
+        "xp_ai_active_seconds_per_xp": 45,   # 1 XP per this many API-active seconds
+        "xp_ai_burst_knee": 60,              # linear up to here, sqrt beyond
+        "xp_ai_min_burst": 3,                # bank deltas until worth this many XP
     },
     "ui": {
         "theme": "neon",

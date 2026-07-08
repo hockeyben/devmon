@@ -55,18 +55,61 @@ def compute_event_xp(event: dict, config: dict) -> int:
     elif event_type == "test_pass":
         return int(game_cfg.get("xp_test_pass", 75))
     elif event_type == "ai_code":
-        # Claude statusline XP bridge (commands/statusline.py): "lines" is a
-        # diffed count of Claude's own added+removed lines since the last
-        # sync. 1 XP per xp_ai_lines_per_xp lines, capped at xp_ai_lines_cap
-        # per event -- does NOT increment total_commands (process_events only
-        # counts type=="cmd" toward that).
-        lines = max(0, int(event.get("lines", 0)))
-        per = max(1, int(game_cfg.get("xp_ai_lines_per_xp", 3)))
-        cap = int(game_cfg.get("xp_ai_lines_cap", 40))
-        return min(cap, max(1, lines // per)) if lines else 0
+        # Claude statusline XP bridge (commands/statusline.py): the event
+        # carries diffed session metrics -- "lines" (added+removed), "tokens"
+        # (Claude output tokens), "api_ms" (API-active milliseconds).
+        # Does NOT increment total_commands (process_events only counts
+        # type=="cmd" toward that).
+        return compute_ai_burst_xp(
+            lines=int(event.get("lines", 0) or 0),
+            tokens=int(event.get("tokens", 0) or 0),
+            api_ms=int(event.get("api_ms", 0) or 0),
+            config=config,
+        )
     else:
         # Plain successful command: 1 XP base
         return _CMD_BASE_XP
+
+
+def compute_ai_burst_xp(lines: int, tokens: int, api_ms: int, config: dict) -> int:
+    """Progressive, uncapped XP for one burst of Claude activity.
+
+    Blends three metrics into raw XP -- changed lines, Claude output tokens,
+    and API-active time -- then applies a knee curve: linear up to
+    xp_ai_burst_knee, `knee + 2*sqrt(excess)` beyond. Every metric unit
+    always earns (no hard cap), but a mega-burst (e.g. a large agent sweep
+    landing at once) can't power-level the player.
+
+    Also used by the statusline XP bridge to estimate whether banked deltas
+    are worth emitting yet (xp_ai_min_burst) -- keep this the single source
+    of truth for the conversion.
+
+    Args:
+        lines: Added+removed line count since the last emitted burst.
+        tokens: Claude output tokens since the last emitted burst.
+        api_ms: API-active milliseconds since the last emitted burst.
+        config: DevMon config dict.
+
+    Returns:
+        Non-negative integer XP value.
+    """
+    import math
+
+    game_cfg = config.get("game", {})
+    per_lines = max(1, int(game_cfg.get("xp_ai_lines_per_xp", 2)))
+    per_tokens = max(1, int(game_cfg.get("xp_ai_tokens_per_xp", 250)))
+    per_seconds = max(1, int(game_cfg.get("xp_ai_active_seconds_per_xp", 45)))
+
+    raw = (
+        max(0, lines) / per_lines
+        + max(0, tokens) / per_tokens
+        + (max(0, api_ms) / 1000.0) / per_seconds
+    )
+
+    knee = max(1, int(game_cfg.get("xp_ai_burst_knee", 60)))
+    if raw <= knee:
+        return int(raw)
+    return int(knee + 2.0 * math.sqrt(raw - knee))
 
 
 def _compute_session_time_xp(duration_ms: int, config: dict) -> int:

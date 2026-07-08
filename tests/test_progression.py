@@ -132,29 +132,56 @@ def test_reward_xp_from_quests_achievements_levels_up():
 # --- Claude statusline XP bridge: ai_code event type -----------------------
 
 
-def test_ai_code_zero_lines_generates_no_xp():
-    """0 changed lines -> 0 XP (no reward for a no-op diff)."""
+def test_ai_code_zero_metrics_generates_no_xp():
+    """A no-op diff (all metrics 0) -> 0 XP."""
     from devmon.engine.progression import compute_event_xp
     from devmon.config.defaults import DEFAULT_CONFIG
     event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 0}
     assert compute_event_xp(event, DEFAULT_CONFIG) == 0
 
 
-def test_ai_code_three_lines_generates_one_xp():
-    """xp_ai_lines_per_xp default is 3 -> 3 lines = 1 XP."""
+def test_ai_code_lines_rate_two_per_xp():
+    """xp_ai_lines_per_xp default is 2 -> 10 lines = 5 XP (linear below knee)."""
     from devmon.engine.progression import compute_event_xp
     from devmon.config.defaults import DEFAULT_CONFIG
-    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 3}
-    assert compute_event_xp(event, DEFAULT_CONFIG) == 1
+    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 10}
+    assert compute_event_xp(event, DEFAULT_CONFIG) == 5
 
 
-def test_ai_code_xp_capped_at_forty():
-    """xp_ai_lines_cap default is 40 -- 300 lines would be 100 XP uncapped,
-    must clamp to 40."""
+def test_ai_code_blends_tokens_and_api_time():
+    """Metrics blend additively: 20 lines (10) + 2500 tokens (10) +
+    90s api time (2) = 22 XP."""
     from devmon.engine.progression import compute_event_xp
     from devmon.config.defaults import DEFAULT_CONFIG
-    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 300}
-    assert compute_event_xp(event, DEFAULT_CONFIG) == 40
+    event = {
+        "ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code",
+        "lines": 20, "tokens": 2500, "api_ms": 90_000,
+    }
+    assert compute_event_xp(event, DEFAULT_CONFIG) == 22
+
+
+def test_ai_code_progressive_beyond_knee_no_hard_cap():
+    """Beyond the knee (60 raw XP) the curve is knee + 2*sqrt(excess):
+    progressive, never a flat cap. 300 lines = 150 raw -> 60 + 2*sqrt(90)
+    = 78; bigger bursts always earn strictly more (monotonic, sublinear)."""
+    from devmon.engine.progression import compute_event_xp
+    from devmon.config.defaults import DEFAULT_CONFIG
+
+    big = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 300}
+    assert compute_event_xp(big, DEFAULT_CONFIG) == 78
+
+    bigger = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 3000}
+    huge = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 30000}
+    assert compute_event_xp(big, DEFAULT_CONFIG) < compute_event_xp(bigger, DEFAULT_CONFIG)
+    assert compute_event_xp(bigger, DEFAULT_CONFIG) < compute_event_xp(huge, DEFAULT_CONFIG)
+
+
+def test_ai_code_missing_token_fields_backward_compatible():
+    """Old ai_code events (lines only, pre-token-metrics) still score."""
+    from devmon.engine.progression import compute_event_xp
+    from devmon.config.defaults import DEFAULT_CONFIG
+    event = {"ts": 1, "exit": 0, "dur": 0, "cwd": "/x", "type": "ai_code", "lines": 8}
+    assert compute_event_xp(event, DEFAULT_CONFIG) == 4
 
 
 def test_ai_code_does_not_increment_total_commands():

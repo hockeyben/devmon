@@ -236,11 +236,30 @@ def _runtime_dir() -> Path:
     return Path(user_runtime_dir("devmon", "devmon"))
 
 
+def _payload_int(container: dict, key: str) -> int:
+    try:
+        return max(0, int(container.get(key, 0) or 0))
+    except Exception:
+        return 0
+
+
 def _xp_bridge(payload: dict, save_path: Path) -> None:
-    """Diff Claude's cost.total_lines_added/removed against a per-session
-    state file; append one `ai_code` event to the event log for the positive
-    delta. All failure paths are silent -- this must never affect the row
-    that already printed.
+    """Diff Claude's session metrics against a per-session state file and
+    append one `ai_code` event carrying the deltas.
+
+    Metrics (progressive, uncapped -- see compute_ai_burst_xp): changed
+    lines (cost.total_lines_added/removed), Claude output tokens
+    (context_window.total_output_tokens), API-active time
+    (cost.total_api_duration_ms).
+
+    Banking: tiny per-refresh deltas (statusline refreshes every ~5s) would
+    floor to 0 XP and be lost forever if emitted eagerly. The state file
+    only advances when the accumulated deltas are worth at least
+    xp_ai_min_burst XP; below that, nothing is emitted and the deltas keep
+    accruing toward the next refresh.
+
+    All failure paths are silent -- this must never affect the row that
+    already printed.
     """
     try:
         session_id = payload.get("session_id")
@@ -248,14 +267,11 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
             return  # No session to key state on -- skip the bridge entirely
 
         cost = payload.get("cost") or {}
-        try:
-            added = int(cost.get("total_lines_added", 0) or 0)
-        except Exception:
-            added = 0
-        try:
-            removed = int(cost.get("total_lines_removed", 0) or 0)
-        except Exception:
-            removed = 0
+        ctx = payload.get("context_window") or {}
+        added = _payload_int(cost, "total_lines_added")
+        removed = _payload_int(cost, "total_lines_removed")
+        tokens_total = _payload_int(ctx, "total_output_tokens")
+        api_ms_total = _payload_int(cost, "total_api_duration_ms")
 
         workspace = payload.get("workspace") or {}
         cwd = workspace.get("current_dir") or payload.get("cwd") or os.getcwd()
@@ -263,44 +279,69 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
         session_dir = save_path.parent / "claude_sessions"
         session_file = session_dir / f"{session_id}.json"
 
-        prev_added = 0
-        prev_removed = 0
+        prev = {}
         if session_file.exists():
             try:
                 prev = json.loads(session_file.read_text(encoding="utf-8"))
-                prev_added = int(prev.get("lines_added", 0))
-                prev_removed = int(prev.get("lines_removed", 0))
+                if not isinstance(prev, dict):
+                    prev = {}
             except Exception:
-                prev_added = 0
-                prev_removed = 0
+                prev = {}
 
-        delta = max(0, added - prev_added) + max(0, removed - prev_removed)
-
-        if delta > 0:
+        def _prev(key: str) -> int:
             try:
-                from devmon.config.loader import load_config
-                config = load_config()
+                return max(0, int(prev.get(key, 0)))
             except Exception:
-                from devmon.config.defaults import DEFAULT_CONFIG
-                config = DEFAULT_CONFIG
+                return 0
 
-            from devmon.commands.hook import resolve_event_log_path
-            log_path = resolve_event_log_path(config)
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            event = {
-                "ts": int(time.time() * 1000),
-                "exit": 0,
-                "dur": 0,
-                "cwd": str(cwd).replace("\\", "/"),
-                "type": "ai_code",
-                "lines": delta,
-            }
-            with log_path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps(event) + "\n")
+        delta_lines = max(0, added - _prev("lines_added")) + max(
+            0, removed - _prev("lines_removed")
+        )
+        delta_tokens = max(0, tokens_total - _prev("output_tokens"))
+        delta_api_ms = max(0, api_ms_total - _prev("api_ms"))
+
+        if delta_lines == 0 and delta_tokens == 0 and delta_api_ms == 0:
+            return
+
+        try:
+            from devmon.config.loader import load_config
+            config = load_config()
+        except Exception:
+            from devmon.config.defaults import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
+
+        # Bank small deltas: only emit (and advance the state file) once the
+        # accumulated activity converts to a meaningful burst.
+        from devmon.engine.progression import compute_ai_burst_xp
+        estimate = compute_ai_burst_xp(delta_lines, delta_tokens, delta_api_ms, config)
+        min_burst = max(1, int(config.get("game", {}).get("xp_ai_min_burst", 3)))
+        if estimate < min_burst:
+            return
+
+        from devmon.commands.hook import resolve_event_log_path
+        log_path = resolve_event_log_path(config)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        event = {
+            "ts": int(time.time() * 1000),
+            "exit": 0,
+            "dur": 0,
+            "cwd": str(cwd).replace("\\", "/"),
+            "type": "ai_code",
+            "lines": delta_lines,
+            "tokens": delta_tokens,
+            "api_ms": delta_api_ms,
+        }
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(event) + "\n")
 
         session_dir.mkdir(parents=True, exist_ok=True)
         session_file.write_text(
-            json.dumps({"lines_added": added, "lines_removed": removed}),
+            json.dumps({
+                "lines_added": added,
+                "lines_removed": removed,
+                "output_tokens": tokens_total,
+                "api_ms": api_ms_total,
+            }),
             encoding="utf-8",
         )
     except Exception:
