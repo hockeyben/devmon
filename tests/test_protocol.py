@@ -40,7 +40,9 @@ class TestProtocolInstall:
         default_value_calls = [c for c in fake_winreg.SetValueEx.call_args_list if c.args[1] is None]
         default_values = [c.args[-1] for c in default_value_calls]
         assert "URL:DevMon Protocol" in default_values
-        assert any("devmon battle" in v for v in default_values)
+        assert any("devmon protocol dispatch" in v for v in default_values)
+        assert any("'%1'" in v for v in default_values)
+        assert any("-NoExit" in v for v in default_values)
         assert any("powershell" in v.lower() for v in default_values)
 
         url_protocol_calls = [c for c in fake_winreg.SetValueEx.call_args_list if c.args[1] == "URL Protocol"]
@@ -127,6 +129,121 @@ class TestProtocolUninstall:
 
         assert result.exit_code == 1
         assert "windows-only" in result.output.lower()
+
+
+class TestProtocolDispatch:
+    """`devmon protocol dispatch <url>` is what the registered `%1`
+    placeholder actually invokes -- it parses the clicked devmon:// URL and
+    spawns the matching subcommand as a real subprocess. All tests here
+    monkeypatch subprocess.run; none may require `devmon app` to actually
+    exist (a parallel agent is adding it)."""
+
+    def test_battle_url_invokes_battle_subcommand(self, monkeypatch):
+        from devmon.commands import protocol as protocol_cmd
+
+        calls = []
+
+        class _FakeResult:
+            returncode = 0
+
+        def _fake_run(argv, **kwargs):
+            calls.append(argv)
+            return _FakeResult()
+
+        monkeypatch.setattr(protocol_cmd.subprocess, "run", _fake_run)
+
+        runner = CliRunner()
+        result = runner.invoke(protocol_cmd.app, ["dispatch", "devmon://battle"])
+
+        assert result.exit_code == 0
+        assert len(calls) == 1
+        assert "battle" in calls[0]
+
+    def test_app_url_invokes_app_subcommand(self, monkeypatch):
+        from devmon.commands import protocol as protocol_cmd
+
+        calls = []
+
+        class _FakeResult:
+            returncode = 0
+
+        def _fake_run(argv, **kwargs):
+            calls.append(argv)
+            return _FakeResult()
+
+        monkeypatch.setattr(protocol_cmd.subprocess, "run", _fake_run)
+
+        runner = CliRunner()
+        result = runner.invoke(protocol_cmd.app, ["dispatch", "devmon://app"])
+
+        assert result.exit_code == 0
+        assert len(calls) == 1
+        assert "app" in calls[0]
+
+    def test_battle_url_with_trailing_slash_still_resolves_to_battle(self, monkeypatch):
+        from devmon.commands import protocol as protocol_cmd
+
+        calls = []
+
+        class _FakeResult:
+            returncode = 0
+
+        def _fake_run(argv, **kwargs):
+            calls.append(argv)
+            return _FakeResult()
+
+        monkeypatch.setattr(protocol_cmd.subprocess, "run", _fake_run)
+
+        runner = CliRunner()
+        result = runner.invoke(protocol_cmd.app, ["dispatch", "devmon://battle/"])
+
+        assert result.exit_code == 0
+        assert len(calls) == 1
+        assert "battle" in calls[0]
+
+    def test_unknown_url_exits_nonzero_without_spawning(self, monkeypatch):
+        from devmon.commands import protocol as protocol_cmd
+
+        calls = []
+        monkeypatch.setattr(
+            protocol_cmd.subprocess, "run", lambda argv, **kwargs: calls.append(argv)
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(protocol_cmd.app, ["dispatch", "devmon://bogus"])
+
+        assert result.exit_code != 0
+        assert calls == []
+        assert "unrecognized" in result.output.lower() or "usage" in result.output.lower()
+
+    def test_non_devmon_scheme_exits_nonzero_without_spawning(self, monkeypatch):
+        from devmon.commands import protocol as protocol_cmd
+
+        calls = []
+        monkeypatch.setattr(
+            protocol_cmd.subprocess, "run", lambda argv, **kwargs: calls.append(argv)
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(protocol_cmd.app, ["dispatch", "not-a-url-at-all"])
+
+        assert result.exit_code != 0
+        assert calls == []
+
+    def test_dispatch_exit_code_mirrors_subprocess_returncode(self, monkeypatch):
+        from devmon.commands import protocol as protocol_cmd
+
+        class _FakeResult:
+            returncode = 7
+
+        monkeypatch.setattr(
+            protocol_cmd.subprocess, "run", lambda argv, **kwargs: _FakeResult()
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(protocol_cmd.app, ["dispatch", "devmon://battle"])
+
+        assert result.exit_code == 7
 
 
 class TestProtocolStatus:

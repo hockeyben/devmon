@@ -589,6 +589,65 @@ class TestStatuslineIndicatorSnapshotPhaseE:
         assert snapshot["aura_active"] is False
 
 
+class TestStatuslineAppIcon:
+    """The FULL idle row gets a dim, clickable `[≡]` app-opener icon as its
+    leftmost glyph, OSC 8-linked to `devmon://app` -- a separate link target
+    from the encounter row's `devmon://battle` link, which stays untouched."""
+
+    def _assert_width_safe(self, text: str) -> None:
+        stripped = _strip(text)
+        for ch in stripped:
+            assert ord(ch) < 0x2600, (
+                f"ambiguous-width codepoint {ch!r} (U+{ord(ch):04X}) in row: {text!r}"
+            )
+
+    def test_full_row_has_app_icon_link(self):
+        from devmon.commands.statusline import _normal_row
+
+        for use_emoji in (True, False):
+            row = _normal_row(5, 40, 100, use_emoji)
+            assert "devmon://app" in row
+            assert "≡" in _strip(row)
+
+    def test_app_icon_is_leftmost_visible_glyph_of_full_row(self):
+        from devmon.commands.statusline import _normal_row
+
+        row = _normal_row(5, 40, 100, use_emoji=False)
+        stripped = _strip(row)
+        assert stripped.lstrip().startswith("[≡]")
+
+    def test_compact_row_has_no_app_icon(self):
+        from devmon.commands.statusline import _normal_row_compact
+
+        for use_emoji in (True, False):
+            row = _normal_row_compact(5, 40, 100, use_emoji)
+            assert "devmon://app" not in row
+            assert "≡" not in row
+
+    def test_encounter_rows_have_no_app_icon_and_battle_link_untouched(self):
+        from devmon.commands.statusline import _encounter_row, _encounter_row_compact
+
+        for use_emoji in (True, False):
+            full = _encounter_row(use_emoji)
+            compact = _encounter_row_compact(use_emoji)
+            assert "devmon://app" not in full
+            assert "devmon://app" not in compact
+            assert "≡" not in full
+            assert "≡" not in compact
+            assert "devmon://battle" in full
+            assert "devmon://battle" in compact
+
+    def test_full_row_with_icon_rank_tag_aura_and_accent_is_width_safe(self):
+        from devmon.commands.statusline import _normal_row
+
+        for use_emoji in (True, False):
+            row = _normal_row(
+                20, 40, 100, use_emoji, badge_count=6, prestige_count=1,
+                accent="bright_magenta", aura_active=True,
+            )
+            self._assert_width_safe(row)
+
+
 class TestStatuslineRankTagIntegration:
     def test_statusline_command_shows_rank_tag_for_badged_player(self, tmp_save_dir):
         import json

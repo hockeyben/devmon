@@ -17,6 +17,7 @@ from typing import Optional
 import typer
 
 from devmon import __version__
+from devmon.commands import app as app_cmd_mod
 from devmon.commands import badges as badges_cmd
 from devmon.commands import battle as battle_cmd
 from devmon.commands import candy as candy_cmd
@@ -81,6 +82,7 @@ app.add_typer(indicator_cmd.app, name="indicator")
 app.add_typer(protocol_cmd.app, name="protocol")
 app.add_typer(skins_cmd.app, name="skins")
 app.command(name="statusline")(statusline_cmd.statusline)
+app.add_typer(app_cmd_mod.app, name="app")
 
 
 def _ensure_utf8_stdio() -> None:
@@ -315,5 +317,9 @@ def main(
     # few seconds) and must print exactly one plain row -- never Rich panels,
     # never a save-file write on the hot path. Backlog processing for that
     # subcommand instead runs quietly/throttled via engine/sync.py.
-    if ctx.invoked_subcommand != "statusline":
+    # `devmon app` (the Textual full-screen UI) does its own quiet sync on
+    # start and on a timer (see devmon.app.tui.DevMonApp), and must not also
+    # trigger this printing/notification-clearing backlog processor before
+    # the Textual event loop even takes over the terminal.
+    if ctx.invoked_subcommand not in ("statusline", "app"):
         _process_event_log_on_startup()

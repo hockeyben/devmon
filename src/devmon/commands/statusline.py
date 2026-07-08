@@ -57,6 +57,14 @@ import typer
 # word in the wild-encounter row (design doc component 3).
 _OSC8_OPEN = "\033]8;;devmon://battle\033\\"
 _OSC8_CLOSE = "\033]8;;\033\\"
+
+# OSC 8 hyperlink wrapper for the clickable app-opener icon at the start of
+# the FULL idle row (see _APP_ICON_LINK below) -- a SEPARATE link target
+# (devmon://app) from the battle link above; kept as its own pair of
+# constants rather than reusing/renaming _OSC8_OPEN/_OSC8_CLOSE so those keep
+# targeting battle unambiguously.
+_OSC8_APP_OPEN = "\033]8;;devmon://app\033\\"
+_OSC8_APP_CLOSE = "\033]8;;\033\\"
 _BOLD_YELLOW = "\033[1;33m"
 _BRIGHT_YELLOW = "\033[93m"
 _CYAN = "\033[36m"
@@ -99,6 +107,17 @@ def _accent_code(name: "str | None") -> str:
 # when the player owns at least one mythic (an active aura) -- a single
 # extra character, never a new glyph (ord('+') well below 0x2600).
 _AURA_MARKER = " \033[2m+\033[0m"
+
+# Clickable app-opener icon: the very first visible glyph of the FULL idle
+# row only (never the compact row, never either encounter row variant --
+# that link stays untouched). U+2261 "IDENTICAL TO" (ord 0x2261 < 0x2600) is
+# width-safe under this file's own glyph rule. Dim-styled (not bold/colored
+# like the battle link) since this is a secondary, always-present affordance
+# rather than an urgent call to action. Wrapped in its own OSC 8 link to
+# devmon://app (see _OSC8_APP_OPEN/_CLOSE above) -- clicking it opens the new
+# `devmon app` Textual UI via `devmon protocol dispatch`.
+_APP_ICON = "≡"
+_APP_ICON_LINK = f"\033[2m{_OSC8_APP_OPEN}[{_APP_ICON}]{_OSC8_APP_CLOSE}\033[0m"
 
 
 def _read_stdin_payload() -> tuple[bytes, dict]:
@@ -240,14 +259,14 @@ def _normal_row(
             + (STRIP_BAR_EMPTY_EMOJI * empty)
         )
         glyph = f"{accent_code}{_UP_ARROW}{_RESET}"
-        return f"{rank_tag}{glyph} Lv.{level} {bar} {pct}%{marker}"
+        return f"{_APP_ICON_LINK} {rank_tag}{glyph} Lv.{level} {bar} {pct}%{marker}"
 
     bar = (
         f"{accent_code}{STRIP_BAR_FILLED_ASCII * filled}{_RESET}{_CYAN}"
         + (STRIP_BAR_EMPTY_ASCII * empty)
     )
     text = f"DevMon Lv.{level} [{bar}] {pct}%"
-    return f"{rank_tag}{_CYAN}{text}{_RESET}{marker}"
+    return f"{_APP_ICON_LINK} {rank_tag}{_CYAN}{text}{_RESET}{marker}"
 
 
 def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
