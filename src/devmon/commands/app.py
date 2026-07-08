@@ -22,12 +22,42 @@ app = typer.Typer()
 play_app = typer.Typer()
 
 
+def _log_crash(exc: BaseException) -> None:
+    """Best-effort crash logger: write a traceback to <save dir>/app.log.
+
+    Diagnoses "it just closed" reports -- Textual apps that hit an
+    unhandled exception restore the terminal and exit silently with no
+    visible error. Uses the SAME DEVMON_HOME/platformdirs resolution as
+    the save file (persistence/save.py's `_save_dir`) so the log always
+    lands next to save.json. Never raises -- logging failure must not mask
+    or replace the original crash.
+    """
+    import datetime
+    import traceback
+
+    try:
+        from devmon.persistence.save import _save_dir
+
+        d = _save_dir()
+        d.mkdir(parents=True, exist_ok=True)
+        log_path = d / "app.log"
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"\n--- crash at {datetime.datetime.now().isoformat()} ---\n")
+            f.write("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+    except Exception:
+        pass
+
+
 @app.callback(invoke_without_command=True)
 def app_command() -> None:
     """Launch the full-screen DevMon Textual app."""
     from devmon.app.tui import DevMonApp
 
-    DevMonApp().run()
+    try:
+        DevMonApp().run()
+    except Exception as exc:
+        _log_crash(exc)
+        raise
 
 
 def _build_play_command() -> "tuple[list[str], int]":

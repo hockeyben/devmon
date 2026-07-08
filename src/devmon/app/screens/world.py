@@ -21,17 +21,54 @@ from devmon.commands.travel import ARRIVAL_LINES
 
 
 class WorldScreen(Vertical):
+    DEFAULT_CSS = """
+    WorldScreen {
+        height: 1fr;
+        padding: 1;
+    }
+    #world-info-pane {
+        height: auto;
+        margin-bottom: 1;
+    }
+    #world-table-pane {
+        height: 1fr;
+    }
+    #world-info {
+        height: auto;
+        width: 1fr;
+        text-style: bold;
+    }
+    #world-table {
+        height: 1fr;
+        width: 1fr;
+    }
+    #world-actions {
+        height: auto;
+        width: 1fr;
+        align: center middle;
+        padding-top: 1;
+    }
+    #travel-btn {
+        width: 1fr;
+        min-height: 3;
+    }
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._selected_region_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
-        yield Static(id="world-info")
-        table = DataTable(id="world-table", cursor_type="row")
-        table.add_columns("Region", "Status", "Unlock Lv", "Discovered")
-        yield table
-        with Horizontal(id="world-actions"):
-            yield Button("Travel", id="travel-btn", variant="primary")
+        with Vertical(id="world-info-pane", classes="panel") as pane:
+            pane.border_title = "Current Location"
+            yield Static(id="world-info")
+        with Vertical(id="world-table-pane", classes="panel") as pane:
+            pane.border_title = "Regions"
+            table = DataTable(id="world-table", cursor_type="row")
+            table.add_columns("Region", "Status", "Unlock Lv", "Discovered")
+            yield table
+            with Horizontal(id="world-actions"):
+                yield Button("Travel", id="travel-btn", variant="primary")
 
     def refresh_data(self) -> None:
         from devmon.engine.regions import (

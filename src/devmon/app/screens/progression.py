@@ -16,6 +16,52 @@ from devmon.app.modals import DoubleConfirmModal
 
 
 class ProgressionScreen(Vertical):
+    DEFAULT_CSS = """
+    ProgressionScreen {
+        height: 1fr;
+    }
+    #progression-tabs {
+        height: 1fr;
+    }
+    #progression-tabs ContentSwitcher {
+        height: 1fr;
+    }
+    TabPane {
+        height: 1fr;
+    }
+    QuestsPane, BadgesPane, PerksPane, AchievementsPane, PrestigePane {
+        height: 1fr;
+        padding: 1;
+    }
+    QuestsPane > .panel, BadgesPane > .panel, PerksPane > .panel,
+    AchievementsPane > .panel, PrestigePane > .panel {
+        height: 1fr;
+        width: 1fr;
+    }
+    #quests-table, #badges-table, #perks-table, #achievements-table {
+        height: 1fr;
+        width: 1fr;
+    }
+    #legendary-info {
+        height: auto;
+        padding-top: 1;
+    }
+    #quests-actions, #perks-actions, #prestige-actions {
+        height: auto;
+        width: 1fr;
+        align: center middle;
+        padding-top: 1;
+    }
+    #buy-perk-btn, #check-completions-btn, #prestige-btn {
+        width: 1fr;
+        min-height: 3;
+    }
+    #perks-points, #prestige-info {
+        height: auto;
+        padding-bottom: 1;
+    }
+    """
+
     def compose(self) -> ComposeResult:
         with TabbedContent(id="progression-tabs"):
             with TabPane("Quests", id="progression-quests-tab"):
@@ -47,12 +93,14 @@ class ProgressionScreen(Vertical):
 
 class QuestsPane(Vertical):
     def compose(self) -> ComposeResult:
-        table = DataTable(id="quests-table", cursor_type="row")
-        table.add_columns("Quest", "Difficulty", "Category", "Progress")
-        yield table
-        yield Static(id="legendary-info")
-        with Horizontal(id="quests-actions"):
-            yield Button("Check Completions", id="check-completions-btn")
+        with Vertical(classes="panel") as pane:
+            pane.border_title = "Quests"
+            table = DataTable(id="quests-table", cursor_type="row")
+            table.add_columns("Quest", "Difficulty", "Category", "Progress")
+            yield table
+            yield Static(id="legendary-info")
+            with Horizontal(id="quests-actions"):
+                yield Button("Check Completions", id="check-completions-btn")
 
     def refresh_data(self) -> None:
         state = self.app.state
@@ -107,9 +155,11 @@ class QuestsPane(Vertical):
 
 class BadgesPane(Vertical):
     def compose(self) -> ComposeResult:
-        table = DataTable(id="badges-table", cursor_type="row")
-        table.add_columns("Badge", "Requirement", "Earned")
-        yield table
+        with Vertical(classes="panel") as pane:
+            pane.border_title = "Badges"
+            table = DataTable(id="badges-table", cursor_type="row")
+            table.add_columns("Badge", "Requirement", "Earned")
+            yield table
 
     def refresh_data(self) -> None:
         from devmon.engine.badges import badge_catalog
@@ -137,12 +187,14 @@ class PerksPane(Vertical):
         self._selected_perk_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
-        yield Static(id="perks-points")
-        table = DataTable(id="perks-table", cursor_type="row")
-        table.add_columns("Perk", "Rank", "Next Effect", "Cost")
-        yield table
-        with Horizontal(id="perks-actions"):
-            yield Button("Buy Rank", id="buy-perk-btn", variant="success")
+        with Vertical(classes="panel") as pane:
+            pane.border_title = "Perks"
+            yield Static(id="perks-points")
+            table = DataTable(id="perks-table", cursor_type="row")
+            table.add_columns("Perk", "Rank", "Next Effect", "Cost")
+            yield table
+            with Horizontal(id="perks-actions"):
+                yield Button("Buy Rank", id="buy-perk-btn", variant="success")
 
     def refresh_data(self) -> None:
         from devmon.engine.perks import get_perk_rank, perk_catalog
@@ -194,9 +246,11 @@ class PerksPane(Vertical):
 
 class AchievementsPane(Vertical):
     def compose(self) -> ComposeResult:
-        table = DataTable(id="achievements-table", cursor_type="row")
-        table.add_columns("Achievement", "Category", "Tiers Unlocked", "Progress")
-        yield table
+        with Vertical(classes="panel") as pane:
+            pane.border_title = "Achievements"
+            table = DataTable(id="achievements-table", cursor_type="row")
+            table.add_columns("Achievement", "Category", "Tiers Unlocked", "Progress")
+            yield table
 
     def refresh_data(self) -> None:
         from devmon.engine.achievement_engine import ACHIEVEMENT_CATALOG, get_stat_value
@@ -226,9 +280,11 @@ class AchievementsPane(Vertical):
 
 class PrestigePane(Vertical):
     def compose(self) -> ComposeResult:
-        yield Static(id="prestige-info")
-        with Horizontal(id="prestige-actions"):
-            yield Button("Prestige", id="prestige-btn", variant="error", disabled=True)
+        with Vertical(classes="panel") as pane:
+            pane.border_title = "Prestige"
+            yield Static(id="prestige-info")
+            with Horizontal(id="prestige-actions"):
+                yield Button("Prestige", id="prestige-btn", variant="error", disabled=True)
 
     def refresh_data(self) -> None:
         from devmon.engine.prestige import PRESTIGE_MIN_LEVEL, can_prestige

@@ -21,26 +21,68 @@ from devmon.app.util import current_theme, display_name
 _PARTY_SIZE = 3
 
 
-class CollectionScreen(Vertical):
-    """Scrollable creature table + detail pane + party/candy/release actions."""
+class CollectionScreen(Horizontal):
+    """Full-height creature table + detail pane (sprite/nature/IVs/abilities)
+    that populates on row highlight, with party/candy/release actions
+    docked at the bottom of the detail pane."""
+
+    DEFAULT_CSS = """
+    CollectionScreen {
+        height: 1fr;
+        padding: 1;
+    }
+    #collection-table-pane {
+        width: 2fr;
+        height: 1fr;
+        margin-right: 1;
+    }
+    #collection-detail-pane {
+        width: 1fr;
+        height: 1fr;
+    }
+    #collection-table {
+        height: 1fr;
+        width: 1fr;
+    }
+    #collection-detail-art {
+        height: auto;
+        content-align: center middle;
+        padding: 1 0;
+    }
+    #collection-detail-text {
+        height: 1fr;
+        width: 1fr;
+    }
+    #collection-actions {
+        height: auto;
+        width: 1fr;
+        align: center middle;
+    }
+    #collection-actions Button {
+        margin: 0 1;
+    }
+    """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._selected_index: Optional[int] = None
 
     def compose(self) -> ComposeResult:
-        table = DataTable(id="collection-table", cursor_type="row")
-        table.add_columns("Name", "Level", "Nature", "HP", "Rarity")
-        yield table
-        with Horizontal(id="collection-detail-row"):
+        with Vertical(id="collection-table-pane", classes="panel") as pane:
+            pane.border_title = "Collection"
+            table = DataTable(id="collection-table", cursor_type="row")
+            table.add_columns("Name", "Level", "Nature", "HP", "Rarity")
+            yield table
+        with Vertical(id="collection-detail-pane", classes="panel") as pane:
+            pane.border_title = "Details"
             yield Static(id="collection-detail-art")
             yield Static(id="collection-detail-text")
-        with Horizontal(id="collection-actions"):
-            yield Button("Make Lead", id="make-lead-btn")
-            yield Button("Add to Party", id="add-party-btn")
-            yield Button("Remove from Party", id="remove-party-btn")
-            yield Button("Feed Candy", id="feed-candy-btn")
-            yield Button("Release", id="release-btn", variant="error")
+            with Horizontal(id="collection-actions"):
+                yield Button("Lead", id="make-lead-btn")
+                yield Button("+Party", id="add-party-btn")
+                yield Button("-Party", id="remove-party-btn")
+                yield Button("Candy", id="feed-candy-btn")
+                yield Button("Release", id="release-btn", variant="error")
 
     # ------------------------------------------------------------------
 
@@ -97,7 +139,7 @@ class CollectionScreen(Vertical):
 
         try:
             from devmon.render.image import render_creature_art
-            art.update(render_creature_art(template.id, template.ascii_art, width=24))
+            art.update(render_creature_art(template.id, template.ascii_art, width=30))
         except Exception:
             art.update("")
 

@@ -41,6 +41,32 @@ def progress_bar(current: int, total: int, theme: dict[str, str], width: int = 2
     return bar
 
 
+def hp_bar(current: int, maximum: int, width: int = 12) -> Text:
+    """Render a `width`-wide HP bar, colored by remaining fraction.
+
+    green >=50%, yellow >=20%, red below -- standard RPG HP-bar convention,
+    used by the Dashboard party panel so HP is scannable at a glance instead
+    of a bare "current/max" number.
+    """
+    safe_max = max(maximum, 1)
+    safe_current = max(0, min(current, safe_max))
+    frac = safe_current / safe_max
+    filled = int(width * frac)
+    empty = width - filled
+    if safe_current <= 0:
+        style = "dim red"
+    elif frac >= 0.5:
+        style = "green"
+    elif frac >= 0.2:
+        style = "yellow"
+    else:
+        style = "red"
+    bar = Text()
+    bar.append("█" * filled, style=style)
+    bar.append("░" * empty, style="dim")
+    return bar
+
+
 def owned_by_id(state) -> dict[str, object]:
     """Return {template_id: OwnedCreature} for the player's collection.
 

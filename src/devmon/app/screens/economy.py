@@ -27,6 +27,22 @@ from devmon.commands.shop import (
 
 
 class EconomyScreen(Vertical):
+    DEFAULT_CSS = """
+    EconomyScreen {
+        height: 1fr;
+    }
+    #economy-tabs {
+        height: 1fr;
+    }
+    #economy-tabs ContentSwitcher {
+        height: 1fr;
+    }
+    #economy-shop-tab, #economy-craft-tab, #economy-npcs-tab {
+        height: 1fr;
+        padding: 0;
+    }
+    """
+
     def compose(self) -> ComposeResult:
         with TabbedContent(id="economy-tabs"):
             with TabPane("Shop", id="economy-shop-tab"):
@@ -52,21 +68,80 @@ class EconomyScreen(Vertical):
 # ---------------------------------------------------------------------------
 
 
-class ShopPane(Vertical):
+class ShopPane(Horizontal):
+    DEFAULT_CSS = """
+    ShopPane {
+        height: 1fr;
+        padding: 1;
+    }
+    #shop-table-pane {
+        width: 2fr;
+        height: 1fr;
+        margin-right: 1;
+    }
+    #shop-purchase-pane {
+        width: 1fr;
+        height: 1fr;
+    }
+    #shop-balance {
+        height: auto;
+        text-style: bold;
+        padding-bottom: 1;
+    }
+    #shop-table {
+        height: 1fr;
+        width: 1fr;
+    }
+    #shop-item-card {
+        height: 1fr;
+        width: 1fr;
+    }
+    #shop-qty-row {
+        height: auto;
+        width: 1fr;
+        align: left middle;
+    }
+    #shop-qty-label {
+        width: auto;
+        padding-right: 1;
+        content-align: left middle;
+    }
+    #shop-qty {
+        width: 10;
+    }
+    #shop-actions {
+        height: auto;
+        width: 1fr;
+        align: center middle;
+        padding-top: 1;
+    }
+    #shop-actions Button {
+        margin: 0 1;
+        width: 1fr;
+    }
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._row_prices: dict[str, tuple[object, int]] = {}
         self._selected_item_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
-        yield Static(id="shop-balance")
-        table = DataTable(id="shop-table", cursor_type="row")
-        table.add_columns("Item", "Category", "Price", "Owned")
-        yield table
-        with Horizontal(id="shop-actions"):
-            yield Input(placeholder="qty", value="1", id="shop-qty")
-            yield Button("Buy", id="shop-buy-btn", variant="success")
-            yield Button("Sell", id="shop-sell-btn", variant="warning")
+        with Vertical(id="shop-table-pane", classes="panel") as pane:
+            pane.border_title = "Shop"
+            yield Static(id="shop-balance")
+            table = DataTable(id="shop-table", cursor_type="row")
+            table.add_columns("Item", "Category", "Price", "Owned")
+            yield table
+        with Vertical(id="shop-purchase-pane", classes="panel") as pane:
+            pane.border_title = "Purchase"
+            yield Static("[dim]Select an item to see details.[/dim]", id="shop-item-card")
+            with Horizontal(id="shop-qty-row"):
+                yield Static("Quantity:", id="shop-qty-label")
+                yield Input(value="1", id="shop-qty")
+            with Horizontal(id="shop-actions"):
+                yield Button("Buy", id="shop-buy-btn", variant="success")
+                yield Button("Sell", id="shop-sell-btn", variant="warning")
 
     def refresh_data(self) -> None:
         from devmon.engine.item_loader import load_all_items
@@ -94,12 +169,34 @@ class ShopPane(Vertical):
 
         for num, item, disc_price, disc_pct, qty in featured_entries:
             key = f"featured:{item.id}"
-            table.add_row(f"{item.name} (-{disc_pct}%)", "featured", str(disc_price), str(qty), key=key)
+            # Only show a discount tag when there IS a discount -- a plain
+            # price on non-discounted featured items avoids the misleading
+            # "(-0%)" label previously shown on every featured row.
+            label = f"{item.name} (-{disc_pct}%)" if disc_pct > 0 else item.name
+            table.add_row(label, "featured", str(disc_price), str(qty), key=key)
             self._row_prices[key] = (item, disc_price)
+
+        self._refresh_card()
+
+    def _refresh_card(self) -> None:
+        card = self.query_one("#shop-item-card", Static)
+        if self._selected_item_id is None or self._selected_item_id not in self._row_prices:
+            card.update("[dim]Select an item to see details.[/dim]")
+            return
+        item, price = self._row_prices[self._selected_item_id]
+        owned = self.app.state.inventory.get(item.id, 0)
+        desc = getattr(item, "description", "") or ""
+        card.update(
+            f"[bold]{item.name}[/bold]\n"
+            f"{desc}\n\n"
+            f"Price: {price} bits\n"
+            f"Owned: {owned}"
+        )
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.row_key is not None:
             self._selected_item_id = event.row_key.value
+            self._refresh_card()
 
     def _qty(self) -> int:
         raw = self.query_one("#shop-qty", Input).value.strip()
@@ -154,17 +251,55 @@ class ShopPane(Vertical):
 # ---------------------------------------------------------------------------
 
 
-class CraftPane(Vertical):
+class CraftPane(Horizontal):
+    DEFAULT_CSS = """
+    CraftPane {
+        height: 1fr;
+        padding: 1;
+    }
+    #craft-table-pane {
+        width: 2fr;
+        height: 1fr;
+        margin-right: 1;
+    }
+    #craft-detail-pane {
+        width: 1fr;
+        height: 1fr;
+    }
+    #craft-table {
+        height: 1fr;
+        width: 1fr;
+    }
+    #craft-detail {
+        height: 1fr;
+        width: 1fr;
+    }
+    #craft-actions {
+        height: auto;
+        width: 1fr;
+        align: center middle;
+        padding-top: 1;
+    }
+    #craft-btn {
+        width: 1fr;
+    }
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._selected_recipe_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
-        table = DataTable(id="craft-table", cursor_type="row")
-        table.add_columns("Recipe", "Result", "Materials", "Cost", "Ready")
-        yield table
-        with Horizontal(id="craft-actions"):
-            yield Button("Craft", id="craft-btn", variant="success")
+        with Vertical(id="craft-table-pane", classes="panel") as pane:
+            pane.border_title = "Recipes"
+            table = DataTable(id="craft-table", cursor_type="row")
+            table.add_columns("Recipe", "Result", "Materials", "Cost", "Ready")
+            yield table
+        with Vertical(id="craft-detail-pane", classes="panel") as pane:
+            pane.border_title = "Recipe Detail"
+            yield Static("[dim]Select a recipe to see details.[/dim]", id="craft-detail")
+            with Horizontal(id="craft-actions"):
+                yield Button("Craft", id="craft-btn", variant="success")
 
     def refresh_data(self) -> None:
         from devmon.engine.crafting import can_craft
@@ -200,9 +335,40 @@ class CraftPane(Vertical):
                 key=recipe_id,
             )
 
+        self._refresh_detail()
+
+    def _refresh_detail(self) -> None:
+        detail = self.query_one("#craft-detail", Static)
+        state = self.app.state
+        from devmon.engine.item_loader import load_all_items
+        from devmon.engine.recipe_loader import load_all_recipes
+
+        recipes = load_all_recipes()
+        recipe = recipes.get(self._selected_recipe_id) if self._selected_recipe_id else None
+        if recipe is None:
+            detail.update("[dim]Select a recipe to see details.[/dim]")
+            return
+
+        items_catalog = load_all_items()
+        result_name = (
+            items_catalog[recipe.result_item_id].name
+            if recipe.result_item_id in items_catalog
+            else recipe.result_item_id
+        )
+        lines = [f"[bold]{recipe.name}[/bold]", f"Result: {result_name} x{recipe.result_qty}", ""]
+        lines.append("Materials:")
+        for mat_id, needed in recipe.materials.items():
+            owned = state.inventory.get(mat_id, 0)
+            mat_name = items_catalog[mat_id].name if mat_id in items_catalog else mat_id
+            color = "green" if owned >= needed else "red"
+            lines.append(f"  [{color}]{mat_name}: {owned}/{needed}[/{color}]")
+        lines.append(f"\nCost: {recipe.currency_cost} bits")
+        detail.update("\n".join(lines))
+
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.row_key is not None:
             self._selected_recipe_id = event.row_key.value
+            self._refresh_detail()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
@@ -240,18 +406,55 @@ class CraftPane(Vertical):
 
 
 class NPCsPane(Vertical):
+    DEFAULT_CSS = """
+    NPCsPane {
+        height: 1fr;
+        padding: 1;
+    }
+    #npcs-info-pane {
+        height: auto;
+        max-height: 40%;
+        margin-bottom: 1;
+    }
+    #npcs-table-pane {
+        height: 1fr;
+    }
+    #npcs-info {
+        height: auto;
+        width: 1fr;
+    }
+    #npcs-table {
+        height: 1fr;
+        width: 1fr;
+    }
+    #npcs-actions {
+        height: auto;
+        width: 1fr;
+        align: center middle;
+        padding-top: 1;
+    }
+    #npcs-actions Button {
+        margin: 0 1;
+        width: 1fr;
+    }
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._row_lookup: dict[str, tuple[str, str, int]] = {}  # row key -> (npc_id, item_id, price)
 
     def compose(self) -> ComposeResult:
-        yield Static(id="npcs-info")
-        table = DataTable(id="npcs-table", cursor_type="row")
-        table.add_columns("NPC", "Item", "Price")
-        yield table
-        with Horizontal(id="npcs-actions"):
-            yield Button("Buy 1", id="npc-buy-btn", variant="success")
-            yield Button("Turn In Quest", id="npc-quest-btn", variant="primary")
+        with Vertical(id="npcs-info-pane", classes="panel") as pane:
+            pane.border_title = "Who's In Town"
+            yield Static(id="npcs-info")
+        with Vertical(id="npcs-table-pane", classes="panel") as pane:
+            pane.border_title = "Stock & Quests"
+            table = DataTable(id="npcs-table", cursor_type="row")
+            table.add_columns("NPC", "Item", "Price")
+            yield table
+            with Horizontal(id="npcs-actions"):
+                yield Button("Buy 1", id="npc-buy-btn", variant="success")
+                yield Button("Turn In Quest", id="npc-quest-btn", variant="primary")
 
     def refresh_data(self) -> None:
         from devmon.engine.npc_loader import load_all_npcs

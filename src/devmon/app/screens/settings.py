@@ -18,44 +18,90 @@ from devmon.config.loader import load_config, save_config
 VALID_RARITIES = ["common", "uncommon", "rare", "epic", "legendary", "mythic"]
 
 
-class SettingsScreen(Vertical):
+class SettingsScreen(Horizontal):
+    DEFAULT_CSS = """
+    SettingsScreen {
+        height: 1fr;
+        padding: 1;
+    }
+    #settings-automation-pane {
+        width: 1fr;
+        height: 1fr;
+        margin-right: 1;
+    }
+    #settings-display-pane {
+        width: 1fr;
+        height: 1fr;
+    }
+    .settings-heading {
+        text-style: bold;
+        padding-top: 1;
+        color: $accent;
+    }
+    #skins-table {
+        height: 1fr;
+        width: 1fr;
+        margin-top: 1;
+    }
+    #skins-actions {
+        height: auto;
+        width: 1fr;
+        padding-top: 1;
+    }
+    #theme-buttons {
+        height: auto;
+        width: 1fr;
+        padding-top: 1;
+        overflow-x: auto;
+    }
+    #auto-fight-rarities, #auto-skip-rarities, #auto-discard-rarities {
+        height: auto;
+        width: 1fr;
+        overflow-x: auto;
+    }
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._loading = False
         self._selected_skin_id = None
 
     def compose(self) -> ComposeResult:
-        yield Static("Auto-Fight", classes="settings-heading")
-        yield Checkbox("Enabled", id="auto-fight-toggle")
-        with Horizontal(id="auto-fight-rarities"):
-            for rarity in VALID_RARITIES:
-                yield Checkbox(rarity.title(), id=f"af-{rarity}")
+        with Vertical(id="settings-automation-pane", classes="panel") as pane:
+            pane.border_title = "Automation"
+            yield Static("Auto-Fight", classes="settings-heading")
+            yield Checkbox("Enabled", id="auto-fight-toggle")
+            with Horizontal(id="auto-fight-rarities"):
+                for rarity in VALID_RARITIES:
+                    yield Checkbox(rarity.title(), id=f"af-{rarity}")
 
-        yield Static("Auto-Skip", classes="settings-heading")
-        yield Checkbox("Enabled", id="auto-skip-toggle")
-        with Horizontal(id="auto-skip-rarities"):
-            for rarity in VALID_RARITIES:
-                yield Checkbox(rarity.title(), id=f"as-{rarity}")
+            yield Static("Auto-Skip", classes="settings-heading")
+            yield Checkbox("Enabled", id="auto-skip-toggle")
+            with Horizontal(id="auto-skip-rarities"):
+                for rarity in VALID_RARITIES:
+                    yield Checkbox(rarity.title(), id=f"as-{rarity}")
 
-        yield Static("Auto-Discard (duplicate captures)", classes="settings-heading")
-        yield Checkbox("Enabled", id="auto-discard-toggle")
-        with Horizontal(id="auto-discard-rarities"):
-            for rarity in VALID_RARITIES:
-                yield Checkbox(rarity.title(), id=f"ad-{rarity}")
+            yield Static("Auto-Discard (duplicate captures)", classes="settings-heading")
+            yield Checkbox("Enabled", id="auto-discard-toggle")
+            with Horizontal(id="auto-discard-rarities"):
+                for rarity in VALID_RARITIES:
+                    yield Checkbox(rarity.title(), id=f"ad-{rarity}")
 
-        yield Static("Display", classes="settings-heading")
-        yield Checkbox("Animations", id="animations-toggle")
-        with Horizontal(id="theme-buttons"):
-            yield Static("Theme:")
-            for theme_name in ("neon", "classic", "monochrome", "solarized_abyss", "voidwave", "root_access", "prestige_gold"):
-                yield Button(theme_name, id=f"theme-{theme_name}")
+        with Vertical(id="settings-display-pane", classes="panel") as pane:
+            pane.border_title = "Display"
+            yield Static("Display", classes="settings-heading")
+            yield Checkbox("Animations", id="animations-toggle")
+            with Horizontal(id="theme-buttons"):
+                yield Static("Theme:")
+                for theme_name in ("neon", "classic", "monochrome", "solarized_abyss", "voidwave", "root_access", "prestige_gold"):
+                    yield Button(theme_name, id=f"theme-{theme_name}")
 
-        yield Static("Skins", classes="settings-heading")
-        table = DataTable(id="skins-table", cursor_type="row")
-        table.add_columns("Skin", "Unlocked", "Equipped")
-        yield table
-        with Horizontal(id="skins-actions"):
-            yield Button("Equip Selected", id="equip-skin-btn")
+            yield Static("Skins", classes="settings-heading")
+            table = DataTable(id="skins-table", cursor_type="row")
+            table.add_columns("Skin", "Unlocked", "Equipped")
+            yield table
+            with Horizontal(id="skins-actions"):
+                yield Button("Equip Selected", id="equip-skin-btn")
 
     # ------------------------------------------------------------------
 

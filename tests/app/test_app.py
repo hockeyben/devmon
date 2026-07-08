@@ -124,6 +124,92 @@ async def test_dashboard_fight_button_disabled_without_encounter(tmp_save_dir, a
         assert fight_btn.disabled is True
 
 
+@pytest.mark.asyncio
+async def test_dashboard_party_hp_not_dashes_when_creature_present(tmp_save_dir, app_factory):
+    """Regression: the party panel used to show "-"/"-" for HP and Status
+    even when the party creature is present in the collection. It must
+    render a real "current/max" HP figure computed via effective_max_hp."""
+    from textual.widgets import Static
+
+    from io import StringIO
+
+    from rich.console import Console
+
+    save_state(_seeded_state())
+    app = app_factory()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        dashboard = app.query_one("#dashboard-screen")
+        table = dashboard._render_party(app.state)
+
+        buf = StringIO()
+        Console(file=buf, width=100).print(table)
+        text = buf.getvalue().lower()
+
+        assert "bugbyte" in text
+        assert "/" in text  # a real "current/max" HP figure, not a bare dash
+        assert "ok" in text or "fainted" in text
+
+
+# ---------------------------------------------------------------------------
+# Header close control
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_header_close_button_present_and_closes_app(tmp_save_dir, app_factory):
+    from textual.widgets import Button
+
+    save_state(_seeded_state())
+    app = app_factory()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        close_btn = app.query_one("#close-btn", Button)
+        assert close_btn is not None
+        assert "close" in close_btn.label.plain.lower() or "x" in close_btn.label.plain.lower()
+
+        close_btn.press()
+        await pilot.pause()
+        assert app._exit is True
+
+
+# ---------------------------------------------------------------------------
+# Collection detail pane populates on row highlight
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_collection_detail_pane_populates_on_highlight(tmp_save_dir, app_factory):
+    from textual.widgets import Static, TabbedContent
+
+    save_state(_seeded_state())
+    app = app_factory()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#main-tabs", TabbedContent).active = "tab-collection"
+        await pilot.pause()
+
+        collection_screen = app.query_one("#collection-screen")
+        detail = app.query_one("#collection-detail-text", Static)
+
+        # No highlight yet -> the pane must show the empty-state prompt,
+        # never a dead/blank pane.
+        collection_screen._selected_index = None
+        collection_screen._refresh_detail()
+        await pilot.pause()
+        assert "select a creature" in str(detail.render()).lower()
+
+        # Selecting (highlighting) a row must populate nature/IVs/abilities.
+        collection_screen._selected_index = 0
+        collection_screen._refresh_detail()
+        await pilot.pause()
+
+        text = str(detail.render()).lower()
+        assert "select a creature" not in text
+        assert "nature" in text
+        assert "ivs" in text
+
+
 # ---------------------------------------------------------------------------
 # Perk spend mutates state and persists
 # ---------------------------------------------------------------------------

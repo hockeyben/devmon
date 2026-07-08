@@ -49,31 +49,56 @@ from devmon.persistence.save import save as save_state
 
 
 class TopBar(Horizontal):
-    """Minimal custom header: title + a clickable [x] close button."""
+    """Custom header: title, current region, and a clickable close button.
+
+    Replaces Textual's built-in Header -- its default [x] control does not
+    reliably render/click in every terminal this app targets (observed
+    "close button does not render" report), so this bar owns the whole
+    close affordance itself: a plain Button with unmistakable padded label
+    text and a bright error-colored background, always at least 9 columns
+    wide so the label is never clipped.
+    """
 
     DEFAULT_CSS = """
     TopBar {
-        height: 1;
+        height: 3;
         background: $primary;
         color: $text;
+        padding: 0 1;
     }
     TopBar #app-title {
         width: 1fr;
         content-align: left middle;
-        padding-left: 1;
         text-style: bold;
     }
+    TopBar #app-region {
+        width: auto;
+        content-align: center middle;
+        padding: 0 2;
+        color: $text;
+    }
     TopBar #close-btn {
-        min-width: 5;
-        height: 1;
+        width: 11;
+        height: 3;
+        min-width: 11;
         border: none;
         background: $error;
+        color: white;
+        text-style: bold;
+        content-align: center middle;
+    }
+    TopBar #close-btn:hover {
+        background: $error-darken-1;
     }
     """
 
     def compose(self) -> ComposeResult:
         yield Static("DevMon", id="app-title")
-        yield Button("[x]", id="close-btn")
+        yield Static("", id="app-region")
+        yield Button(" [ X ] Close ", id="close-btn")
+
+    def set_region(self, text: str) -> None:
+        self.query_one("#app-region", Static).update(text)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close-btn":
@@ -93,6 +118,25 @@ class DevMonApp(App):
     #main-tabs {
         height: 1fr;
     }
+    TabbedContent ContentSwitcher {
+        height: 1fr;
+    }
+    TabPane {
+        height: 1fr;
+        padding: 0;
+    }
+    /* Shared panel styling used by every screen -- bordered box with a
+    title bar (Textual `border_title`), full-bleed via 1fr sizing so every
+    screen uses the whole terminal at any size (dashboard/collection/
+    economy/etc all set `.panel` on their bordered containers). */
+    .panel {
+        border: round $primary;
+        background: $surface;
+        padding: 0 1;
+    }
+    .panel:focus-within {
+        border: round $accent;
+    }
     """
 
     BINDINGS = [
@@ -100,7 +144,7 @@ class DevMonApp(App):
         # by accident (user request 2026-07-08). Closing is the header [x]
         # button or an explicit ctrl+q chord.
         Binding("ctrl+q", "quit", "Quit", priority=True),
-        Binding("f", "fight", "Fight", show=False),
+        Binding("f", "fight", "Fight", show=True),
     ]
 
     SYNC_INTERVAL_SECONDS = 10
@@ -208,6 +252,10 @@ class DevMonApp(App):
         each screen's refresh_data() just rebuilds a few Static/DataTable
         widgets from `self.state`, no I/O beyond what refresh_data itself
         does (template/catalog loads, which are already cheap JSON reads)."""
+        try:
+            self.query_one(TopBar).set_region(f"Region: {self.state.current_region}")
+        except Exception:
+            pass
         for screen_id in (
             "#dashboard-screen",
             "#collection-screen",
