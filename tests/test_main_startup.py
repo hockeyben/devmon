@@ -179,6 +179,83 @@ def test_ensure_utf8_stdio_handles_reconfigure_raising(monkeypatch):
     m._ensure_utf8_stdio()  # Must not raise
 
 
+# --- Bug B: deferred evolution notification display + clear -----------
+
+
+def test_startup_displays_and_clears_pending_evolution_notification(tmp_save_dir):
+    """main.py's startup stack renders any queued pending_evolution_notifications
+    (populated by commands/battle.py's _queue_deferred_evolution_if_ready on
+    capture — see test_evolution.py) and clears the list afterward so it
+    never shows twice.
+    """
+    from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load as load_state
+    from devmon.persistence.save import save as save_state
+
+    state = GameState.new_game("TestPlayer")
+    state.pending_evolution_notifications = [
+        {"old_name": "Bugbyte", "new_name": "ChromeMoth"}
+    ]
+    save_state(state)
+
+    # main._process_event_log_on_startup() fast-returns when the event log
+    # is empty/absent — write one valid event so it takes its real path.
+    log_path = tmp_save_dir / "events.log"
+    event = {
+        "ts": int(time.time() * 1000),
+        "exit": 0,
+        "dur": 0,
+        "cwd": str(tmp_save_dir),
+        "type": "cmd",
+    }
+    log_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["status"])
+
+    assert result.exit_code == 0, result.output
+    assert "Bugbyte evolved into ChromeMoth!" in result.output
+
+    # Cleared after display so it never re-shows on the next invocation.
+    post = load_state()
+    assert post is not None
+    assert post.pending_evolution_notifications == []
+
+
+def test_startup_does_not_display_evolution_notification_twice(tmp_save_dir):
+    """Invoking devmon a second time (after the first cleared the list)
+    must not re-render the same evolution notification.
+    """
+    from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save as save_state
+
+    state = GameState.new_game("TestPlayer")
+    state.pending_evolution_notifications = [
+        {"old_name": "Bugbyte", "new_name": "ChromeMoth"}
+    ]
+    save_state(state)
+
+    log_path = tmp_save_dir / "events.log"
+    event = {
+        "ts": int(time.time() * 1000),
+        "exit": 0,
+        "dur": 0,
+        "cwd": str(tmp_save_dir),
+        "type": "cmd",
+    }
+    log_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+    first = runner.invoke(app, ["status"])
+    assert "Bugbyte evolved into ChromeMoth!" in first.output
+
+    # Second invocation: no new event written, but even if there were,
+    # the notification list is already empty — must not re-appear.
+    log_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+    second = runner.invoke(app, ["status"])
+    assert "Bugbyte evolved into ChromeMoth!" not in second.output
+
+
 def test_cli_still_runs_under_clirunner_with_utf8_guard_wired_in():
     """The encoding guard is invoked on every CLI callback (via main()) and
     must not break normal CliRunner-based test invocation (350+ existing

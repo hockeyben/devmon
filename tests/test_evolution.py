@@ -645,3 +645,87 @@ def test_narrow_battle_panel():
         assert art_line.strip() not in output, (
             f"ASCII art line {art_line!r} should be hidden in narrow battle panel"
         )
+
+
+# ---------------------------------------------------------------------------
+# Bug B regression: pending_evolution_notifications was never populated.
+#
+# Root cause: _run_evolution_checks() (the only code that ever applied an
+# evolution) is called exclusively from the two battle-victory paths (Attack,
+# Special Ability) in commands/battle.py. A creature added via a successful
+# Capture never passes through it, so a wild creature captured at/above its
+# species' evolution_level_threshold sat evolution-ready with no prompt ever
+# shown. progression.process_events() (the startup shell-event handler) only
+# mutates state.player — creatures cannot gain XP/levels outside a battle in
+# this codebase, so the plan's originally-described trigger ("XP granted
+# during startup shell-event processing") does not exist as a real path.
+# _queue_deferred_evolution_if_ready() closes the real gap: it applies the
+# evolution immediately (matching render_evolution_notification's past-tense
+# "evolved into" copy) and queues {old_name, new_name} for main.py's startup
+# stack to display and clear on the next `devmon` invocation.
+# ---------------------------------------------------------------------------
+
+def test_queue_deferred_evolution_if_ready_applies_and_queues_notification():
+    """A creature already at/above its evolution threshold (e.g. a captured
+    wild creature) is evolved immediately and a matching notification dict
+    is appended to state.pending_evolution_notifications.
+    """
+    from devmon.commands.battle import _queue_deferred_evolution_if_ready
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.state import GameState
+
+    state = GameState.new_game("TestPlayer")
+    # bugbyte evolves_to cyber_beetle at evolution_level_threshold=10.
+    captured = OwnedCreature(template_id="bugbyte", level=10, current_hp=20)
+
+    assert state.pending_evolution_notifications == []
+
+    _queue_deferred_evolution_if_ready(state, captured)
+
+    # Evolution applied immediately (template_id mutated, matching
+    # apply_evolution()'s contract used by the interactive battle-victory path).
+    assert captured.template_id == "cyber_beetle"
+    assert captured.evolution_declined is False
+    assert captured.battles_won_with == 0
+    assert captured.current_hp is None  # apply_evolution() resets HP to "full"
+
+    # Deferred notification queued with the shape main.py's renderer expects.
+    assert len(state.pending_evolution_notifications) == 1
+    notif = state.pending_evolution_notifications[0]
+    assert notif["old_name"] == "Bugbyte"
+    assert notif["new_name"] == "ChromeMoth"
+
+
+def test_queue_deferred_evolution_if_ready_noop_below_threshold():
+    """A creature below its evolution threshold is left untouched — no
+    notification queued, no template change.
+    """
+    from devmon.commands.battle import _queue_deferred_evolution_if_ready
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.state import GameState
+
+    state = GameState.new_game("TestPlayer")
+    captured = OwnedCreature(template_id="bugbyte", level=3, current_hp=15)
+
+    _queue_deferred_evolution_if_ready(state, captured)
+
+    assert captured.template_id == "bugbyte"
+    assert state.pending_evolution_notifications == []
+
+
+def test_queue_deferred_evolution_if_ready_noop_no_evolves_to():
+    """A creature with no evolves_to target (e.g. a fully-evolved species)
+    is left untouched even if somehow past a level threshold.
+    """
+    from devmon.commands.battle import _queue_deferred_evolution_if_ready
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.state import GameState
+
+    state = GameState.new_game("TestPlayer")
+    # cyber_beetle has evolves_to=null — nothing to evolve into.
+    captured = OwnedCreature(template_id="cyber_beetle", level=50, current_hp=40)
+
+    _queue_deferred_evolution_if_ready(state, captured)
+
+    assert captured.template_id == "cyber_beetle"
+    assert state.pending_evolution_notifications == []

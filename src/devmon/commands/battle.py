@@ -195,6 +195,85 @@ def _run_evolution_checks(state, participated: set, prev_levels: dict, console) 
 
 
 # ---------------------------------------------------------------------------
+# Bug B fix: deferred evolution queueing for captures (no live battle prompt)
+# ---------------------------------------------------------------------------
+
+def _queue_deferred_evolution_if_ready(state, owned_c) -> None:
+    """Auto-apply and queue a deferred evolution notification for a creature
+    that becomes evolution-ready outside the interactive battle-victory flow.
+
+    Root cause (Bug B): `state.pending_evolution_notifications` was read and
+    cleared by main.py's startup stack (and defaulted by migrations) but
+    nothing in the codebase ever appended to it. `_run_evolution_checks()`
+    (the only place that currently applies evolutions) is called exclusively
+    from the two battle-victory paths (Attack, Special Ability) and drives an
+    interactive y/n prompt via `input()`. A creature added via a successful
+    Capture (choice [3]) never passes through `_run_evolution_checks()` at
+    all — so a wild creature captured at or above its species'
+    evolution_level_threshold sits evolution-ready with no prompt ever shown,
+    for potentially many future battles (until it happens to participate in
+    and survive another battle win). That capture path is the "evolution
+    became ready but no prompt was shown" gap this hook closes.
+
+    Evidence this is the real (not merely theoretical) path, verified by
+    reading the whole codebase before choosing this hook:
+      - `progression.process_events()` (the startup shell-event handler,
+        called from main.py before battle ever runs) only mutates
+        `state.player` (PlayerProfile: xp, streak, sessions, commands) — it
+        never touches `state.creature_collection` or calls
+        `apply_creature_xp()`. Creatures cannot gain XP or level up outside
+        a battle in the current design, so the plan's originally-described
+        trigger ("XP granted during startup shell-event processing") does
+        not exist as a real code path — confirmed by grepping the whole
+        engine/ and commands/ trees for `apply_creature_xp` (battle.py only)
+        and for any creature-XP mutation inside progression.py (none found).
+      - `_run_evolution_checks()` is called at exactly two sites in
+        battle.py (the wild-fainted branches of choice "1" Attack and choice
+        "2" Special Ability) — grep confirms no third call site, and in
+        particular the Capture success branch (choice "3") never calls it.
+      - Since there is no y/n prompt available on the capture path (unlike
+        the interactive battle-victory prompt), this mirrors the exact
+        contract main.py's startup stack already expects for
+        pending_evolution_notifications: the evolution is applied
+        immediately and only the *notification display* is deferred to the
+        next `devmon` invocation (render_evolution_notification's copy is
+        past-tense — "{old} evolved into {new}!" — meaning the transformation
+        must already be applied by the time it prints).
+
+    Args:
+        state: GameState instance (mutated in-place).
+        owned_c: The freshly captured OwnedCreature to check.
+    """
+    from devmon.engine.creature_loader import get_creature
+    from devmon.engine.evolution_engine import (
+        apply_evolution,
+        check_condition_evolution,
+        check_evolution_ready,
+    )
+
+    try:
+        t = get_creature(owned_c.template_id)
+    except Exception:
+        return
+
+    should_evolve = check_evolution_ready(owned_c, t) or check_condition_evolution(owned_c, t)
+    if not (should_evolve and t.evolves_to):
+        return
+
+    try:
+        evolved_template = get_creature(t.evolves_to)
+    except Exception:
+        # Missing evolved template — skip gracefully (T-10-04), same policy
+        # as _run_evolution_checks().
+        return
+
+    apply_evolution(owned_c, t.evolves_to)
+    state.pending_evolution_notifications.append(
+        {"old_name": t.name, "new_name": evolved_template.name}
+    )
+
+
+# ---------------------------------------------------------------------------
 # Battle animation helpers
 # ---------------------------------------------------------------------------
 
@@ -491,7 +570,20 @@ def battle_cmd() -> None:
     last_narration = "Battle begins!"
     intro_played = False
 
-    with Live(auto_refresh=False, console=console) as live:
+    # Bug A fix: manage the Live lifecycle manually (start/try/finally) instead
+    # of a `with Live(...) as live:` block. Several branches below must stop
+    # Live before an interactive sub-prompt and then re-enter the turn loop
+    # with a *running* Live. The previous `with Live(...) as live: continue`
+    # re-entry pattern exited the `with` block on `continue`, which called
+    # Live.__exit__ (stopping the freshly-created Live) before the next loop
+    # iteration ever called live.update()/refresh() — freezing the screen.
+    # Rebinding `live` here and stopping it explicitly in `finally` (which
+    # always targets whatever Live object `live` currently points to) avoids
+    # that trap while guaranteeing cleanup on every exit path, including
+    # exceptions.
+    live = Live(auto_refresh=False, console=console)
+    live.start()
+    try:
         while battle_active:
             # Refresh player template reference (may change after switch)
             player_template = get_creature(player_owned.template_id)
@@ -903,8 +995,9 @@ def battle_cmd() -> None:
                         "  You have no capsules. Buy some at the shop.",
                         style="dim white",
                     )
-                    with Live(auto_refresh=False, console=console) as live:
-                        continue
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
 
                 # Show capsule sub-menu
                 console.print("\n  [bold white]Throw which capsule?[/bold white]\n")
@@ -916,8 +1009,9 @@ def battle_cmd() -> None:
                 capsule_choice = input("  Choose: ").strip()
 
                 if capsule_choice.lower() == "b":
-                    with Live(auto_refresh=False, console=console) as live:
-                        continue
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
 
                 try:
                     capsule_idx = int(capsule_choice)
@@ -926,8 +1020,9 @@ def battle_cmd() -> None:
 
                 if not (1 <= capsule_idx <= len(owned_capsules)):
                     last_narration = "Invalid capsule choice."
-                    with Live(auto_refresh=False, console=console) as live:
-                        continue
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
 
                 selected_capsule_id, _ = owned_capsules[capsule_idx - 1]
                 selected_capsule = items_catalog[selected_capsule_id]
@@ -956,6 +1051,13 @@ def battle_cmd() -> None:
                     state.creature_collection.append(captured)
                     state.codex_state[wild.template_id] = "captured"
                     state.player.total_creatures_captured += 1
+                    # Bug B fix: a captured wild creature's level may already
+                    # be at/above its species' evolution threshold (wild
+                    # encounter level scales independently of the player's
+                    # collection) — this path never runs the interactive
+                    # battle-victory evolution check, so queue a deferred
+                    # notification instead (see _queue_deferred_evolution_if_ready).
+                    _queue_deferred_evolution_if_ready(state, captured)
                     rewards = compute_capture_rewards(wild.level, wild.rarity)
                     # XP booster multiplier (D-08)
                     if is_booster_active(state):
@@ -1037,8 +1139,9 @@ def battle_cmd() -> None:
                                 break
 
                         # Re-enter Live for continued battle
-                        with Live(auto_refresh=False, console=console) as live:
-                            continue
+                        live = Live(auto_refresh=False, console=console)
+                        live.start()
+                        continue
 
             # ================================================================
             # [4] Switch Creature (BATL-08)
@@ -1119,8 +1222,9 @@ def battle_cmd() -> None:
                     last_narration = "Switch cancelled."
 
                 # Re-open Live
-                with Live(auto_refresh=False, console=console) as live:
-                    continue
+                live = Live(auto_refresh=False, console=console)
+                live.start()
+                continue
 
             # ================================================================
             # [5] Items
@@ -1154,8 +1258,9 @@ def battle_cmd() -> None:
 
                 if not usable_items:
                     console.print("  No usable items.", style="dim white")
-                    with Live(auto_refresh=False, console=console) as live:
-                        continue
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
 
                 # Show items sub-menu
                 console.print("\n  [bold white]Use which item?[/bold white]\n")
@@ -1167,8 +1272,9 @@ def battle_cmd() -> None:
                 item_choice = input("  Choose: ").strip()
 
                 if item_choice.lower() == "b":
-                    with Live(auto_refresh=False, console=console) as live:
-                        continue
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
 
                 try:
                     item_idx = int(item_choice)
@@ -1177,8 +1283,9 @@ def battle_cmd() -> None:
 
                 if not (1 <= item_idx <= len(usable_items)):
                     last_narration = "Invalid item choice."
-                    with Live(auto_refresh=False, console=console) as live:
-                        continue
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
 
                 selected_id, selected_def, _ = usable_items[item_idx - 1]
                 consume_item(state.inventory, selected_id)
@@ -1249,11 +1356,17 @@ def battle_cmd() -> None:
                         _auto_heal(state)
                         save(state)
                         battle_active = False
-                        with Live(auto_refresh=False, console=console) as live:
-                            break
+                        # Live is already stopped (stopped at the top of the
+                        # Items branch) and render_defeat_screen() has already
+                        # printed — do not start a new Live just to break out
+                        # of it (Rule 1: matches the equivalent defeat paths
+                        # in the Attack/Special/Switch/Capture branches, none
+                        # of which reopen Live before breaking).
+                        break
 
-                with Live(auto_refresh=False, console=console) as live:
-                    continue
+                live = Live(auto_refresh=False, console=console)
+                live.start()
+                continue
 
             # ================================================================
             # [6] Flee (D-03)
@@ -1274,6 +1387,14 @@ def battle_cmd() -> None:
             else:
                 last_narration = "Invalid choice. Enter 1, 2, 3, 4, 5, or 6."
                 continue
+    finally:
+        # Stops whichever Live object `live` currently references — covers
+        # every re-entry point above that rebound `live` to a fresh
+        # instance, plus the original Live from before the loop if none of
+        # those branches ever ran. Idempotent (Live.stop() no-ops if already
+        # stopped), so this is safe even on paths that already called
+        # live.stop() explicitly before breaking.
+        live.stop()
 
     # Phase 11: Restore indicator after battle ends (SC5)
     try:

@@ -633,3 +633,75 @@ def test_run_capture_animation_prints_shakes(monkeypatch):
     assert "EmberFox" in output
     # Capture rate must NEVER appear in animation output (T-06-06)
     assert "capture_rate" not in output
+
+
+# ---------------------------------------------------------------------------
+# Bug A regression: Live freezes after Items/Switch/Capture-back re-entry.
+#
+# Root cause: several battle-loop branches re-entered the turn loop via
+# `with Live(auto_refresh=False, console=console) as live: continue`. The
+# `continue` statement exits the `with` block immediately, which invokes
+# Live.__exit__ (stop()) on the brand-new, never-updated Live *before* the
+# next loop iteration ever calls live.update()/refresh() on it. In a
+# non-terminal console (exactly what CliRunner/subprocess capture produce),
+# Rich's Live.refresh() only ever flushes visible output at the *next*
+# live.stop() call, printing whatever was last passed to live.update() at
+# that moment — so once a Live is left permanently stopped without ever
+# receiving an update(), all subsequent turn narration is silently dropped
+# (frozen stale screen), even though game state mutates and saves correctly.
+# Fixed by rebinding `live` to a freshly started (non-with) Live at every
+# re-entry point, with a `finally: live.stop()` around the whole turn loop
+# guaranteeing cleanup regardless of which Live object `live` currently
+# references.
+# ---------------------------------------------------------------------------
+
+def test_battle_items_branch_does_not_freeze_subsequent_turn_output(monkeypatch, tmp_path):
+    """Bug A: narration from the turn AFTER using an Item must still reach
+    the rendered output — proving the Live re-entered after the Items
+    sub-menu is a running Live, not a stopped one silently swallowing
+    subsequent update()/refresh() calls.
+    """
+    import os
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+
+    state = GameState.new_game("TestPlayer")
+    # Damaged bugbyte (max HP 28 at level 5) so the potion sub-menu is
+    # non-empty and the heal narration is distinguishable from a full-HP no-op.
+    owned = OwnedCreature(template_id="bugbyte", level=5, current_hp=10)
+    state.creature_collection.append(owned)
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    # GameState.new_game already grants small_potion=3 in the starter kit.
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    # [5] Items -> [1] use the first (only) usable item (Small Potion) ->
+    # [6] Flee on the very next turn. The flee turn's rendered frame carries
+    # last_narration built from the item-use branch ("... restored N HP
+    # (now X/28)."). Under the bug this text never reaches output because
+    # the re-entered Live after Items was permanently stopped.
+    result = runner.invoke(battle_app, input="5\n1\n6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "Use which item?" in result.output
+    assert "Small Potion" in result.output
+    # This is the differentiating assertion: the item's applied effect
+    # narration only ever appears inside the Live-rendered battle screen for
+    # the turn immediately following item use — it is never console.print'd
+    # directly anywhere else in the flow.
+    assert "restored" in result.output
+    assert "You fled from Pebblite" in result.output
