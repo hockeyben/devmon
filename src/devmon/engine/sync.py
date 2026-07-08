@@ -69,6 +69,12 @@ def sync_game_state(config: dict) -> None:
         check_expiry(state)
         tick_encounter(state, config)
 
+        # Auto-fight/auto-skip resolution (engine/auto_battle.py). Report
+        # stays queued in pending_auto_battle_reports -- this quiet path
+        # never prints, the next interactive `devmon` command drains it.
+        from devmon.engine.auto_battle import auto_resolve_encounter
+        auto_resolve_encounter(state, config)
+
         save_state(state)
     except Exception:
         pass  # Never let a background statusline refresh crash or hang

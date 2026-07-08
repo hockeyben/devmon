@@ -118,6 +118,16 @@ class GameState(BaseModel):
     daily_bonus_pending: bool = False
     """True if all 5 quests completed today and daily bonus not yet displayed (D-07)."""
 
+    pending_auto_battle_reports: list = Field(default_factory=list)
+    """Auto-fight/auto-skip resolution reports awaiting display (engine/auto_battle.py).
+
+    Populated by `auto_resolve_encounter()` whenever it silently resolves a wild
+    encounter (e.g. from engine/sync.py's quiet statusline path). Each entry is a
+    human-readable report string. Drained and printed by main.py's startup stack
+    (`_process_event_log_on_startup`), mirroring the pending_evolution_notifications
+    contract. Missing in old saves defaults cleanly via default_factory (no explicit
+    migration needed — Pydantic fills it at validation time)."""
+
     # Phase 5 encounter fields (D-23)
     encounter_queue: Optional[EncounterEntry] = None
     encounter_cooldown_until: float = 0.0

@@ -80,6 +80,13 @@ DEFAULT_CONFIG: dict = {
         "xp_ai_hourly_knee": 250,            # linear up to here (per hour), sqrt beyond
         "xp_ai_hourly_scale": 4.0,           # sqrt(excess) multiplier beyond the knee
         "xp_ai_min_burst": 3,                # bank deltas until worth this many XP
+        # Rarity-filtered wild-encounter auto-resolution (opt-in, all default OFF).
+        # See engine/auto_battle.py auto_resolve_encounter() for precedence rules
+        # (auto-fight is checked before auto-skip when a rarity is in both lists).
+        "auto_fight_enabled": False,
+        "auto_fight_rarities": ["common"],
+        "auto_skip_enabled": False,
+        "auto_skip_rarities": ["common"],
     },
     "ui": {
         "theme": "neon",

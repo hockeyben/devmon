@@ -148,6 +148,13 @@ def _process_event_log_on_startup() -> None:
         # Tick encounter timer (D-01, D-02, D-03) — may spawn new encounter
         notification_msg = tick_encounter(state, config)
 
+        # Auto-fight/auto-skip resolution (engine/auto_battle.py) — resolve
+        # BEFORE save_state so the mutation (rewards, encounter clear, etc.)
+        # persists in this save. This path is interactive, so the report is
+        # printed and cleared immediately below rather than left queued.
+        from devmon.engine.auto_battle import auto_resolve_encounter
+        auto_resolve_encounter(state, config)
+
         save_state(state)
 
         # Print after save so state changes persist even if rendering fails
@@ -157,6 +164,19 @@ def _process_event_log_on_startup() -> None:
             console.print(expiry_msg)
         if notification_msg:
             console.print(notification_msg)
+
+        # Auto-battle reports: this invocation's resolution (just appended
+        # above) plus any still queued from a prior quiet sync via
+        # engine/sync.py's sync_game_state(). Print-and-clear in the same
+        # pass (interactive path — unlike sync.py, which leaves them queued).
+        if state.pending_auto_battle_reports:
+            try:
+                for report in state.pending_auto_battle_reports:
+                    console.print(f"[dim]{report}[/dim]")
+                state.pending_auto_battle_reports = []
+                save_state(state)
+            except Exception:
+                pass
 
         # Phase 10: Deferred evolution notifications (D-10 — between level-up and quest)
         if state.pending_evolution_notifications:
