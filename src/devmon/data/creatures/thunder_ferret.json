@@ -1,6 +1,6 @@
 {
   "id": "thunder_ferret",
-  "name": "ThunderFerret",
+  "name": "ThunderNewt",
   "species": "Thunder Rebirth",
   "rarity": "epic",
   "allowed_rarities": [
@@ -16,7 +16,7 @@
   "base_defense": 20,
   "base_speed": 40,
   "capture_rate": 0.1,
-  "flavor_text": "Rises from a crashed build server, fully charged. It restores uptime with a single wing beat.",
+  "flavor_text": "Rises from a crashed build server, fully charged. It regrows anything you break — services, limbs, faith in CI.",
   "ascii_art": [
     "  ~*  *~  ",
     " /  ~~  \\ ",

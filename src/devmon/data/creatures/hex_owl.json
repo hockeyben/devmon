@@ -1,6 +1,6 @@
 {
   "id": "hex_owl",
-  "name": "HexOwl",
+  "name": "HexBat",
   "species": "Thought Flutterer",
   "rarity": "uncommon",
   "allowed_rarities": [
@@ -17,7 +17,7 @@
   "base_defense": 12,
   "base_speed": 19,
   "capture_rate": 0.42,
-  "flavor_text": "Drawn irresistibly to bright monitor light at 2am. It reads your stack traces before you do.",
+  "flavor_text": "By day an owlet, by night this. It echolocates code smells from three repos away.",
   "ascii_art": [
     " /|   |\\ ",
     "< (o.o) >",

@@ -379,7 +379,7 @@ def test_render_party_panel_marks_lead_slot():
     lead_lines = [line for line in lines if "LEAD" in line]
     assert len(lead_lines) == 1
     assert "Sparky" in lead_lines[0]
-    assert "EmberFox" not in lead_lines[0]
+    assert "EmberDrake" not in lead_lines[0]
 
 
 def test_render_party_panel_empty_slot_dim_italic():
@@ -436,7 +436,7 @@ def test_render_party_panel_narrow_no_crash():
 
     assert "Active Party" in output
     assert "Sparky" in output
-    assert "EmberFox" in output
+    assert "EmberDrake" in output
     # No line should exceed the console width (no runaway wrapping garbage).
     for line in output.splitlines():
         assert len(line) <= 35

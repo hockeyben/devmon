@@ -17,7 +17,7 @@
   "base_defense": 28,
   "base_speed": 22,
   "capture_rate": 0.15,
-  "flavor_text": "Eight tentacles, each running a separate microservice. It sinks monoliths without reading the docs.",
+  "flavor_text": "A small galaxy drifts inside its bell. Each tendril runs its own microservice; none of them share state.",
   "ascii_art": [
     "   /\\/\\/\\   ",
     "  | ~  ~ |  ",

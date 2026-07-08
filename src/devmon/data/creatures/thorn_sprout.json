@@ -17,7 +17,7 @@
   "base_defense": 11,
   "base_speed": 11,
   "capture_rate": 0.64,
-  "flavor_text": "Hides in dependency trees with circular imports. It blooms every time you run `pip list --outdated`.",
+  "flavor_text": "A root vegetable that uprooted itself from a dependency tree with circular imports. It blooms when you run `pip list --outdated`.",
   "ascii_art": [
     "[bold green] ,[bright_green]*[bold green],[bright_green]*[bold green], [/bold green]",
     "[dim yellow]`[bold green]@[bright_green]###[bold green]@[dim yellow]`[/dim yellow]",

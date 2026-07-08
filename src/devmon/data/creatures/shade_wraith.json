@@ -16,7 +16,7 @@
   "base_defense": 12,
   "base_speed": 18,
   "capture_rate": 0.48,
-  "flavor_text": "Hunts NullPointerExceptions by scent. It has never once found one it didn't cause.",
+  "flavor_text": "Hunts NullPointerExceptions by scent. Its antlers are grown entirely from dead branches you never deleted.",
   "ascii_art": [
     "   /\\  /\\   ",
     "  ( null )  ",

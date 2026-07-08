@@ -1,6 +1,6 @@
 {
   "id": "cyber_beetle",
-  "name": "CyberBeetle",
+  "name": "ChromeMoth",
   "species": "Digital Scarab",
   "rarity": "uncommon",
   "allowed_rarities": [],
@@ -14,7 +14,7 @@
   "base_defense": 42,
   "base_speed": 52,
   "capture_rate": 0.35,
-  "flavor_text": "The evolved form of Bugbyte. Its shell is made of compressed stack traces.",
+  "flavor_text": "The evolved form of Bugbyte. Drawn to glowing monitors, its armored wings are laminated stack traces.",
   "ascii_art": [
     "  _______  ",
     " / 0 1 0 \\ ",

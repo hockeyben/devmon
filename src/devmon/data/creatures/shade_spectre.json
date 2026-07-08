@@ -17,7 +17,7 @@
   "base_defense": 17,
   "base_speed": 28,
   "capture_rate": 0.32,
-  "flavor_text": "Navigates by echolocation and dark patterns. It appears only after your third `git rebase --abort`.",
+  "flavor_text": "Cackles exactly once per failed rebase. It navigates by echolocation and dark patterns.",
   "ascii_art": [
     " /\\     /\\ ",
     "/  \\___/  \\",

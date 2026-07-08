@@ -67,7 +67,7 @@ def test_collection_shows_table(saved_collection_state, tmp_save_dir):
     assert result.exit_code == 0
     assert "Your Collection" in result.output
     assert "Bugbyte" in result.output
-    assert "EmberFox" in result.output
+    assert "EmberDrake" in result.output
     assert "DepthByte" in result.output
 
 
@@ -91,7 +91,7 @@ def test_collection_sort_level(saved_collection_state, tmp_save_dir):
     assert result.exit_code == 0
     # DepthByte level 8 before ember_fox level 3
     high_pos = result.output.find("DepthByte")
-    low_pos = result.output.find("EmberFox")
+    low_pos = result.output.find("EmberDrake")
     assert high_pos < low_pos
 
 
@@ -101,10 +101,10 @@ def test_collection_sort_name(saved_collection_state, tmp_save_dir):
     runner = CliRunner()
     result = runner.invoke(collection_app, ["--sort", "name"])
     assert result.exit_code == 0
-    # Bugbyte < DepthByte < EmberFox alphabetically
+    # Bugbyte < DepthByte < EmberDrake alphabetically
     b_pos = result.output.find("Bugbyte")
     d_pos = result.output.find("DepthByte")
-    e_pos = result.output.find("EmberFox")
+    e_pos = result.output.find("EmberDrake")
     assert b_pos < d_pos < e_pos
 
 
