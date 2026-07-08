@@ -291,6 +291,16 @@ def _show_detail(state: GameState, name: str, theme: dict[str, str] | None = Non
             style="bold red",
         )
 
+    # Individuality: nature + IVs (Phase A1). Plain numbers only — never
+    # show capture chances/percentages anywhere (hard project rule).
+    console.print(f"  Nature: {owned.nature.title()}", style=theme["stat_key"])
+    ivs = owned.ivs or {}
+    iv_line = (
+        f"  IVs: HP {ivs.get('hp', 0)}  ATK {ivs.get('attack', 0)}  "
+        f"DEF {ivs.get('defense', 0)}  SPD {ivs.get('speed', 0)}"
+    )
+    console.print(iv_line, style=theme["stat_key"])
+
 
 # ---------------------------------------------------------------------------
 # Rename subcommand
@@ -467,3 +477,58 @@ def codex_cmd() -> None:
         expand=False,
     )
     console.print(panel)
+
+
+# ---------------------------------------------------------------------------
+# Release subcommand (Phase A1 — duplicate -> candy conversion)
+# ---------------------------------------------------------------------------
+
+@app.command("release")
+def release_cmd(
+    index: int = typer.Argument(..., help="1-based collection index of the creature to release."),
+) -> None:
+    """Release a creature from your collection, converting it to candy (Phase A1).
+
+    Requires interactive confirmation (destructive, cannot be undone).
+    """
+    state = load_state()
+    if state is None:
+        console.print("No save file found.", style="dim white")
+        return
+
+    if not state.creature_collection:
+        console.print("No creatures captured yet.", style="dim white")
+        return
+
+    if index < 1 or index > len(state.creature_collection):
+        console.print(f"Invalid collection index: {index}", style="dim white")
+        return
+
+    owned = state.creature_collection[index - 1]
+    try:
+        template = get_creature(owned.template_id)
+    except (KeyError, ValueError):
+        console.print("Unknown creature template.", style="dim white")
+        return
+
+    display = _display_name(owned, template)
+
+    confirmed = typer.confirm(
+        f"Release {display} (Lv.{owned.level})? This cannot be undone."
+    )
+    if not confirmed:
+        console.print("Release cancelled.", style="dim white")
+        return
+
+    from devmon.config.loader import load_config
+    from devmon.engine.candy_engine import convert_to_candy
+
+    config = load_config()
+    amount = convert_to_candy(state, owned.template_id, template.rarity, config)
+
+    state.creature_collection.pop(index - 1)
+    if owned.template_id not in {c.template_id for c in state.creature_collection}:
+        state.party = [tid for tid in state.party if tid != owned.template_id]
+
+    save_state(state)
+    console.print(f"{display} released. Gained {amount} candy.", style="white")

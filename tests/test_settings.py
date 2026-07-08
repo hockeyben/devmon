@@ -42,3 +42,85 @@ def test_settings_theme_flag_sets_neon(runner, tmp_devmon_home):
     from devmon.main import app
     result = runner.invoke(app, ["settings", "--theme", "neon"])
     assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# Phase A1: devmon settings auto-discard (opt-in duplicate auto-discard)
+# ---------------------------------------------------------------------------
+
+def test_settings_auto_discard_default_is_off_with_empty_lists(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(app, ["settings", "auto-discard"])
+    assert result.exit_code == 0
+    assert "off" in result.output.lower()
+    assert "none" in result.output.lower()
+
+
+def test_settings_shows_auto_discard_in_overview(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(app, ["settings"])
+    assert result.exit_code == 0
+    assert "Auto-discard" in result.output
+
+
+def test_settings_auto_discard_on_and_rarities_round_trip(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(
+        app, ["settings", "auto-discard", "--on", "--rarities", "common,uncommon"]
+    )
+    assert result.exit_code == 0
+    assert "on" in result.output.lower()
+    assert "common" in result.output
+    assert "uncommon" in result.output
+
+    from devmon.config.loader import load_config
+    cfg = load_config()
+    assert cfg["game"]["auto_discard_enabled"] is True
+    assert cfg["game"]["auto_discard_rarities"] == ["common", "uncommon"]
+
+
+def test_settings_auto_discard_species_round_trip(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(
+        app, ["settings", "auto-discard", "--on", "--species", "bugbyte"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "bugbyte" in result.output
+
+    from devmon.config.loader import load_config
+    cfg = load_config()
+    assert cfg["game"]["auto_discard_species"] == ["bugbyte"]
+
+
+def test_settings_auto_discard_invalid_species_rejected(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(
+        app, ["settings", "auto-discard", "--species", "not_a_real_creature_xyz"]
+    )
+    assert result.exit_code != 0
+
+
+def test_settings_auto_discard_invalid_rarity_rejected(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(
+        app, ["settings", "auto-discard", "--rarities", "mythic_super_rare"]
+    )
+    assert result.exit_code != 0
+
+
+def test_settings_auto_discard_off(runner, tmp_devmon_home):
+    from devmon.main import app
+    runner.invoke(app, ["settings", "auto-discard", "--on"])
+    result = runner.invoke(app, ["settings", "auto-discard", "--off"])
+    assert result.exit_code == 0
+    assert "off" in result.output.lower()
+
+    from devmon.config.loader import load_config
+    cfg = load_config()
+    assert cfg["game"]["auto_discard_enabled"] is False
+
+
+def test_settings_auto_discard_on_and_off_together_rejected(runner, tmp_devmon_home):
+    from devmon.main import app
+    result = runner.invoke(app, ["settings", "auto-discard", "--on", "--off"])
+    assert result.exit_code != 0

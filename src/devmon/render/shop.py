@@ -202,11 +202,12 @@ def render_items_inventory(
     Returns:
         Rich Panel with full inventory.
     """
-    CATEGORY_ORDER = ["capsule", "potion", "booster"]
+    CATEGORY_ORDER = ["capsule", "potion", "booster", "gear"]
     CATEGORY_LABELS = {
         "capsule": "Capsules",
         "potion": "Potions",
         "booster": "Boosters",
+        "gear": "Gear",
     }
 
     # Group items by category

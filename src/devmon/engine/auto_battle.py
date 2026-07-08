@@ -179,12 +179,13 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
         wild_creature_ai,
     )
     from devmon.engine.creature_loader import get_creature
+    from devmon.engine.natures import effective_max_hp, effective_stat
 
     player_template = get_creature(player_owned.template_id)
     wild_template = get_creature(entry.template_id)
     wild_level = entry.encounter_level
 
-    player_max_hp = compute_max_hp(player_template, player_owned.level)
+    player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
     if player_owned.current_hp is None:
         player_owned.current_hp = player_max_hp
 
@@ -201,9 +202,9 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     def _player_turn() -> bool:
         """Execute one player action. Returns True if the wild creature fainted."""
         nonlocal wild_hp
-        p_atk = compute_stat(player_template.base_attack, player_owned.level)
+        p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
         w_def = compute_stat(wild_template.base_defense, wild_level)
-        p_spd = compute_stat(player_template.base_speed, player_owned.level)
+        p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
         if best_ability is not None:
             effectiveness = get_type_effectiveness(best_ability.type, wild_template.type)
             crit = roll_crit(p_spd)
@@ -220,7 +221,7 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
         """Execute one wild action. Returns True if the player's lead fainted."""
         w_abilities = get_available_abilities(wild_template.abilities, wild_level)
         w_atk = compute_stat(wild_template.base_attack, wild_level)
-        p_def = compute_stat(player_template.base_defense, player_owned.level)
+        p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
         w_spd = compute_stat(wild_template.base_speed, wild_level)
         wild_action = wild_creature_ai(w_abilities)
         w_ability = None
@@ -242,7 +243,7 @@ def simulate_battle(state: "GameState", config: dict) -> dict:
     turns = 0
     while turns < SIMULATION_TURN_CAP:
         turns += 1
-        player_speed = compute_stat(player_template.base_speed, player_owned.level)
+        player_speed = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
         wild_speed = compute_stat(wild_template.base_speed, wild_level)
         turn_order = determine_turn_order(player_speed, wild_speed)
 
@@ -313,6 +314,7 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
     from devmon.engine.creature_loader import get_creature
     from devmon.engine.evolution_engine import clear_evolution_declined_on_level_up
     from devmon.engine.item_engine import is_booster_active
+    from devmon.engine.medibot import record_battle_loss, record_battle_win
     from devmon.engine.progression import check_player_level_up
 
     entry = state.encounter_queue
@@ -336,6 +338,7 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
 
     if outcome == "loss":
         state.encounter_queue = None
+        record_battle_loss(state)
         return (
             f"Auto-battle: {lead_name} was defeated by wild {wild_template.name} "
             f"({rarity}). No rewards."
@@ -349,6 +352,9 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
     state.player.xp += rewards["player_xp"]
     state.player.currency += rewards["currency"]
     state.player.battles_won += 1
+    medibot_msg = record_battle_win(state)
+    if medibot_msg:
+        state.pending_auto_battle_reports.append(medibot_msg)
     check_player_level_up(state.player, config)
 
     if apply_creature_xp(player_owned, player_template, rewards["creature_xp"]):

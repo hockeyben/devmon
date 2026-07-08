@@ -252,6 +252,106 @@ def test_default_config_has_streak_multiplier_cap():
     assert DEFAULT_CONFIG["game"]["streak_multiplier_cap"] == 2.0
 
 
+# --- Phase A1 migration tests: nature/IV backfill (field-presence based, NOT a version bump) ---
+
+def test_migrate_backfills_nature_and_ivs_for_old_creature():
+    """Phase A1: a creature dict missing nature/ivs gets them rolled by migrate()."""
+    from devmon.persistence.migrations import CURRENT_VERSION, migrate
+
+    data = {
+        "schema_version": CURRENT_VERSION,
+        "player": {"name": "Ash"},
+        "creature_collection": [
+            {"template_id": "bugbyte", "level": 5, "xp": 0},
+        ],
+    }
+    result = migrate(data)
+    # Schema version must NOT bump for this backfill (other tests hardcode it).
+    assert result["schema_version"] == CURRENT_VERSION
+    creature = result["creature_collection"][0]
+    assert "nature" in creature
+    assert "ivs" in creature
+    assert set(creature["ivs"].keys()) == {"hp", "attack", "defense", "speed"}
+    for v in creature["ivs"].values():
+        assert 0 <= v <= 15
+
+
+def test_migrate_does_not_bump_schema_version_for_backfill():
+    """CURRENT_VERSION stays 11 — the nature/IV backfill is not a schema migration."""
+    from devmon.persistence.migrations import CURRENT_VERSION
+    assert CURRENT_VERSION == 11
+
+
+def test_migrate_preserves_existing_nature_and_ivs():
+    """setdefault-style behavior: a creature that already has nature/ivs keeps them."""
+    from devmon.persistence.migrations import CURRENT_VERSION, migrate
+
+    data = {
+        "schema_version": CURRENT_VERSION,
+        "player": {"name": "Ash"},
+        "creature_collection": [
+            {
+                "template_id": "bugbyte",
+                "level": 5,
+                "xp": 0,
+                "nature": "agile",
+                "ivs": {"hp": 9, "attack": 9, "defense": 9, "speed": 9},
+            },
+        ],
+    }
+    result = migrate(data)
+    creature = result["creature_collection"][0]
+    assert creature["nature"] == "agile"
+    assert creature["ivs"] == {"hp": 9, "attack": 9, "defense": 9, "speed": 9}
+
+
+def test_migrate_backfill_handles_empty_creature_collection():
+    """No creatures -> backfill is a no-op, no crash."""
+    from devmon.persistence.migrations import CURRENT_VERSION, migrate
+
+    data = {"schema_version": CURRENT_VERSION, "player": {"name": "Ash"}, "creature_collection": []}
+    result = migrate(data)
+    assert result["creature_collection"] == []
+
+
+def test_migrate_backfill_from_v0_rolls_individuality_for_captured_creature():
+    """A full v0 -> current migration also rolls nature/ivs for a bundled creature."""
+    from devmon.persistence.migrations import migrate
+
+    data = {
+        "player": {"name": "Ash"},
+        "creature_collection": [{"template_id": "bugbyte", "level": 1, "xp": 0}],
+    }
+    result = migrate(data)
+    creature = result["creature_collection"][0]
+    assert "nature" in creature
+    assert "ivs" in creature
+
+
+def test_owned_creature_loads_with_backfilled_individuality_via_load(tmp_save_dir):
+    """End-to-end: an old save (dict lacking nature/ivs) loads into a valid
+    GameState with rolled nature/ivs on the owned creature."""
+    import json
+
+    from devmon.persistence.save import _save_dir, load
+
+    old_save = {
+        "schema_version": 11,
+        "player": {"name": "Ash"},
+        "creature_collection": [{"template_id": "bugbyte", "level": 3, "xp": 0}],
+    }
+    save_path = _save_dir() / "save.json"
+    save_path.write_text(json.dumps(old_save), encoding="utf-8")
+
+    from devmon.engine.natures import NATURES
+
+    state = load()
+    assert state is not None
+    owned = state.creature_collection[0]
+    assert owned.nature in NATURES
+    assert set(owned.ivs.keys()) == {"hp", "attack", "defense", "speed"}
+
+
 def test_default_config_has_all_phase2_game_keys():
     """D-05 through D-10: DEFAULT_CONFIG game section has all required Phase 2 keys."""
     from devmon.config.defaults import DEFAULT_CONFIG

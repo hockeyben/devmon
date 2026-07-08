@@ -97,6 +97,13 @@ def settings(
             game_cfg.get("auto_skip_enabled", False),
             game_cfg.get("auto_skip_rarities", []),
         ))
+        auto_discard_state = "on" if game_cfg.get("auto_discard_enabled", False) else "off"
+        auto_discard_rarities = ", ".join(game_cfg.get("auto_discard_rarities", []) or []) or "none"
+        auto_discard_species = ", ".join(game_cfg.get("auto_discard_species", []) or []) or "none"
+        typer.echo(
+            f"Auto-discard: {auto_discard_state} "
+            f"(rarities: {auto_discard_rarities}; species: {auto_discard_species})"
+        )
 
 
 def _auto_rule_command(
@@ -199,4 +206,100 @@ def auto_skip(
         on=on,
         off=off,
         rarities=rarities,
+    )
+
+
+def _parse_species(raw: str) -> list[str]:
+    """Parse a comma-separated species id list, validating against creature_loader.
+
+    Args:
+        raw: Comma-separated species id string, e.g. "bugbyte,ember_fox".
+
+    Returns:
+        List of lowercase, whitespace-trimmed species id strings.
+
+    Raises:
+        ValueError: If any token is not a known creature template id. The
+            message lists a sample of valid ids for a helpful CLI error.
+    """
+    from devmon.engine.creature_loader import load_all_creatures
+
+    ids = [t.strip().lower() for t in raw.split(",") if t.strip()]
+    known = load_all_creatures()
+    invalid = [t for t in ids if t not in known]
+    if invalid:
+        sample = ", ".join(sorted(known.keys())[:10])
+        raise ValueError(
+            f"Unknown creature id(s): {', '.join(invalid)}. "
+            f"Valid ids include: {sample}..."
+        )
+    return ids
+
+
+@app.command("auto-discard")
+def auto_discard(
+    on: bool = typer.Option(False, "--on", help="Enable auto-discard."),
+    off: bool = typer.Option(False, "--off", help="Disable auto-discard."),
+    rarities: Optional[str] = typer.Option(
+        None,
+        "--rarities",
+        help="Comma-separated rarity tiers to auto-discard duplicates of, e.g. common.",
+    ),
+    species: Optional[str] = typer.Option(
+        None,
+        "--species",
+        help="Comma-separated creature ids to auto-discard duplicates of, e.g. bugbyte.",
+    ),
+) -> None:
+    """View or change opt-in duplicate-capture auto-discard settings.
+
+    OPT-IN ONLY (hard rule): defaults to fully off with empty rarity/species
+    lists. When enabled, a fresh capture of a species you already own
+    converts instantly to candy instead of joining your collection IF its
+    rarity is in --rarities OR its id is in --species (see
+    engine/candy_engine.py's should_auto_discard). Never discards anything
+    while disabled, regardless of the stored rarity/species lists.
+    """
+    from devmon.config.loader import load_config, save_config
+
+    if on and off:
+        typer.echo("Cannot pass both --on and --off.", err=True)
+        raise typer.Exit(1)
+
+    cfg = load_config()
+    game_cfg = cfg.setdefault("game", {})
+
+    changed = False
+    if on:
+        game_cfg["auto_discard_enabled"] = True
+        changed = True
+    if off:
+        game_cfg["auto_discard_enabled"] = False
+        changed = True
+
+    if rarities is not None:
+        try:
+            game_cfg["auto_discard_rarities"] = _parse_rarities(rarities)
+        except ValueError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(1)
+        changed = True
+
+    if species is not None:
+        try:
+            game_cfg["auto_discard_species"] = _parse_species(species)
+        except ValueError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(1)
+        changed = True
+
+    if changed:
+        save_config(cfg)
+
+    state_label = "on" if game_cfg.get("auto_discard_enabled", False) else "off"
+    rarities_label = ", ".join(game_cfg.get("auto_discard_rarities", []) or []) or "none"
+    species_label = ", ".join(game_cfg.get("auto_discard_species", []) or []) or "none"
+    typer.echo(
+        f"Auto-discard: {state_label} "
+        f"(rarities: {rarities_label}; species: {species_label})"
     )

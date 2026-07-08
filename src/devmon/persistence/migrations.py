@@ -56,6 +56,39 @@ def migrate(data: dict) -> dict:
             f"Save file may be from a future version or is corrupt."
         )
 
+    data = _backfill_creature_individuality(data)
+
+    return data
+
+
+def _backfill_creature_individuality(data: dict) -> dict:
+    """Phase A1: roll nature + IVs for owned creatures that predate them.
+
+    Deliberately field-presence based rather than a numbered schema
+    migration — several tests hardcode `schema_version == 11`, and this
+    backfill has nothing to do with save *shape* (every field already has a
+    clean Pydantic default). It runs unconditionally on every load() so a
+    creature captured before Phase A1 gets real (rolled) individuality
+    instead of silently defaulting to nature="stable"/ivs=all-zero forever.
+
+    Import-time-safe randomness: engine.natures is only imported here, at
+    call time, never at module import time (mirrors persistence/save.py's
+    existing lazy-import pattern for engine.progression).
+    """
+    creatures = data.get("creature_collection")
+    if not creatures:
+        return data
+
+    from devmon.engine.natures import roll_ivs, roll_nature
+
+    for creature in creatures:
+        if not isinstance(creature, dict):
+            continue
+        if "nature" not in creature:
+            creature["nature"] = roll_nature()
+        if "ivs" not in creature:
+            creature["ivs"] = roll_ivs()
+
     return data
 
 

@@ -1,0 +1,9 @@
+{
+  "id": "medibot_module",
+  "name": "Medibot Module",
+  "category": "gear",
+  "price": 150,
+  "sold_in_shop": true,
+  "effect_description": "Auto-heals your team every 5-win streak",
+  "restores_fainted": false
+}

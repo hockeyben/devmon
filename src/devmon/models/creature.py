@@ -201,3 +201,22 @@ class OwnedCreature(BaseModel):
     """True if the player declined evolution at the last level threshold (Phase 10).
     Reset to False on the next level-up so the prompt fires again (D-02, Pitfall 1).
     """
+
+    nature: str = "stable"
+    """Rolled at acquisition time (capture/starter/bootstrap) via
+    engine.natures.roll_nature() — a dev-flavored +10%/-10% stat pair (or
+    neutral). Two specimens of the same species are never identical
+    (Phase A1). Old saves missing this field are backfilled by
+    persistence.migrations.migrate() rather than defaulting silently to
+    "stable" for every pre-existing creature."""
+
+    ivs: dict = Field(default_factory=lambda: {"hp": 0, "attack": 0, "defense": 0, "speed": 0})
+    """Individual Values (0-15 per stat), rolled at acquisition time via
+    engine.natures.roll_ivs() (Phase A1). Keys: 'hp', 'attack', 'defense',
+    'speed'. Consumed by engine.natures.effective_stat/effective_max_hp —
+    never read directly by battle math, which always calls those wrappers."""
+
+    candies_fed: int = 0
+    """Cumulative count of duplicate-species candy fed to this specimen via
+    `devmon candy feed` (Phase A1). Every 10 cumulative candies grants +1 to
+    a random IV (capped at 15) — see engine.candy_engine.feed_candy."""

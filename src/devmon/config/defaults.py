@@ -87,6 +87,27 @@ DEFAULT_CONFIG: dict = {
         "auto_fight_rarities": ["common"],
         "auto_skip_enabled": False,
         "auto_skip_rarities": ["common"],
+        # Phase A1 — creature individuality & care.
+        # Repo Center free full-team heal cooldown (`devmon heal --center`).
+        "center_heal_cooldown_minutes": 30,
+        # Duplicate-capture candy yield per rarity tier (engine/candy_engine.py).
+        "candy_by_rarity": {
+            "common": 1,
+            "uncommon": 2,
+            "rare": 4,
+            "epic": 8,
+            "legendary": 15,
+        },
+        # Candy spending (`devmon candy feed`): XP granted per candy fed,
+        # routed through engine.battle_engine.apply_creature_xp.
+        "candy_xp_per_piece": 40,
+        # Auto-discard on capture — OPT-IN ONLY, defaults fully off (hard
+        # rule: NEVER convert/discard a player's devmon without explicit
+        # opt-in). A capture matching a listed rarity OR species converts
+        # straight to candy instead of joining the collection.
+        "auto_discard_enabled": False,
+        "auto_discard_rarities": [],
+        "auto_discard_species": [],
     },
     "ui": {
         "theme": "neon",

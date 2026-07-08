@@ -143,6 +143,23 @@ class GameState(BaseModel):
     indicator_hidden: bool = False
     """True when battle is active — daemon hides indicator. Set by battle command, cleared on exit."""
 
+    # Phase A1 — creature individuality & care
+    candy: dict[str, int] = Field(default_factory=dict)
+    """Duplicate-creature candy balances: {species template_id: count}.
+    Sourced from manual release (`devmon collection release`) and opt-in
+    auto-discard on capture (engine.candy_engine). Spent via
+    `devmon candy feed` for creature XP and (every 10 fed) a random IV point."""
+
+    last_center_heal_ts: float = 0.0
+    """Unix timestamp of the last free `devmon heal --center` full-team heal.
+    Gated by game.center_heal_cooldown_minutes (default 30). 0.0 means never
+    used — always available on a fresh save."""
+
+    battle_win_streak: int = 0
+    """Consecutive battle wins (interactive AND auto-battle), reset to 0 on
+    any battle loss. A Medibot Module (if owned) fully heals the team every
+    time this hits a multiple of 5 — see engine.medibot.record_battle_win."""
+
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":
         """Bootstrap a fresh game state for a new player (SAVE-01 fresh install)."""

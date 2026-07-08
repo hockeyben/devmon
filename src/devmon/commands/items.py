@@ -93,6 +93,22 @@ def _use_item(use: str) -> None:
             )
             raise typer.Exit(code=1)
 
+    elif item.category == "gear":
+        # Gear (e.g. Medibot Module) is passive — owning it is enough, it is
+        # never "used" or consumed (Phase A1).
+        state = _load_state_or_new()
+        owned_qty = state.inventory.get(item_id, 0)
+        if owned_qty < 1:
+            console.print(
+                f"  You don't own a {item.name}. Buy one at the shop.",
+                style="bold red",
+            )
+            raise typer.Exit(code=1)
+        console.print(
+            f"  {item.name} is passive gear — already active, nothing to use.",
+            style="dim white",
+        )
+
     elif item.category in ("potion",) or item.restores_fainted:
         # Potions and revives require a target creature — only usable in battle
         console.print(

@@ -298,6 +298,155 @@ def test_fight_loss_applies_faint_no_rewards_honest_report():
 
 
 # ---------------------------------------------------------------------------
+# Phase A1: Medibot Module win-streak integration via auto-fight
+# ---------------------------------------------------------------------------
+
+def test_auto_fight_win_increments_battle_win_streak():
+    from devmon.engine.auto_battle import auto_resolve_encounter
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+        rarity="common",
+    )
+    assert state.battle_win_streak == 0
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["common"])
+    auto_resolve_encounter(state, cfg)
+    assert state.battle_win_streak == 1
+
+
+def test_auto_fight_loss_resets_battle_win_streak():
+    from devmon.engine.auto_battle import auto_resolve_encounter
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=1, wild_id="cyber_beetle", wild_level=100,
+        rarity="uncommon",
+    )
+    state.battle_win_streak = 3
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["uncommon"])
+    auto_resolve_encounter(state, cfg)
+    assert state.battle_win_streak == 0
+
+
+def test_auto_fight_fifth_win_with_medibot_queues_heal_report():
+    from devmon.engine.auto_battle import auto_resolve_encounter
+    from devmon.engine.medibot import MEDIBOT_HEAL_MESSAGE
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+        rarity="common",
+    )
+    state.battle_win_streak = 4
+    state.inventory["medibot_module"] = 1
+    lead = state.creature_collection[0]
+
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["common"])
+    auto_resolve_encounter(state, cfg)
+
+    assert state.battle_win_streak == 5
+    assert MEDIBOT_HEAL_MESSAGE in state.pending_auto_battle_reports
+    assert lead.current_hp is None  # fully healed sentinel
+    assert lead.is_fainted is False
+
+
+def test_auto_fight_fifth_win_without_medibot_no_heal_report():
+    """Not-owned no-op: streak still advances, but no Medibot means no heal."""
+    from devmon.engine.auto_battle import auto_resolve_encounter
+    from devmon.engine.medibot import MEDIBOT_HEAL_MESSAGE
+
+    state = _state_with_encounter(
+        lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1,
+        rarity="common",
+    )
+    state.battle_win_streak = 4
+    assert state.inventory.get("medibot_module", 0) == 0
+
+    cfg = _config(auto_fight_enabled=True, auto_fight_rarities=["common"])
+    auto_resolve_encounter(state, cfg)
+
+    assert state.battle_win_streak == 5
+    assert MEDIBOT_HEAL_MESSAGE not in state.pending_auto_battle_reports
+
+
+# ---------------------------------------------------------------------------
+# Phase A1: simulate_battle consumes effective (nature + IV adjusted) stats
+# for the PLAYER side only — wild creatures stay on template stats.
+# ---------------------------------------------------------------------------
+
+def test_simulate_battle_player_max_hp_uses_effective_stats_not_base(monkeypatch):
+    """player_owned.current_hp, when starting None, is seeded from
+    effective_max_hp (nature + IV adjusted) — not the plain compute_max_hp.
+
+    Forces the player to one-shot the wild on turn 1 (via monkeypatched
+    determine_turn_order + compute_damage) so the wild never gets a turn —
+    isolating the seeded max_hp value from any subsequent combat damage.
+    """
+    from devmon.engine import battle_engine
+    from devmon.engine.auto_battle import simulate_battle
+    from devmon.engine.creature_loader import get_creature
+    from devmon.engine.natures import effective_max_hp
+
+    state = _state_with_encounter(lead_id="bugbyte", lead_level=10, wild_id="stack_kitten", wild_level=1)
+    owned = state.creature_collection[0]
+    owned.nature = "cached"  # cached: +hp
+    owned.ivs = {"hp": 15, "attack": 0, "defense": 0, "speed": 0}
+    assert owned.current_hp is None
+
+    monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
+    monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
+
+    template = get_creature("bugbyte")
+    expected_effective = effective_max_hp(template, owned.level, 15, "cached")
+
+    result = simulate_battle(state, _config())
+
+    assert result["outcome"] == "win"
+    assert owned.current_hp == expected_effective
+
+
+def test_simulate_battle_neutral_nature_zero_ivs_matches_base_compute_max_hp(monkeypatch):
+    """Regression guard: default nature/ivs (stable/all-zero) must reproduce
+    the pre-Phase-A1 behavior exactly (no accidental stat drift)."""
+    from devmon.engine import battle_engine
+    from devmon.engine.auto_battle import simulate_battle
+    from devmon.engine.battle_engine import compute_max_hp
+    from devmon.engine.creature_loader import get_creature
+
+    state = _state_with_encounter(lead_id="bugbyte", lead_level=10, wild_id="stack_kitten", wild_level=1)
+    owned = state.creature_collection[0]
+    assert owned.nature == "stable"
+    assert owned.ivs == {"hp": 0, "attack": 0, "defense": 0, "speed": 0}
+
+    monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
+    monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
+
+    template = get_creature("bugbyte")
+    base_max_hp = compute_max_hp(template, owned.level)
+
+    result = simulate_battle(state, _config())
+
+    assert result["outcome"] == "win"
+    assert owned.current_hp == base_max_hp
+
+
+def test_simulate_battle_wild_side_never_gets_iv_boost(monkeypatch):
+    """Wild creatures in battle do NOT get IVs — a high-IV player lead must
+    not affect the wild's own max HP (only its own stats change)."""
+    from devmon.engine.auto_battle import simulate_battle
+    from devmon.engine.battle_engine import compute_max_hp
+    from devmon.engine.creature_loader import get_creature
+
+    state = _state_with_encounter(lead_id="bugbyte", lead_level=30, wild_id="stack_kitten", wild_level=1)
+    owned = state.creature_collection[0]
+    owned.nature = "cached"
+    owned.ivs = {"hp": 15, "attack": 15, "defense": 15, "speed": 15}
+
+    result = simulate_battle(state, _config())
+
+    wild_template = get_creature("stack_kitten")
+    assert result["wild_max_hp"] == compute_max_hp(wild_template, 1)
+
+
+# ---------------------------------------------------------------------------
 # simulate_battle: turn cap always terminates
 # ---------------------------------------------------------------------------
 

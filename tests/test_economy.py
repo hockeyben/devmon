@@ -551,12 +551,12 @@ def test_items_exits_ok(tmp_save_dir):
 # Plan 08-02: Item loader tests
 # ---------------------------------------------------------------------------
 
-def test_item_loader_load_all_items_returns_eight() -> None:
-    """load_all_items() returns exactly 8 items."""
+def test_item_loader_load_all_items_returns_nine() -> None:
+    """load_all_items() returns exactly 9 items (8 + Phase A1's medibot_module)."""
     from devmon.engine.item_loader import load_all_items
 
     items = load_all_items()
-    assert len(items) == 8, f"Expected 8 items, got {len(items)}: {list(items.keys())}"
+    assert len(items) == 9, f"Expected 9 items, got {len(items)}: {list(items.keys())}"
 
 
 def test_item_loader_keys_match_ids() -> None:
@@ -573,6 +573,7 @@ def test_item_loader_keys_match_ids() -> None:
         "full_potion",
         "revive",
         "xp_booster",
+        "medibot_module",
     }
     assert set(items.keys()) == expected_ids
 

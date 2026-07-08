@@ -518,6 +518,230 @@ def test_render_victory_screen_produces_output():
     assert "+50" in output
 
 
+# ---------------------------------------------------------------------------
+# Phase A1: acquisition rolls (nature + IVs) and duplicate auto-discard
+# ---------------------------------------------------------------------------
+
+def test_bootstrap_starter_rolls_nature_and_ivs():
+    from devmon.commands.battle import _bootstrap_starter
+    from devmon.engine.natures import NATURES
+    from devmon.models.state import GameState
+
+    state = GameState.new_game("Tester")
+    owned = _bootstrap_starter(state)
+    assert owned.nature in NATURES
+    assert set(owned.ivs.keys()) == {"hp", "attack", "defense", "speed"}
+    for v in owned.ivs.values():
+        assert 0 <= v <= 15
+
+
+def test_capture_success_rolls_nature_and_ivs(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.engine.natures import NATURES
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    monkeypatch.setattr(battle_engine, "attempt_capture", lambda chance: True)
+
+    state = GameState.new_game("TestPlayer")
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=10))
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.inventory["basic_capsule"] = 3
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="3\n1\n\n")
+    assert result.exit_code == 0, result.output
+
+    reloaded = load()
+    captured = [c for c in reloaded.creature_collection if c.template_id == "pebblite"]
+    assert len(captured) == 1
+    new_creature = captured[0]
+    assert new_creature.nature in NATURES
+    assert set(new_creature.ivs.keys()) == {"hp", "attack", "defense", "speed"}
+
+
+def test_capture_duplicate_with_auto_discard_disabled_keeps_creature(tmp_path, monkeypatch):
+    """Hard rule: with auto-discard disabled (the default), a duplicate
+    capture still joins the collection normally — never silently discarded.
+    """
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    monkeypatch.setattr(battle_engine, "attempt_capture", lambda chance: True)
+
+    state = GameState.new_game("TestPlayer")
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=10))
+    state.party.append("bugbyte")
+    # Already own a pebblite -- the next capture is a duplicate species.
+    state.creature_collection.append(OwnedCreature(template_id="pebblite", level=1))
+    state.codex_state["pebblite"] = "captured"
+    state.inventory["basic_capsule"] = 3
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="3\n1\n\n")
+    assert result.exit_code == 0, result.output
+    assert "auto-discard" not in result.output.lower()
+
+    reloaded = load()
+    pebblite_owned = [c for c in reloaded.creature_collection if c.template_id == "pebblite"]
+    assert len(pebblite_owned) == 2  # original + freshly captured duplicate
+    assert reloaded.candy.get("pebblite", 0) == 0
+
+
+def test_capture_duplicate_with_auto_discard_enabled_converts_to_candy(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.config.loader import load_config, save_config
+    from devmon.engine import battle_engine
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    monkeypatch.setattr(battle_engine, "attempt_capture", lambda chance: True)
+
+    cfg = load_config()
+    cfg["game"]["auto_discard_enabled"] = True
+    cfg["game"]["auto_discard_species"] = ["pebblite"]
+    save_config(cfg)
+
+    state = GameState.new_game("TestPlayer")
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=10))
+    state.party.append("bugbyte")
+    state.creature_collection.append(OwnedCreature(template_id="pebblite", level=1))
+    state.codex_state["pebblite"] = "captured"
+    state.inventory["basic_capsule"] = 3
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="3\n1\n\n")
+    assert result.exit_code == 0, result.output
+    assert "converted to" in result.output
+    assert "candy" in result.output.lower()
+
+    reloaded = load()
+    pebblite_owned = [c for c in reloaded.creature_collection if c.template_id == "pebblite"]
+    assert len(pebblite_owned) == 1  # still just the original -- no duplicate added
+    assert reloaded.candy.get("pebblite", 0) > 0
+
+
+# ---------------------------------------------------------------------------
+# Phase A1: battle_win_streak + Medibot Module integration (interactive path)
+# ---------------------------------------------------------------------------
+
+def test_interactive_attack_win_increments_streak_and_medibot_heals(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    # Force the player to one-shot the wild on turn 1 (deterministic win).
+    monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
+    monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
+
+    state = GameState.new_game("TestPlayer")
+    # Level 5 deliberately stays under bugbyte's evolution-level threshold
+    # (10) — an evolution y/n prompt would need extra scripted input
+    # unrelated to what this test verifies (streak + Medibot wiring).
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=5))
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.battle_win_streak = 4
+    state.inventory["medibot_module"] = 1
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=1,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="1\n\n")
+    assert result.exit_code == 0, result.output
+    assert "Medibot Module" in result.output
+
+    reloaded = load()
+    assert reloaded.battle_win_streak == 5
+
+
+def test_interactive_defeat_resets_battle_win_streak(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    # Force the wild to one-shot the player on turn 1 (deterministic loss).
+    monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "wild")
+    monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
+
+    state = GameState.new_game("TestPlayer")
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=1))
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.battle_win_streak = 3
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=50,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="1\n\n")
+    assert result.exit_code == 0, result.output
+
+    reloaded = load()
+    assert reloaded.battle_win_streak == 0
+
+
 def test_render_capture_screen_produces_output():
     """UI-03: render_capture_screen outputs content and never shows capture rate."""
     from rich.console import Console

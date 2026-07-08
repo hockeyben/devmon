@@ -66,8 +66,9 @@ def _bootstrap_starter(state) -> object:
         The newly created OwnedCreature.
     """
     from devmon.models.creature import OwnedCreature
+    from devmon.engine.natures import roll_ivs, roll_nature
 
-    owned = OwnedCreature(template_id="bugbyte", level=5)
+    owned = OwnedCreature(template_id="bugbyte", level=5, nature=roll_nature(), ivs=roll_ivs())
     state.creature_collection.append(owned)
     state.codex_state["bugbyte"] = "captured"
     if "bugbyte" not in state.party:
@@ -468,6 +469,8 @@ def battle_cmd() -> None:
         use_potion_on_creature,
     )
     from devmon.engine.item_loader import load_all_items
+    from devmon.engine.medibot import record_battle_loss, record_battle_win
+    from devmon.engine.natures import effective_max_hp, effective_stat
     from devmon.engine.progression import check_player_level_up
     from devmon.config.loader import load_config
     from devmon.persistence.save import load, save
@@ -560,7 +563,7 @@ def battle_cmd() -> None:
     )
 
     # --- Step 4: Resolve player creature HP (Pitfall 5) ---
-    player_max_hp = compute_max_hp(player_template, player_owned.level)
+    player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
     if player_owned.current_hp is None:
         player_owned.current_hp = player_max_hp
 
@@ -587,7 +590,7 @@ def battle_cmd() -> None:
         while battle_active:
             # Refresh player template reference (may change after switch)
             player_template = get_creature(player_owned.template_id)
-            player_max_hp = compute_max_hp(player_template, player_owned.level)
+            player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
             if player_owned.current_hp is None:
                 player_owned.current_hp = player_max_hp
 
@@ -656,7 +659,7 @@ def battle_cmd() -> None:
             # [1] Attack
             # ================================================================
             if choice == "1":
-                player_speed = compute_stat(player_template.base_speed, player_owned.level)
+                player_speed = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                 wild_speed = compute_stat(wild_template.base_speed, wild.level)
                 turn_order = determine_turn_order(player_speed, wild_speed)
 
@@ -665,9 +668,9 @@ def battle_cmd() -> None:
                 def _player_attacks() -> bool:
                     """Execute player attack. Returns True if wild fainted."""
                     nonlocal wild
-                    p_atk = compute_stat(player_template.base_attack, player_owned.level)
+                    p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
                     w_def = compute_stat(wild_template.base_defense, wild.level)
-                    p_spd = compute_stat(player_template.base_speed, player_owned.level)
+                    p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                     effectiveness = get_type_effectiveness(player_template.type, wild_template.type)
                     crit = roll_crit(p_spd)
                     dmg = compute_damage(p_atk, player_owned.level, p_spd, w_def, effectiveness, crit)
@@ -681,7 +684,7 @@ def battle_cmd() -> None:
                 def _wild_attacks() -> bool:
                     """Execute wild attack. Returns True if player creature fainted."""
                     w_atk = compute_stat(wild_template.base_attack, wild.level)
-                    p_def = compute_stat(player_template.base_defense, player_owned.level)
+                    p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                     w_spd = compute_stat(wild_template.base_speed, wild.level)
                     effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                     crit = roll_crit(w_spd)
@@ -733,6 +736,7 @@ def battle_cmd() -> None:
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
+                    medibot_msg = record_battle_win(state)
                     config = load_config()
                     player_leveled = check_player_level_up(state.player, config)
                     # Distribute XP to all creatures that participated
@@ -762,6 +766,8 @@ def battle_cmd() -> None:
                     live.stop()
                     render_faint_message(console, wild_template.name, is_player=False)
                     render_victory_screen(console, player_template.name, wild_template.name, rewards)
+                    if medibot_msg:
+                        console.print(f"  [bold green]{medibot_msg}[/bold green]")
                     for name, new_level in leveled_creatures:
                         console.print(
                             f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
@@ -795,7 +801,7 @@ def battle_cmd() -> None:
                         player_owned = next_creature
                         participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
-                        player_max_hp = compute_max_hp(player_template, player_owned.level)
+                        player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
                         if player_owned.current_hp is None:
                             player_owned.current_hp = player_max_hp
                         last_narration = f"{player_template.name} switched in!"
@@ -806,6 +812,7 @@ def battle_cmd() -> None:
                         save(state)
                         live.stop()
                         render_defeat_screen(console)
+                        record_battle_loss(state)
                         # Auto-heal after battle
                         _auto_heal(state)
                         save(state)
@@ -822,7 +829,7 @@ def battle_cmd() -> None:
                     continue
 
                 ability = abilities[-1]
-                player_speed = compute_stat(player_template.base_speed, player_owned.level)
+                player_speed = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                 wild_speed = compute_stat(wild_template.base_speed, wild.level)
                 turn_order = determine_turn_order(player_speed, wild_speed)
 
@@ -830,9 +837,9 @@ def battle_cmd() -> None:
 
                 def _player_special() -> bool:
                     """Execute player special ability. Returns True if wild fainted."""
-                    p_atk = compute_stat(player_template.base_attack, player_owned.level)
+                    p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
                     w_def = compute_stat(wild_template.base_defense, wild.level)
-                    p_spd = compute_stat(player_template.base_speed, player_owned.level)
+                    p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                     effectiveness = get_type_effectiveness(ability.type, wild_template.type)
                     crit = roll_crit(p_spd)
                     base_dmg = compute_damage(p_atk, player_owned.level, p_spd, w_def, effectiveness, crit)
@@ -848,7 +855,7 @@ def battle_cmd() -> None:
                     """Execute wild attack. Returns True if player creature fainted."""
                     w_abilities = get_available_abilities(wild_template.abilities, wild.level)
                     w_atk = compute_stat(wild_template.base_attack, wild.level)
-                    p_def = compute_stat(player_template.base_defense, player_owned.level)
+                    p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                     w_spd = compute_stat(wild_template.base_speed, wild.level)
                     wild_action = wild_creature_ai(w_abilities)
                     if wild_action != "attack":
@@ -912,6 +919,7 @@ def battle_cmd() -> None:
                     state.player.xp += rewards["player_xp"]
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
+                    medibot_msg = record_battle_win(state)
                     config = load_config()
                     player_leveled = check_player_level_up(state.player, config)
                     # Distribute XP to all creatures that participated
@@ -941,6 +949,8 @@ def battle_cmd() -> None:
                     live.stop()
                     render_faint_message(console, wild_template.name, is_player=False)
                     render_victory_screen(console, player_template.name, wild_template.name, rewards)
+                    if medibot_msg:
+                        console.print(f"  [bold green]{medibot_msg}[/bold green]")
                     for name, new_level in leveled_creatures:
                         console.print(
                             f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
@@ -964,7 +974,7 @@ def battle_cmd() -> None:
                         player_owned = next_creature
                         participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
-                        player_max_hp = compute_max_hp(player_template, player_owned.level)
+                        player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
                         if player_owned.current_hp is None:
                             player_owned.current_hp = player_max_hp
                         last_narration = f"{player_template.name} switched in!"
@@ -974,6 +984,7 @@ def battle_cmd() -> None:
                         save(state)
                         live.stop()
                         render_defeat_screen(console)
+                        record_battle_loss(state)
                         _auto_heal(state)
                         save(state)
                         battle_active = False
@@ -1047,23 +1058,46 @@ def battle_cmd() -> None:
                 )
 
                 if success:
-                    # Create owned creature from wild and add to collection (CAPT-05)
+                    # Create owned creature from wild and roll its individuality
+                    # (nature + IVs, Phase A1) — unless a duplicate-species
+                    # auto-discard rule (opt-in only, hard rule: never on by
+                    # default) converts it straight to candy instead of a new
+                    # collection slot.
                     from devmon.models.creature import OwnedCreature as _OwnedCreature
-                    captured = _OwnedCreature(
-                        template_id=wild.template_id,
-                        level=wild.level,
-                        current_hp=wild.current_hp,
+                    from devmon.engine.candy_engine import (
+                        convert_to_candy,
+                        is_duplicate_species,
+                        should_auto_discard,
                     )
-                    state.creature_collection.append(captured)
+                    from devmon.engine.natures import roll_ivs, roll_nature
+
+                    _ad_config = load_config()
+                    auto_discard_report: Optional[str] = None
+                    if is_duplicate_species(state, wild.template_id) and should_auto_discard(
+                        wild.template_id, wild.rarity, _ad_config
+                    ):
+                        candy_amount = convert_to_candy(state, wild.template_id, wild.rarity, _ad_config)
+                        auto_discard_report = (
+                            f"Duplicate {wild_template.name} converted to {candy_amount} candy (auto-discard)."
+                        )
+                    else:
+                        captured = _OwnedCreature(
+                            template_id=wild.template_id,
+                            level=wild.level,
+                            current_hp=wild.current_hp,
+                            nature=roll_nature(),
+                            ivs=roll_ivs(),
+                        )
+                        state.creature_collection.append(captured)
+                        # Bug B fix: a captured wild creature's level may already
+                        # be at/above its species' evolution threshold (wild
+                        # encounter level scales independently of the player's
+                        # collection) — this path never runs the interactive
+                        # battle-victory evolution check, so queue a deferred
+                        # notification instead (see _queue_deferred_evolution_if_ready).
+                        _queue_deferred_evolution_if_ready(state, captured)
                     state.codex_state[wild.template_id] = "captured"
                     state.player.total_creatures_captured += 1
-                    # Bug B fix: a captured wild creature's level may already
-                    # be at/above its species' evolution threshold (wild
-                    # encounter level scales independently of the player's
-                    # collection) — this path never runs the interactive
-                    # battle-victory evolution check, so queue a deferred
-                    # notification instead (see _queue_deferred_evolution_if_ready).
-                    _queue_deferred_evolution_if_ready(state, captured)
                     rewards = compute_capture_rewards(wild.level, wild.rarity)
                     # XP booster multiplier (D-08)
                     if is_booster_active(state):
@@ -1091,6 +1125,8 @@ def battle_cmd() -> None:
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     render_capture_screen(console, wild_template.name, wild.rarity, rewards)
+                    if auto_discard_report:
+                        console.print(f"  {auto_discard_report}", style="dim white")
                     if player_leveled:
                         console.print(
                             f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
@@ -1133,7 +1169,7 @@ def battle_cmd() -> None:
                                 player_owned = next_creature
                                 participated.add(player_owned.template_id)
                                 player_template = get_creature(player_owned.template_id)
-                                player_max_hp = compute_max_hp(player_template, player_owned.level)
+                                player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
                                 if player_owned.current_hp is None:
                                     player_owned.current_hp = player_max_hp
                             else:
@@ -1141,6 +1177,7 @@ def battle_cmd() -> None:
                                 # Save BEFORE rendering (T-06-09)
                                 save(state)
                                 render_defeat_screen(console)
+                                record_battle_loss(state)
                                 _auto_heal(state)
                                 save(state)
                                 battle_active = False
@@ -1168,7 +1205,7 @@ def battle_cmd() -> None:
                 for i, c in enumerate(switchable, 1):
                     from devmon.render.party import display_name as _display_name
                     t = get_creature(c.template_id)
-                    c_max_hp = compute_max_hp(t, c.level)
+                    c_max_hp = effective_max_hp(t, c.level, c.ivs.get("hp", 0), c.nature)
                     c_hp = c.current_hp if c.current_hp is not None else c_max_hp
                     console.print(
                         f"  [{i}] {_display_name(c, t)}  LVL {c.level}  HP {c_hp}/{c_max_hp}"
@@ -1185,14 +1222,14 @@ def battle_cmd() -> None:
                     player_owned = switchable[idx - 1]
                     participated.add(player_owned.template_id)
                     player_template = get_creature(player_owned.template_id)
-                    player_max_hp = compute_max_hp(player_template, player_owned.level)
+                    player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
                     if player_owned.current_hp is None:
                         player_owned.current_hp = player_max_hp
 
                     # Wild gets a free attack (switch costs a turn)
                     w_abilities = get_available_abilities(wild_template.abilities, wild.level)
                     w_atk = compute_stat(wild_template.base_attack, wild.level)
-                    p_def = compute_stat(player_template.base_defense, player_owned.level)
+                    p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                     w_spd = compute_stat(wild_template.base_speed, wild.level)
                     effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                     crit = roll_crit(w_spd)
@@ -1213,7 +1250,7 @@ def battle_cmd() -> None:
                             player_owned = next_creature
                             participated.add(player_owned.template_id)
                             player_template = get_creature(player_owned.template_id)
-                            player_max_hp = compute_max_hp(player_template, player_owned.level)
+                            player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
                             if player_owned.current_hp is None:
                                 player_owned.current_hp = player_max_hp
                             last_narration = f"{player_template.name} switched in!"
@@ -1222,6 +1259,7 @@ def battle_cmd() -> None:
                             # Save BEFORE rendering (T-06-09)
                             save(state)
                             render_defeat_screen(console)
+                            record_battle_loss(state)
                             _auto_heal(state)
                             save(state)
                             battle_active = False
@@ -1249,6 +1287,8 @@ def battle_cmd() -> None:
                     item_def = items_catalog[item_id]
                     if item_def.category == "capsule":
                         continue  # capsules used via choice [3]
+                    if item_def.category == "gear":
+                        continue  # gear (e.g. Medibot Module) is passive, never "used" (Phase A1)
                     if item_def.category == "booster":
                         usable_items.append((item_id, item_def, qty))
                     elif item_def.restores_fainted:
@@ -1322,7 +1362,7 @@ def battle_cmd() -> None:
                         rev_idx = max(1, min(rev_idx, len(fainted)))
                         target = fainted[rev_idx - 1]
                     t_template = get_creature(target.template_id)
-                    t_max_hp = compute_max_hp(t_template, target.level)
+                    t_max_hp = effective_max_hp(t_template, target.level, target.ivs.get("hp", 0), target.nature)
                     item_narration = use_potion_on_creature(target, selected_def, t_max_hp)
                 else:
                     # Regular potion on active creature
@@ -1354,13 +1394,14 @@ def battle_cmd() -> None:
                         player_owned = next_creature
                         participated.add(player_owned.template_id)
                         player_template = get_creature(player_owned.template_id)
-                        player_max_hp = compute_max_hp(player_template, player_owned.level)
+                        player_max_hp = effective_max_hp(player_template, player_owned.level, player_owned.ivs.get("hp", 0), player_owned.nature)
                         if player_owned.current_hp is None:
                             player_owned.current_hp = player_max_hp
                     else:
                         state.encounter_queue = None
                         save(state)
                         render_defeat_screen(console)
+                        record_battle_loss(state)
                         _auto_heal(state)
                         save(state)
                         battle_active = False

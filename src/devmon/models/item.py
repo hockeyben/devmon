@@ -18,7 +18,10 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-ItemCategory = Literal["capsule", "potion", "booster"]
+ItemCategory = Literal["capsule", "potion", "booster", "gear"]
+"""'gear' (Phase A1): persistent, never-consumed items whose effect is
+"owning >=1 makes it active" — e.g. the Medibot Module. Distinct from
+'booster', which is consumed and grants a time-limited buff."""
 
 
 class ItemDefinition(BaseModel):

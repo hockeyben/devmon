@@ -26,11 +26,12 @@ app = typer.Typer()
 console = Console()
 
 # Category display order (D-01)
-CATEGORY_ORDER = ["capsule", "potion", "booster"]
+CATEGORY_ORDER = ["capsule", "potion", "booster", "gear"]
 CATEGORY_LABELS = {
     "capsule": "Capsules",
     "potion": "Potions",
     "booster": "Boosters",
+    "gear": "Gear",
 }
 
 

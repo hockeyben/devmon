@@ -148,6 +148,62 @@ def test_CURRENT_VERSION_matches_schema_version_default():
     assert CURRENT_VERSION == state.schema_version
 
 
+# --- Phase A1 model tests: individuality + care fields ---
+
+def test_owned_creature_defaults_nature_and_ivs():
+    from devmon.models.creature import OwnedCreature
+
+    owned = OwnedCreature(template_id="bugbyte")
+    assert owned.nature == "stable"
+    assert owned.ivs == {"hp": 0, "attack": 0, "defense": 0, "speed": 0}
+    assert owned.candies_fed == 0
+
+
+def test_owned_creature_nature_ivs_round_trip():
+    from devmon.models.creature import OwnedCreature
+
+    owned = OwnedCreature(
+        template_id="bugbyte",
+        nature="agile",
+        ivs={"hp": 3, "attack": 5, "defense": 7, "speed": 11},
+        candies_fed=4,
+    )
+    loaded = OwnedCreature.model_validate_json(owned.model_dump_json())
+    assert loaded.nature == "agile"
+    assert loaded.ivs == {"hp": 3, "attack": 5, "defense": 7, "speed": 11}
+    assert loaded.candies_fed == 4
+
+
+def test_gamestate_defaults_phase_a1_fields():
+    state = GameState.new_game("Ash")
+    assert state.candy == {}
+    assert state.last_center_heal_ts == 0.0
+    assert state.battle_win_streak == 0
+
+
+def test_gamestate_phase_a1_fields_round_trip():
+    state = GameState.new_game("Ash")
+    state.candy["bugbyte"] = 3
+    state.last_center_heal_ts = 12345.0
+    state.battle_win_streak = 4
+    loaded = GameState.model_validate_json(state.model_dump_json())
+    assert loaded.candy == {"bugbyte": 3}
+    assert loaded.last_center_heal_ts == 12345.0
+    assert loaded.battle_win_streak == 4
+
+
+def test_old_save_missing_phase_a1_fields_loads_with_clean_defaults():
+    """Forward-compat: a save predating Phase A1 loads with clean defaults."""
+    old_json = json.dumps({
+        "schema_version": 11,
+        "player": {"name": "OldTrainer"},
+    })
+    state = GameState.model_validate_json(old_json)
+    assert state.candy == {}
+    assert state.last_center_heal_ts == 0.0
+    assert state.battle_win_streak == 0
+
+
 def test_full_migration_chain_v0_to_v11():
     """Schema migration: v0 data migrates cleanly to v11 producing valid GameState."""
     from devmon.persistence.migrations import migrate
