@@ -162,3 +162,5 @@ Stopped at: Phase 999.1 paused — art rendering approach TBD
 Resume file: .planning/phases/999.1-improve-ascii-art-for-all-25-creatures/999.1-CONTEXT.md
 
 - [art-v4 2026-07-07]: Roster art switched to hand-crafted Tuxemon sprites (CC BY-SA; per-monster credits in art/CREDITS.md; mapping chosen by hand from the 411-monster catalog — scratchpad devmon_tuxemon_map.json). Back-view sprites in art/back/ enable future player-side battle rendering. AI-generation pipeline (ComfyUI+FLUX+LoRA) remains available for bespoke additions.
+
+- [follow-ups 2026-07-07]: All three deferred threads closed: battle shows player-creature BACK sprites (art/back/, shrink-over-trim 20-row cap, width 25->34 adaptive); wide-terminal adaptive art (creature panels 30->56 cols, evolution 24->40 per panel); UAT automated via scripts/uat_smoke.py (23/23; only multi-terminal-emulator check and a handful of purely visual judgments remain human — see phase UAT files). Smoke harness found+fixed 3 real bugs: evolution-accept NameError, Live-context freeze on items/switch re-entry, dead pending_evolution_notifications path (now queued on over-threshold captures).
