@@ -32,29 +32,70 @@ def _seed_for_date(day: date) -> int:
     return int(digest[:16], 16)
 
 
-def todays_npc_ids(all_ids: list[str], today: Optional[date] = None) -> list[str]:
+def todays_npc_ids(
+    all_ids: list[str], today: Optional[date] = None, count: int = NPCS_IN_TOWN_PER_DAY
+) -> list[str]:
     """Return the NPC ids that are "in town" today (deterministic per day).
 
     Args:
         all_ids: All known NPC ids (sort order doesn't matter -- sorted here
             for determinism regardless of caller-provided ordering).
         today: The date to compute rotation for. Defaults to date.today().
+        count: How many ids to pick (default NPCS_IN_TOWN_PER_DAY). Exposed
+            so npcs_in_town_today (Phase B2) can request a partial slot
+            count when a resident NPC already occupies one slot.
 
     Returns:
-        List of NPC ids in town today, length min(NPCS_IN_TOWN_PER_DAY, len(all_ids)).
+        List of NPC ids in town today, length min(count, len(all_ids)).
     """
     day = today or date.today()
     pool = sorted(all_ids)
     if not pool:
         return []
     rng = random.Random(_seed_for_date(day))
-    count = min(NPCS_IN_TOWN_PER_DAY, len(pool))
-    return sorted(rng.sample(pool, k=count))
+    k = min(count, len(pool))
+    return sorted(rng.sample(pool, k=k))
 
 
 def is_npc_in_town(npc_id: str, all_ids: list[str], today: Optional[date] = None) -> bool:
     """Return True if npc_id is in today's rotation."""
     return npc_id in todays_npc_ids(all_ids, today)
+
+
+def npcs_in_town_today(
+    all_npcs: "dict[str, NPCDefinition]",
+    current_region: str,
+    today: Optional[date] = None,
+) -> list[str]:
+    """Return NPC ids in town today, honoring Phase B2 region gating.
+
+    The NPC whose `.region` matches `current_region` (if any) is always in
+    town -- travel there and that NPC never rotates away. The remaining
+    NPCS_IN_TOWN_PER_DAY - 1 slot(s) are filled by the existing date-seeded
+    rotation among the OTHER NPCs, so daily rotation still surprises. If no
+    NPC's region matches current_region (e.g. Cloud Reaches currently has no
+    resident merchant), falls back to the original full-pool rotation
+    unchanged.
+
+    Args:
+        all_npcs: Full {npc_id: NPCDefinition} catalog.
+        current_region: The player's GameState.current_region.
+        today: Date override for testing.
+
+    Returns:
+        Sorted list of NPC ids in town today.
+    """
+    all_ids = list(all_npcs.keys())
+    resident_id = next(
+        (nid for nid, npc in all_npcs.items() if npc.region == current_region), None
+    )
+    if resident_id is None:
+        return todays_npc_ids(all_ids, today)
+
+    other_ids = [nid for nid in all_ids if nid != resident_id]
+    remaining_slots = max(0, NPCS_IN_TOWN_PER_DAY - 1)
+    rotated = todays_npc_ids(other_ids, today, count=remaining_slots) if remaining_slots and other_ids else []
+    return sorted({resident_id, *rotated})
 
 
 def week_key(day: Optional[date] = None) -> str:

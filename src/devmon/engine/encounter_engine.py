@@ -87,30 +87,45 @@ AI_TOOL_NAMES: set[str] = {"claude", "aider", "cursor", "copilot"}
 # Creature / rarity selection
 # ---------------------------------------------------------------------------
 
-def select_encounter_creature(
-    registry: dict[str, CreatureTemplate],
-) -> tuple[str, str]:
-    """Roll a random rarity then pick a creature whose pool includes that rarity.
+def roll_encounter_rarity() -> str:
+    """Roll a random rarity following D-11 weights.
 
-    Rarity weights follow D-11:
-        Common 65%, Uncommon 20%, Rare 10%, Epic 4%, Legendary 1%
+    Rarity weights: Common 65%, Uncommon 20%, Rare 10%, Epic 4%, Legendary 1%.
+
+    Returns:
+        One of "common", "uncommon", "rare", "epic", "legendary".
+    """
+    rarities = list(RARITY_WEIGHTS.keys())
+    weights = [RARITY_WEIGHTS[r] for r in rarities]
+    return random.choices(rarities, weights=weights, k=1)[0]
+
+
+def select_creature_for_rarity(
+    registry: dict[str, CreatureTemplate],
+    rolled_rarity: str,
+    type_weights: "dict[str, float] | None" = None,
+) -> str:
+    """Pick a creature from registry matching rolled_rarity (fallback chain).
 
     Fallback chain (RESEARCH Pattern 5):
         1. Filter registry to creatures with rolled_rarity in allowed_rarities.
         2. If empty, filter to creatures whose template.rarity == rolled_rarity.
         3. If still empty, use any common creature (template.rarity == "common").
-        4. If absolutely no match, pick any creature at random.
+        4. If absolutely no match, pick any creature in registry.
 
     Args:
-        registry: Mapping of creature_id -> CreatureTemplate (all loaded creatures).
+        registry: Mapping of creature_id -> CreatureTemplate to pick from
+            (callers may pre-filter this to a region's candidate pool —
+            see engine.regions.region_candidate_registry).
+        rolled_rarity: The already-rolled rarity tier (see roll_encounter_rarity).
+        type_weights: Optional {CreatureType: multiplier} map (Phase B2
+            biome modifiers — see engine.biomes.type_weight_multipliers).
+            When given, the final pick is a weighted random choice by each
+            candidate's template.type instead of a uniform random.choice.
 
     Returns:
-        (creature_id, rolled_rarity) tuple.
+        The chosen creature_id.
     """
-    rarities = list(RARITY_WEIGHTS.keys())
-    weights = [RARITY_WEIGHTS[r] for r in rarities]
-    rolled_rarity: str = random.choices(rarities, weights=weights, k=1)[0]
-
     # Step 1: creatures that explicitly allow this rarity
     pool = [
         cid for cid, tmpl in registry.items()
@@ -135,7 +150,31 @@ def select_encounter_creature(
     if not pool:
         pool = list(registry.keys())
 
-    creature_id = random.choice(pool)
+    if type_weights:
+        weight_list = [type_weights.get(registry[cid].type, 1.0) for cid in pool]
+        return random.choices(pool, weights=weight_list, k=1)[0]
+
+    return random.choice(pool)
+
+
+def select_encounter_creature(
+    registry: dict[str, CreatureTemplate],
+) -> tuple[str, str]:
+    """Roll a random rarity then pick a creature whose pool includes that rarity.
+
+    Thin composition of roll_encounter_rarity() + select_creature_for_rarity()
+    kept as a single call for existing callers/tests. _spawn_encounter calls
+    the two steps separately so it can apply region filtering and the
+    temporal-rift rarity bump (engine.biomes) between the roll and the pick.
+
+    Args:
+        registry: Mapping of creature_id -> CreatureTemplate (all loaded creatures).
+
+    Returns:
+        (creature_id, rolled_rarity) tuple.
+    """
+    rolled_rarity = roll_encounter_rarity()
+    creature_id = select_creature_for_rarity(registry, rolled_rarity)
     return creature_id, rolled_rarity
 
 
@@ -165,6 +204,7 @@ def compute_encounter_level(
     template: CreatureTemplate,
     rolled_rarity: str,
     encounter_type: str,
+    region_band: "tuple[int, int] | None" = None,
 ) -> int:
     """Compute the encounter level for a wild creature spawn.
 
@@ -179,11 +219,29 @@ def compute_encounter_level(
 
     The "rare" encounter type uses random.randint(2, 3) instead of flat 2 (D-12).
 
+    Phase B2 region banding rule (region_band, optional): once the base
+    formula above produces `result`, it is clamped into the INTERSECTION of
+    the region's level_band and the species' own level_range —
+    `[max(region_lo, species_lo), min(region_hi, species_hi)]` — when that
+    intersection is non-empty. If the species' level_range doesn't overlap
+    the region band at all (expected for the 27 pre-Phase-B1 species, whose
+    level_range predates the region system and is looser than their
+    region's band), the region band wins outright and the species range is
+    ignored for clamping purposes. This keeps a spawn's level meaningfully
+    inside "the zone the player is standing in" — since travel gating
+    already requires player_level >= region_band[0], the clamp mostly just
+    prevents rare/legendary/high-type-bonus rolls from drifting a spawn
+    below the region's floor for a low-level player who just unlocked it.
+    The final max(1, ...) floor (D-18) always applies last.
+
     Args:
         player_level: Current player level (from PlayerProfile).
         template: The creature template being encountered.
         rolled_rarity: The rarity rolled for this encounter (may differ from template.rarity).
         encounter_type: One of "normal", "rare", "elite", "boss".
+        region_band: Optional (min_level, max_level) of the current region
+            (see engine.regions.RegionDefinition.level_band). None (default)
+            preserves the pre-Phase-B2 unclamped behavior exactly.
 
     Returns:
         Positive integer encounter level (>= 1).
@@ -208,6 +266,16 @@ def compute_encounter_level(
     # D-16: ±10% variance
     variance = max(1, int(base * 0.10))
     result = base + random.randint(-variance, variance)
+
+    if region_band is not None:
+        region_lo, region_hi = region_band
+        species_lo, species_hi = template.level_range
+        eff_lo, eff_hi = max(region_lo, species_lo), min(region_hi, species_hi)
+        if eff_lo > eff_hi:
+            # No overlap between the region band and this species' own
+            # level_range -- region band takes precedence (see docstring).
+            eff_lo, eff_hi = region_lo, region_hi
+        result = max(eff_lo, min(eff_hi, result))
 
     # D-18: floor at 1
     return max(1, result)
@@ -282,6 +350,7 @@ def tick_encounter(
     state: GameState,
     config: dict,
     now: float | None = None,
+    events: "list[dict] | None" = None,
 ) -> str | None:
     """Check encounter timers and possibly spawn a wild creature.
 
@@ -298,8 +367,16 @@ def tick_encounter(
 
     Args:
         state: Mutable GameState. Modified in-place on spawn.
-        config: Game config dict (not used in this plan, reserved for future).
+        config: Game config dict. Consulted for game.biomes_enabled and
+            game.biome_* tunables (Phase B2 — see engine/biomes.py).
         now: Unix timestamp override (for testing). Defaults to time.time().
+        events: The batch of shell events being processed this tick (Phase
+            B2 biome modifiers — used to detect a git_commit for the
+            temporal-rift rarity bump and to sniff the workspace language
+            from the most recent event's cwd). None/empty means both biome
+            signals are simply inactive this tick; callers that share this
+            batch with process_ai_events (main.py, engine/sync.py) should
+            pass the same list through here.
 
     Returns:
         Rich markup notification string on spawn, None otherwise.
@@ -320,7 +397,7 @@ def tick_encounter(
     if cooldown_ok and tick_ok:
         chance = ENCOUNTER_BASE_CHANCE + (state.encounter_roll_count * ENCOUNTER_CHANCE_ESCALATION)
         if random.random() < chance:
-            notification = _spawn_encounter(state, now)
+            notification = _spawn_encounter(state, now, config, events)
         else:
             # Miss: escalate probability and advance tick timer
             state.encounter_roll_count += 1
@@ -331,34 +408,76 @@ def tick_encounter(
         ai_tick_ok = now >= state.last_encounter_time + AI_BOOST_INTERVAL_SECONDS
         if ai_tick_ok:
             if random.random() < AI_BOOST_CHANCE:
-                notification = _spawn_encounter(state, now)
+                notification = _spawn_encounter(state, now, config, events)
                 # AI spawn also resets normal cooldown (D-03)
                 state.encounter_cooldown_until = now + ENCOUNTER_COOLDOWN_SECONDS
 
     return notification
 
 
-def _spawn_encounter(state: GameState, now: float) -> str:
+def _spawn_encounter(
+    state: GameState,
+    now: float,
+    config: "dict | None" = None,
+    events: "list[dict] | None" = None,
+) -> str:
     """Create and queue a new encounter. Internal helper for tick_encounter.
 
     Selects creature, rolls type and level, creates EncounterEntry, updates
     all relevant state fields.
 
+    Phase B2: the candidate pool is restricted to state.current_region's
+    species (engine.regions.region_candidate_registry — falls back to the
+    full roster if the region resolves to zero candidates), the rolled
+    rarity may be bumped one tier by a "temporal rift" if the event batch
+    contains a git_commit (engine.biomes.maybe_bump_rarity), and the final
+    creature pick is weighted by night-shift/workspace-language type
+    multipliers (engine.biomes.type_weight_multipliers). The spawn level is
+    then banded into the region's level_band (see compute_encounter_level's
+    region_band docs).
+
     Args:
         state: Mutable GameState.
         now: Current unix timestamp.
+        config: Game config dict (biome tunables). None treated as {}.
+        events: Event batch for this tick (biome signal detection).
 
     Returns:
         Rich markup notification string.
     """
+    from devmon.engine.biomes import maybe_bump_rarity, type_weight_multipliers
     from devmon.engine.creature_loader import load_all_creatures
+    from devmon.engine.regions import (
+        DEFAULT_REGION_ID,
+        get_region,
+        region_available_rarities,
+        region_candidate_registry,
+    )
+
+    if config is None:
+        config = {}
 
     registry = load_all_creatures()
-    creature_id, rolled_rarity = select_encounter_creature(registry)
+    region_id = getattr(state, "current_region", None) or DEFAULT_REGION_ID
+    pool_registry = region_candidate_registry(region_id, registry)
+
+    rolled_rarity = roll_encounter_rarity()
+    available_rarities = region_available_rarities(region_id, registry)
+    rolled_rarity = maybe_bump_rarity(rolled_rarity, available_rarities, events, config)
+
+    type_weights = type_weight_multipliers(config, now=now, events=events)
+    creature_id = select_creature_for_rarity(pool_registry, rolled_rarity, type_weights=type_weights)
+
     encounter_type = roll_encounter_type()
     template = registry[creature_id]
+
+    try:
+        region_band: "tuple[int, int] | None" = tuple(get_region(region_id).level_band)
+    except KeyError:
+        region_band = None
+
     level = compute_encounter_level(
-        state.player.level, template, rolled_rarity, encounter_type
+        state.player.level, template, rolled_rarity, encounter_type, region_band=region_band
     )
 
     entry = EncounterEntry(

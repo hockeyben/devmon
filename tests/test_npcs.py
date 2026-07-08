@@ -120,6 +120,64 @@ def test_npc_rotation_order_independent_of_input_order():
 
 
 # ---------------------------------------------------------------------------
+# Phase B2: region-gated town presence
+# ---------------------------------------------------------------------------
+
+def test_resident_npc_always_in_town_for_its_region():
+    """The NPC whose region matches current_region is in town every day,
+    regardless of the date-seeded rotation (voss is termina_meadows's
+    resident merchant)."""
+    from devmon.engine.npc_loader import load_all_npcs
+    from devmon.engine.npcs import npcs_in_town_today
+
+    all_npcs = load_all_npcs()
+    for d in range(1, 29):
+        in_town = npcs_in_town_today(all_npcs, "termina_meadows", date(2026, 3, d))
+        assert "voss" in in_town, f"voss should always be in town on day {d}"
+
+
+def test_non_resident_slot_still_rotates():
+    """The second slot (filled from the OTHER NPCs) varies across dates even
+    though the resident NPC never moves."""
+    from devmon.engine.npc_loader import load_all_npcs
+    from devmon.engine.npcs import npcs_in_town_today
+
+    all_npcs = load_all_npcs()
+    others_seen = set()
+    for d in range(1, 29):
+        in_town = npcs_in_town_today(all_npcs, "termina_meadows", date(2026, 3, d))
+        assert len(in_town) == 2
+        others_seen.update(nid for nid in in_town if nid != "voss")
+    assert len(others_seen) >= 2, f"non-resident slot barely varies: {others_seen}"
+
+
+def test_region_with_no_resident_npc_falls_back_to_full_rotation():
+    """cloud_reaches has no matching NPC -- npcs_in_town_today must fall back
+    to the original unfiltered rotation rather than granting a phantom slot."""
+    from devmon.engine.npc_loader import load_all_npcs
+    from devmon.engine.npcs import npcs_in_town_today, todays_npc_ids
+
+    all_npcs = load_all_npcs()
+    day = date(2026, 7, 8)
+    gated = npcs_in_town_today(all_npcs, "cloud_reaches", day)
+    ungated = todays_npc_ids(list(all_npcs.keys()), day)
+    assert gated == ungated
+
+
+def test_different_regions_yield_different_residents():
+    """Traveling to a different resident region swaps who's guaranteed in town."""
+    from devmon.engine.npc_loader import load_all_npcs
+    from devmon.engine.npcs import npcs_in_town_today
+
+    all_npcs = load_all_npcs()
+    day = date(2026, 7, 8)
+    assert "voss" in npcs_in_town_today(all_npcs, "termina_meadows", day)
+    assert "kip" in npcs_in_town_today(all_npcs, "kernel_depths", day)
+    assert "nyx" in npcs_in_town_today(all_npcs, "compiler_wastes", day)
+    assert "the_intern" in npcs_in_town_today(all_npcs, "voidnet", day)
+
+
+# ---------------------------------------------------------------------------
 # Weekly quest turn-in
 # ---------------------------------------------------------------------------
 
@@ -235,12 +293,16 @@ def test_old_save_without_field_loads_cleanly(tmp_save_dir):
 # CLI
 # ---------------------------------------------------------------------------
 
-def _todays_in_town_names():
+def _todays_in_town_names(current_region: str = "termina_meadows"):
+    """Phase B2: mirrors commands/npcs.py's _in_town_today(), region-gated.
+    A fresh GameState.new_game() always starts in "termina_meadows" (its
+    default current_region), matching the CLI tests below that don't
+    explicitly `devmon travel` first."""
     from devmon.engine.npc_loader import load_all_npcs
-    from devmon.engine.npcs import todays_npc_ids
+    from devmon.engine.npcs import npcs_in_town_today
 
     all_npcs = load_all_npcs()
-    ids = todays_npc_ids(list(all_npcs.keys()))
+    ids = npcs_in_town_today(all_npcs, current_region)
     return [all_npcs[i] for i in ids]
 
 
@@ -273,11 +335,13 @@ def test_npcs_visit_shows_stock_deal_and_quest(tmp_save_dir):
 def test_npcs_visit_out_of_town_rejected(tmp_save_dir):
     from typer.testing import CliRunner
     from devmon.engine.npc_loader import load_all_npcs
-    from devmon.engine.npcs import todays_npc_ids
+    from devmon.engine.npcs import npcs_in_town_today
     from devmon.main import app as devmon_app
 
+    # No save exists yet -- the CLI's _in_town_today() falls back to the
+    # default current_region ("termina_meadows"), same as a fresh GameState.
     all_npcs = load_all_npcs()
-    in_town = set(todays_npc_ids(list(all_npcs.keys())))
+    in_town = set(npcs_in_town_today(all_npcs, "termina_meadows"))
     away = next(i for i in all_npcs if i not in in_town)
 
     runner = CliRunner()

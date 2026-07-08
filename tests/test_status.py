@@ -94,6 +94,31 @@ def test_stats_panel_shows_all_prof04_fields(runner, tmp_devmon_home):
     assert "captures" in output_lower, "PROF-04: 'Captures' must appear in status output"
 
 
+def test_status_shows_current_region(runner, tmp_devmon_home):
+    """Phase B2: status Identity panel surfaces the player's current region display name."""
+    from devmon.main import app
+    result = runner.invoke(app, ["status"])
+    assert result.exit_code == 0
+    assert "Region" in result.output
+    assert "Termina Meadows" in result.output
+
+
+def test_status_shows_region_after_travel(tmp_devmon_home):
+    from typer.testing import CliRunner
+    from devmon.main import app
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    state = GameState.new_game("Trainer")
+    state.current_region = "kernel_depths"
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["status"])
+    assert result.exit_code == 0
+    assert "Kernel Depths" in result.output
+
+
 def test_status_profile_stats_reflect_player_data(tmp_devmon_home):
     """PROF-04: Status output reflects actual PlayerProfile stat values
     (sessions, streak_count, battles_won, total_creatures_captured)."""

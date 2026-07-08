@@ -65,15 +65,27 @@ def test_all_creatures_load_through_creature_loader():
 # regions.json structure + membership
 # ---------------------------------------------------------------------------
 
-def test_regions_json_is_pure_data_not_loaded_by_app_code():
-    """B1 constraint: regions.json exists but no engine/commands/models code may
-    import or reference it yet (that wiring is Phase B2's job)."""
+def test_regions_json_loaded_only_through_engine_regions():
+    """Phase B2 wires regions.json in via engine/regions.py (single loading
+    point, mirroring engine/npc_loader.py and engine/recipe_loader.py's
+    DEVMON_HOME-override pattern for other single-file catalogs). Everything
+    else (travel, encounters, NPC gating, status) must go through that
+    module's API rather than re-reading the raw file, so this test now
+    checks the *narrower* invariant: only engine/regions.py references the
+    literal filename "regions.json" anywhere in src/devmon. (Phase B1's
+    original assertion here -- "nothing loads it yet" -- was superseded by
+    this phase's job of wiring it in.)"""
     src_dir = REPO_ROOT / "src" / "devmon"
+    expected_loader = src_dir / "engine" / "regions.py"
     offenders = []
     for py_file in src_dir.rglob("*.py"):
+        if py_file == expected_loader:
+            continue
         if "regions.json" in py_file.read_text(encoding="utf-8"):
             offenders.append(str(py_file.relative_to(REPO_ROOT)))
-    assert not offenders, f"regions.json must not be referenced by app code yet: {offenders}"
+    assert not offenders, (
+        f"regions.json must only be referenced by engine/regions.py, not: {offenders}"
+    )
 
 
 def test_regions_json_has_expected_regions():

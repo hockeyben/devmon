@@ -169,6 +169,18 @@ class GameState(BaseModel):
     defaults cleanly via default_factory (field-presence-safe, no explicit
     migration needed — same pattern as pending_auto_battle_reports)."""
 
+    # Phase B2 — region travel system
+    current_region: str = "termina_meadows"
+    """Region id the player is currently in (matches engine.regions'
+    DEFAULT_REGION_ID / the bundled region data's keys). Gates wild-encounter spawn
+    pools (engine.encounter_engine), NPC town presence (engine.npcs), and
+    is surfaced on `devmon status`. Set via `devmon travel <region>`
+    (engine.regions.is_region_unlocked gates the destination by player
+    level). A plain string default makes this field-presence-safe for old
+    saves — Pydantic backfills "termina_meadows" for anyone who saved before
+    Phase B2 without needing a numbered schema migration (same pattern as
+    npc_quest_completions above)."""
+
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":
         """Bootstrap a fresh game state for a new player (SAVE-01 fresh install)."""

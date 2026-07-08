@@ -108,6 +108,13 @@ DEFAULT_CONFIG: dict = {
         "auto_discard_enabled": False,
         "auto_discard_rarities": [],
         "auto_discard_species": [],
+        # Phase B2 — biome modifiers (engine/biomes.py). Master switch plus
+        # tunable multiplier values; the type/marker-file mappings themselves
+        # stay as code constants (they're structural, not balance knobs).
+        "biomes_enabled": True,
+        "biome_night_shift_multiplier": 2.0,   # Shadow/Psychic weight 22:00-06:00 local
+        "biome_rift_chance": 0.25,             # temporal rift rarity-tier bump chance
+        "biome_language_multiplier": 1.5,      # workspace-language type weight boost
     },
     "ui": {
         "theme": "neon",

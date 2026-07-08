@@ -146,7 +146,7 @@ def test_craft_output_has_no_capture_percentages(tmp_save_dir):
 def test_npc_surfaces_have_no_capture_percentages(tmp_save_dir):
     from typer.testing import CliRunner
     from devmon.engine.npc_loader import load_all_npcs
-    from devmon.engine.npcs import todays_npc_ids
+    from devmon.engine.npcs import npcs_in_town_today
     from devmon.main import app as devmon_app
 
     runner = CliRunner()
@@ -154,8 +154,12 @@ def test_npc_surfaces_have_no_capture_percentages(tmp_save_dir):
     assert result.exit_code == 0, result.output
     _assert_no_capture_language(result.output, "devmon npcs")
 
+    # Phase B2: `devmon npcs` is region-gated off GameState.current_region.
+    # No save exists yet, so the CLI falls back to the default region
+    # ("termina_meadows") -- match that here rather than the old unfiltered
+    # rotation.
     all_npcs = load_all_npcs()
-    for npc_id in todays_npc_ids(list(all_npcs.keys())):
+    for npc_id in npcs_in_town_today(all_npcs, "termina_meadows"):
         visit = runner.invoke(devmon_app, ["npcs", "visit", npc_id])
         assert visit.exit_code == 0, visit.output
         _assert_no_capture_language(visit.output, f"devmon npcs visit {npc_id}")

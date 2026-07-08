@@ -87,6 +87,13 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
     identity_grid.add_row(Text("Level"), Text(str(p.level), style=theme["level"]))
     identity_grid.add_row(Text("Currency"), Text(f"{p.currency} Bits", style="gold1"))
 
+    from devmon.engine.regions import get_region
+    try:
+        region_name = get_region(state.current_region).name
+    except Exception:
+        region_name = state.current_region.replace("_", " ").title()
+    identity_grid.add_row(Text("Region"), Text(region_name, style=theme["stat_value"]))
+
     from devmon.engine.item_engine import is_booster_active, booster_remaining_minutes
     if is_booster_active(state):
         remaining = booster_remaining_minutes(state)

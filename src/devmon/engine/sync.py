@@ -67,7 +67,9 @@ def sync_game_state(config: dict) -> None:
 
         process_ai_events(state, events)
         check_expiry(state)
-        tick_encounter(state, config)
+        # Pass this batch's events through for Phase B2 biome modifiers
+        # (mirrors main.py's _process_event_log_on_startup wiring).
+        tick_encounter(state, config, events=events)
 
         # Auto-fight/auto-skip resolution (engine/auto_battle.py). Report
         # stays queued in pending_auto_battle_reports -- this quiet path

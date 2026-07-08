@@ -36,6 +36,7 @@ from devmon.commands import status as status_cmd
 from devmon.commands import statusline as statusline_cmd
 from devmon.commands import quests as quests_cmd
 from devmon.commands import achievements as achievements_cmd
+from devmon.commands import travel as travel_cmd
 from devmon.commands.hook import track_app
 from devmon.config.defaults import DEFAULT_CONFIG
 from devmon.config.loader import load_config
@@ -68,6 +69,7 @@ app.add_typer(quests_cmd.app, name="quests")
 app.add_typer(achievements_cmd.app, name="achievements")
 app.add_typer(craft_cmd.app, name="craft")
 app.add_typer(npcs_cmd.app, name="npcs")
+app.add_typer(travel_cmd.app, name="travel")
 app.add_typer(indicator_cmd.app, name="indicator")
 app.add_typer(protocol_cmd.app, name="protocol")
 app.command(name="statusline")(statusline_cmd.statusline)
@@ -153,8 +155,10 @@ def _process_event_log_on_startup() -> None:
         # Check encounter expiry first (D-09) — clear stale encounters before ticking
         expiry_msg = check_expiry(state)
 
-        # Tick encounter timer (D-01, D-02, D-03) — may spawn new encounter
-        notification_msg = tick_encounter(state, config)
+        # Tick encounter timer (D-01, D-02, D-03) — may spawn new encounter.
+        # Pass this batch's events through for Phase B2 biome modifiers
+        # (temporal-rift git_commit detection + workspace language sniff).
+        notification_msg = tick_encounter(state, config, events=events)
 
         # Auto-fight/auto-skip resolution (engine/auto_battle.py) — resolve
         # BEFORE save_state so the mutation (rewards, encounter clear, etc.)

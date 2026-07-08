@@ -42,12 +42,20 @@ def _resolve_npc(name: str):
 
 
 def _in_town_today() -> tuple[dict, list]:
-    """Return (all_npcs dict, list of NPCDefinitions in town today)."""
+    """Return (all_npcs dict, list of NPCDefinitions in town today).
+
+    Phase B2: region-gated -- the NPC resident to the player's
+    current_region is always included; see engine.npcs.npcs_in_town_today.
+    """
     from devmon.engine.npc_loader import load_all_npcs
-    from devmon.engine.npcs import todays_npc_ids
+    from devmon.engine.npcs import npcs_in_town_today
+    from devmon.engine.regions import DEFAULT_REGION_ID
+    from devmon.persistence.save import load
 
     all_npcs = load_all_npcs()
-    today_ids = todays_npc_ids(list(all_npcs.keys()))
+    state = load()
+    current_region = state.current_region if state is not None else DEFAULT_REGION_ID
+    today_ids = npcs_in_town_today(all_npcs, current_region)
     in_town = [all_npcs[i] for i in today_ids if i in all_npcs]
     return all_npcs, in_town
 
