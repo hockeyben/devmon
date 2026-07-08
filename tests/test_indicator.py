@@ -147,6 +147,260 @@ class TestIndicatorCli:
         result = runner.invoke(app, ["status"])
         assert "not running" in result.output.lower()
 
+    def test_indicator_status_shows_resolved_mode(self, tmp_path, monkeypatch):
+        from typer.testing import CliRunner
+        from devmon.commands.indicator import app
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        runner = CliRunner()
+        result = runner.invoke(app, ["status"])
+        assert "mode: persistent" in result.output
+
+
+# === Phase 11.1 tests: status strip, xp bar math, persistence modes ===
+
+class TestStatusStrip:
+    """Strip rendering (Phase 11.1 requirement 1) -- exact strings + widths."""
+
+    def test_build_strip_emoji_idle(self):
+        from devmon.daemon.frames import build_status_strip
+        text, width = build_status_strip(8, 181, 438, encounter=False, use_emoji=True, glyph_frame_idx=0)
+        assert text == "⚡Lv.8 ▰▰▰▱▱▱▱▱ 41%"
+        assert width == 19
+
+    def test_build_strip_emoji_liveness_frame_toggles_glyph_only(self):
+        from devmon.daemon.frames import build_status_strip
+        t0, w0 = build_status_strip(8, 181, 438, encounter=False, use_emoji=True, glyph_frame_idx=0)
+        t1, w1 = build_status_strip(8, 181, 438, encounter=False, use_emoji=True, glyph_frame_idx=1)
+        assert t0 != t1
+        assert w0 == w1 == 19  # width stable across liveness frames
+        assert "Lv.8 ▰▰▰▱▱▱▱▱ 41%" in t0
+        assert "Lv.8 ▰▰▰▱▱▱▱▱ 41%" in t1  # bar/Lv text unchanged, only glyph differs
+
+    def test_build_strip_ascii_idle(self):
+        from devmon.daemon.frames import build_status_strip
+        text, width = build_status_strip(8, 181, 438, encounter=False, use_emoji=False, glyph_frame_idx=0)
+        assert text == "DevMon Lv.8 [===-----] 41%"
+        assert width == 26
+
+    def test_build_strip_ascii_liveness_frame_bold_toggle(self):
+        from devmon.daemon.frames import build_status_strip
+        t0, w0 = build_status_strip(8, 181, 438, encounter=False, use_emoji=False, glyph_frame_idx=0)
+        t1, w1 = build_status_strip(8, 181, 438, encounter=False, use_emoji=False, glyph_frame_idx=1)
+        assert t0 != t1
+        assert w0 == w1 == 26
+        assert "\033[1m" in t1
+
+    def test_build_strip_encounter_emoji(self):
+        from devmon.daemon.frames import build_status_strip
+        text, width = build_status_strip(8, 181, 438, encounter=True, use_emoji=True, glyph_frame_idx=0)
+        assert text == "⚠ WILD ENCOUNTER — devmon battle"
+        assert width == 33
+
+    def test_build_strip_encounter_ascii(self):
+        from devmon.daemon.frames import build_status_strip
+        text, width = build_status_strip(8, 181, 438, encounter=True, use_emoji=False, glyph_frame_idx=0)
+        assert text == "! ENCOUNTER: devmon battle"
+        assert width == 26
+
+    def test_ansi_codes_excluded_from_visible_width(self):
+        from devmon.daemon.frames import visible_width
+        assert visible_width("\033[1mDevMon\033[0m") == len("DevMon")
+
+    def test_wide_emoji_counted_as_two_columns(self):
+        from devmon.daemon.frames import visible_width
+        assert visible_width("⚡") == 2
+
+
+class TestXpBarMath:
+    """XP bar math (Phase 11.1 requirement 6): 0%, 41%, 99%, level boundary."""
+
+    def test_bar_zero_percent(self):
+        from devmon.daemon.frames import compute_bar_progress
+        assert compute_bar_progress(0, 100) == (0, 0)
+
+    def test_bar_41_percent(self):
+        from devmon.daemon.frames import compute_bar_progress
+        assert compute_bar_progress(181, 438) == (3, 41)
+
+    def test_bar_99_percent_not_full(self):
+        from devmon.daemon.frames import compute_bar_progress
+        # Floor (not round) -- bar must never show full before 100%.
+        assert compute_bar_progress(99, 100) == (7, 99)
+
+    def test_bar_level_boundary_full(self):
+        from devmon.daemon.frames import compute_bar_progress
+        assert compute_bar_progress(438, 438) == (8, 100)
+
+    def test_bar_needed_zero_is_defensive_zero(self):
+        from devmon.daemon.frames import compute_bar_progress
+        assert compute_bar_progress(50, 0) == (0, 0)
+
+
+class TestIndicatorModeResolution:
+    """Persistence mode resolution (Phase 11.1 requirement 3)."""
+
+    def test_default_mode_is_persistent(self):
+        from devmon.daemon.indicator import resolve_indicator_mode
+        assert resolve_indicator_mode({"ui": {}}) == "persistent"
+
+    def test_explicit_flash_mode(self):
+        from devmon.daemon.indicator import resolve_indicator_mode
+        assert resolve_indicator_mode({"ui": {"indicator_mode": "flash"}}) == "flash"
+
+    def test_explicit_off_mode(self):
+        from devmon.daemon.indicator import resolve_indicator_mode
+        assert resolve_indicator_mode({"ui": {"indicator_mode": "off"}}) == "off"
+
+    def test_invalid_mode_falls_back_to_persistent(self):
+        from devmon.daemon.indicator import resolve_indicator_mode
+        assert resolve_indicator_mode({"ui": {"indicator_mode": "bogus"}}) == "persistent"
+
+    def test_default_config_declares_persistent_mode(self):
+        from devmon.config.defaults import DEFAULT_CONFIG
+        assert DEFAULT_CONFIG["ui"]["indicator_mode"] == "persistent"
+
+    def test_off_mode_daemon_exits_immediately_no_pid_written(self, tmp_path, monkeypatch):
+        from devmon.daemon import indicator as indicator_mod
+        monkeypatch.setattr(indicator_mod, "resolve_indicator_mode", lambda: "off")
+        pf = tmp_path / "test.pid"
+        indicator_mod.run_indicator_daemon(pid_file=pf)
+        assert not pf.exists()
+
+
+class TestIndicatorSnapshot:
+    """Save-file reading for the status strip (level/xp/encounter/hidden)."""
+
+    def test_read_snapshot_computes_level_progress(self, tmp_path):
+        import json
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon.indicator import read_indicator_snapshot
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({
+            "player": {"level": 1, "xp": 50},
+            "encounter_queue": None,
+            "indicator_hidden": False,
+        }))
+        snap = read_indicator_snapshot(sf, DEFAULT_CONFIG)
+        assert snap["level"] == 1
+        assert snap["encounter"] is False
+        assert snap["hidden"] is False
+        assert snap["earned"] >= 0
+        assert snap["needed"] > 0
+
+    def test_read_snapshot_missing_file_returns_default(self, tmp_path):
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon.indicator import _DEFAULT_SNAPSHOT, read_indicator_snapshot
+        snap = read_indicator_snapshot(tmp_path / "missing.json", DEFAULT_CONFIG)
+        assert snap == _DEFAULT_SNAPSHOT
+
+    def test_read_snapshot_encounter_true(self, tmp_path):
+        import json
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon.indicator import read_indicator_snapshot
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({
+            "player": {"level": 2, "xp": 10},
+            "encounter_queue": {"template_id": "x"},
+            "indicator_hidden": False,
+        }))
+        snap = read_indicator_snapshot(sf, DEFAULT_CONFIG)
+        assert snap["encounter"] is True
+
+    def test_read_snapshot_hidden_true(self, tmp_path):
+        import json
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon.indicator import read_indicator_snapshot
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({
+            "player": {"level": 2, "xp": 10},
+            "encounter_queue": None,
+            "indicator_hidden": True,
+        }))
+        snap = read_indicator_snapshot(sf, DEFAULT_CONFIG)
+        assert snap["hidden"] is True
+
+
+class TestMtimeGatedRefresh:
+    """Requirement 2: reparse save.json only when its mtime changes."""
+
+    def test_unchanged_mtime_skips_reparse(self, tmp_path, monkeypatch):
+        import json
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon import indicator as indicator_mod
+
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({
+            "player": {"level": 1, "xp": 0},
+            "encounter_queue": None,
+            "indicator_hidden": False,
+        }))
+
+        call_count = {"n": 0}
+        original = indicator_mod.read_indicator_snapshot
+
+        def counting_read(path, config):
+            call_count["n"] += 1
+            return original(path, config)
+
+        monkeypatch.setattr(indicator_mod, "read_indicator_snapshot", counting_read)
+
+        mtime1, snap1 = indicator_mod.maybe_refresh_snapshot(
+            sf, DEFAULT_CONFIG, None, dict(indicator_mod._DEFAULT_SNAPSHOT)
+        )
+        assert call_count["n"] == 1
+
+        # Same mtime passed back in -- file unchanged, must NOT reparse.
+        mtime2, snap2 = indicator_mod.maybe_refresh_snapshot(sf, DEFAULT_CONFIG, mtime1, snap1)
+        assert call_count["n"] == 1
+        assert snap2 is snap1  # identical object -- proves no reparse happened
+
+    def test_changed_mtime_triggers_reparse(self, tmp_path):
+        import json
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon.indicator import maybe_refresh_snapshot
+
+        sf = tmp_path / "save.json"
+        sf.write_text(json.dumps({
+            "player": {"level": 1, "xp": 0},
+            "encounter_queue": None,
+            "indicator_hidden": False,
+        }))
+        mtime1, snap1 = maybe_refresh_snapshot(sf, DEFAULT_CONFIG, None, {})
+        assert snap1["level"] == 1
+
+        sf.write_text(json.dumps({
+            "player": {"level": 5, "xp": 0},
+            "encounter_queue": None,
+            "indicator_hidden": False,
+        }))
+        # Force a distinct mtime -- some filesystems have coarse resolution.
+        bumped = sf.stat().st_mtime + 1
+        os.utime(sf, (bumped, bumped))
+
+        mtime2, snap2 = maybe_refresh_snapshot(sf, DEFAULT_CONFIG, mtime1, snap1)
+        assert mtime2 != mtime1
+        assert snap2["level"] == 5
+
+    def test_missing_file_returns_default_snapshot(self, tmp_path):
+        from devmon.config.defaults import DEFAULT_CONFIG
+        from devmon.daemon.indicator import _DEFAULT_SNAPSHOT, maybe_refresh_snapshot
+        # Use a sentinel last_mtime distinct from None so a missing file
+        # (mtime=None) still counts as a "change" and gets refreshed on the
+        # very first tick -- mirrors the daemon's real startup state where
+        # last_mtime starts as a value that hasn't been observed yet.
+        mtime, snap = maybe_refresh_snapshot(tmp_path / "missing.json", DEFAULT_CONFIG, "unset", {})
+        assert mtime is None
+        assert snap == _DEFAULT_SNAPSHOT
+
+    def test_persistently_missing_file_does_not_reparse_every_tick(self, tmp_path):
+        """Once mtime settles at None (file absent), a second tick with the
+        same None last_mtime must short-circuit -- this is what actually
+        happens on daemon startup before any save.json exists."""
+        from devmon.daemon.indicator import maybe_refresh_snapshot
+        mtime1, snap1 = maybe_refresh_snapshot(tmp_path / "missing.json", {}, None, {"sentinel": True})
+        assert mtime1 is None
+        assert snap1 == {"sentinel": True}  # unchanged -- None == None means "no change"
+
 
 # === Plan 03 tests (real — shell hook integration complete) ===
 

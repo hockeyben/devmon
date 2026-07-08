@@ -5,6 +5,12 @@ Reads save file directly for state (D-05).
 Writes ANSI to /dev/tty or sys.stderr (D-06).
 ~500ms animation cycle (D-01).
 Checks typing flag file before writing -- skips write when readline is active (SC6).
+
+Architecture note: this module may import `devmon.config` (for indicator_mode /
+emoji detection) and `devmon.engine.progression` (pure xp math for the status
+strip). It must NOT import `devmon.commands` or `devmon.render` -- the daemon
+is a standalone background process and those packages pull in Typer/Rich UI
+plumbing that has no business running headless every 100ms.
 """
 from __future__ import annotations
 
@@ -14,6 +20,7 @@ import signal
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 from devmon.daemon.ansi import (
     clear_indicator,
@@ -21,17 +28,17 @@ from devmon.daemon.ansi import (
     render_indicator,
     write_to_terminal,
 )
-from devmon.daemon.frames import (
-    ALERT_FRAMES_ASCII,
-    ALERT_FRAMES_EMOJI,
-    ALERT_WIDTH_ASCII,
-    ALERT_WIDTH_EMOJI,
-    SEARCH_FRAMES_ASCII,
-    SEARCH_FRAMES_EMOJI,
-    SEARCH_WIDTH_ASCII,
-    SEARCH_WIDTH_EMOJI,
-)
+from devmon.daemon.frames import build_status_strip
 from devmon.daemon.pid import remove_pid, write_pid
+
+# Legacy walking-figure/alert frame sets (SEARCH_FRAMES_EMOJI, ALERT_FRAMES_ASCII,
+# etc.) live in devmon.daemon.frames and are no longer imported here -- the
+# status strip (build_status_strip) replaced them as the primary render
+# output (requirement 1). They're retained in frames.py purely for
+# TestDaemonLoop backward compatibility; import them from there directly.
+
+# Valid values for config ui.indicator_mode (D-XX, requirement 3).
+VALID_INDICATOR_MODES = ("persistent", "flash", "off")
 
 
 def _make_cursor_checker():
@@ -202,6 +209,122 @@ def read_indicator_state(save_path: Path) -> str:
         return "searching"
 
 
+def resolve_indicator_mode(config: dict | None = None) -> str:
+    """Resolve `ui.indicator_mode` from config, defaulting to "persistent".
+
+    Falls back to "persistent" (D-XX: always-on presence by default) if:
+    - config loading raises for any reason
+    - the configured value isn't one of VALID_INDICATOR_MODES
+
+    Args:
+        config: Pre-loaded config dict (tests pass this to avoid touching
+            disk). When None, loads via `devmon.config.loader.load_config()`.
+    """
+    try:
+        if config is None:
+            from devmon.config.loader import load_config
+            config = load_config()
+        mode = config.get("ui", {}).get("indicator_mode", "persistent")
+        if mode in VALID_INDICATOR_MODES:
+            return mode
+    except Exception:
+        pass
+    return "persistent"
+
+
+def _compute_level_progress(level: int, xp: int, config: dict) -> tuple[int, int]:
+    """Return (xp_earned_in_level, xp_needed_to_level_up) via engine math.
+
+    Builds a minimal duck-typed profile (level, xp attributes only) instead
+    of instantiating the full Pydantic `PlayerProfile` model -- the daemon's
+    hot read path avoids Pydantic validation overhead (D-05 precedent).
+    `xp_within_level` only reads `.level`/`.xp` off its `profile` argument,
+    so a `SimpleNamespace` satisfies it without a real model import.
+    """
+    from devmon.engine.progression import xp_within_level
+
+    profile = SimpleNamespace(level=level, xp=xp)
+    return xp_within_level(profile, config)
+
+
+_DEFAULT_SNAPSHOT = {
+    "level": 1,
+    "earned": 0,
+    "needed": 1,
+    "hidden": False,
+    "encounter": False,
+}
+
+
+def read_indicator_snapshot(save_path: Path, config: dict) -> dict:
+    """Read full status-strip data: level, within-level xp progress, flags.
+
+    Raw JSON parse only (D-05) -- never instantiates the GameState Pydantic
+    model. On any error (missing file, corrupt JSON, missing player block),
+    returns a safe default snapshot (level 1, 0/1 xp, no encounter, visible).
+
+    Returns:
+        dict with keys: level (int), earned (int), needed (int),
+        hidden (bool), encounter (bool).
+    """
+    try:
+        raw = save_path.read_text(encoding="utf-8")
+        data = json.loads(raw)
+        player = data.get("player") or {}
+        level = int(player.get("level", 1))
+        xp = int(player.get("xp", 0))
+        earned, needed = _compute_level_progress(level, xp, config)
+        return {
+            "level": level,
+            "earned": earned,
+            "needed": needed,
+            "hidden": bool(data.get("indicator_hidden", False)),
+            "encounter": data.get("encounter_queue") is not None,
+        }
+    except Exception:
+        return dict(_DEFAULT_SNAPSHOT)
+
+
+def maybe_refresh_snapshot(
+    save_path: Path,
+    config: dict,
+    last_mtime: float | None,
+    last_snapshot: dict,
+) -> tuple[float | None, dict]:
+    """Return (mtime, snapshot), reparsing save.json only when it changed.
+
+    Requirement 2: the daemon must not add I/O beyond an `os.stat` per tick,
+    plus a reparse only when that stat's mtime differs from the previous
+    tick's. Extracted as a pure function (mtime/snapshot passed in and out)
+    so the caching behavior is unit-testable without running the daemon loop.
+
+    Args:
+        save_path: Path to save.json.
+        config: Loaded config dict (for xp math).
+        last_mtime: mtime observed on the previous tick (None if save.json
+            didn't exist then).
+        last_snapshot: snapshot dict from the previous tick, returned as-is
+            when the file is unchanged.
+
+    Returns:
+        (mtime, snapshot) -- snapshot is `last_snapshot` unchanged (same
+        object) when mtime is unchanged, otherwise a freshly parsed dict
+        (or `_DEFAULT_SNAPSHOT` if the file is missing/unreadable).
+    """
+    try:
+        mtime = os.stat(save_path).st_mtime
+    except OSError:
+        mtime = None
+    if mtime == last_mtime:
+        return last_mtime, last_snapshot
+    snapshot = (
+        read_indicator_snapshot(save_path, config)
+        if mtime is not None
+        else dict(_DEFAULT_SNAPSHOT)
+    )
+    return mtime, snapshot
+
+
 def run_indicator_daemon(
     pid_file: Path | None = None,
     save_path: Path | None = None,
@@ -211,29 +334,42 @@ def run_indicator_daemon(
     Per D-01: ~500ms cycle. Per D-05: reads save file each tick.
     Per D-06: ANSI cursor positioning via write_to_terminal.
     Per SC6: checks typing flag before each write -- skips when readline active.
+
+    Persistence mode (requirement 3, ui.indicator_mode):
+    - "off": returns immediately, writes no PID file, renders nothing.
+    - "persistent" (default): strip stays rendered at all times except while
+      the user is typing -- the typing-flag + Windows cursor-movement checks
+      below are unchanged and still gate every write.
+    - "flash": legacy behavior -- only renders while the show-signal file
+      (touched by the shell precmd hook) is younger than DISPLAY_TIMEOUT.
     """
+    mode = resolve_indicator_mode()
+    if mode == "off":
+        return
+
+    from devmon.config.loader import load_config
     from devmon.daemon.pid import pid_file_path as default_pid_path
 
     pf = pid_file or default_pid_path()
     sp = save_path or _resolve_save_path()
     tf = typing_flag_path()
+    sf = show_signal_path()
+
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
 
     write_pid(pf)
 
     # Detect emoji support once at startup (UI-SPEC: cached for process lifetime)
     use_emoji = detect_emoji_support()
 
-    # Select frame sets based on emoji support
-    if use_emoji:
-        search_frames = SEARCH_FRAMES_EMOJI
-        search_width = SEARCH_WIDTH_EMOJI
-        alert_frames = ALERT_FRAMES_EMOJI
-        alert_width = ALERT_WIDTH_EMOJI
-    else:
-        search_frames = SEARCH_FRAMES_ASCII
-        search_width = SEARCH_WIDTH_ASCII
-        alert_frames = ALERT_FRAMES_ASCII
-        alert_width = ALERT_WIDTH_ASCII
+    # Status-strip data snapshot -- re-parsed only when save.json's mtime
+    # changes (requirement 2: no I/O beyond an os.stat per tick, plus a
+    # reparse only on change).
+    _save_mtime: float | None = None
+    _snapshot = dict(_DEFAULT_SNAPSHOT)
 
     # Terminal width -- updated each tick + SIGWINCH (RESEARCH.md Pattern 2)
     _cols = get_terminal_cols()
@@ -273,6 +409,10 @@ def run_indicator_daemon(
     try:
         while True:
             _cols = get_terminal_cols()
+
+            # Requirement 2: os.stat every tick (cheap); reparse save.json
+            # only when its mtime changed since the last tick.
+            _save_mtime, _snapshot = maybe_refresh_snapshot(sp, config, _save_mtime, _snapshot)
 
             # Skip if terminal too narrow (UI-SPEC: <20 cols -> disabled)
             if _cols < 20:
@@ -355,9 +495,19 @@ def run_indicator_daemon(
                     should_render = True
 
             if should_render:
-                state = read_indicator_state(sp)
+                # Battle screen (Rich Live) always wins -- indicator stays hidden.
+                if _snapshot["hidden"]:
+                    if not was_hidden:
+                        write_to_terminal(clear_indicator(_cols))
+                        was_hidden = True
+                    time.sleep(0.1)
+                    _render_counter += 1
+                    continue
 
-                if state == "hidden":
+                # flash mode: only render within DISPLAY_TIMEOUT of the last
+                # show-signal touch (shell precmd hook). persistent mode
+                # skips this gate entirely -- always-on by default.
+                if mode == "flash" and not should_show(sf):
                     if not was_hidden:
                         write_to_terminal(clear_indicator(_cols))
                         was_hidden = True
@@ -367,16 +517,19 @@ def run_indicator_daemon(
 
                 was_hidden = False
 
-                if state == "alert":
-                    frames = alert_frames
-                    width = alert_width
-                    idx = frame_idx % len(alert_frames)
-                else:
-                    frames = search_frames
-                    width = search_width
-                    idx = frame_idx % len(search_frames)
+                # Liveness cue (requirement 4): leading glyph alternates every
+                # render tick while Lv./bar text stays stable. Reuses the
+                # existing 0..3 frame_idx counter, folded to a 2-frame cycle.
+                text, width = build_status_strip(
+                    _snapshot["level"],
+                    _snapshot["earned"],
+                    _snapshot["needed"],
+                    encounter=_snapshot["encounter"],
+                    use_emoji=use_emoji,
+                    glyph_frame_idx=frame_idx % 2,
+                )
 
-                output = render_indicator(frames[idx], width, _cols)
+                output = render_indicator(text, width, _cols)
                 write_to_terminal(output)
                 frame_idx = (frame_idx + 1) % 4
 

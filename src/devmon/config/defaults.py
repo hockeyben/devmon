@@ -65,6 +65,13 @@ DEFAULT_CONFIG: dict = {
         "ascii_art": True,
         "render_mode": "auto",
         "animations": True,
+        # Phase 11.1: terminal status indicator persistence behavior.
+        #   "persistent" (default) — strip stays rendered at all times except
+        #     while the user is typing (D-XX: always-on "DevMon is active").
+        #   "flash"      — legacy behavior: shows briefly after each command
+        #     (indicator.show signal + DISPLAY_TIMEOUT), then auto-hides.
+        #   "off"        — daemon never renders and exits immediately.
+        "indicator_mode": "persistent",
     },
     "shell": {
         "event_log": _default_event_log(),

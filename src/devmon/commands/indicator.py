@@ -87,14 +87,17 @@ def status() -> None:
     """Show indicator daemon status."""
     from devmon.daemon.pid import is_alive, read_pid
 
+    from devmon.daemon.indicator import resolve_indicator_mode
+    mode = resolve_indicator_mode()
+
     if is_alive():
         pid = read_pid()
         # Read current indicator state
         from devmon.daemon.indicator import _resolve_save_path, read_indicator_state
         state = read_indicator_state(_resolve_save_path())
-        typer.echo(f"Indicator running (PID {pid}), state: {state}")
+        typer.echo(f"Indicator running (PID {pid}), state: {state}, mode: {mode}")
     else:
-        typer.echo("Indicator not running")
+        typer.echo(f"Indicator not running, mode: {mode}")
 
 
 @app.command()
