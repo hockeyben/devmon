@@ -270,14 +270,17 @@ def _normal_row(
 
 
 def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
-    """Narrow-terminal variant of the idle row: level + percent, no bar."""
+    """Narrow-terminal variant of the idle row: level + percent, no bar.
+    Carries the [≡] app opener too -- the opener must be reachable on EVERY
+    row variant (a player whose statusline sat on the encounter/compact rows
+    otherwise never sees a way into the app)."""
     from devmon.daemon.frames import compute_bar_progress
 
     _, pct = compute_bar_progress(earned, needed)
     if use_emoji:
         glyph = f"{_BRIGHT_YELLOW}{_UP_ARROW}{_RESET}"
-        return f"{glyph} Lv.{level} {pct}%"
-    return f"{_CYAN}DevMon Lv.{level} {pct}%{_RESET}"
+        return f"{_APP_ICON_LINK} {glyph} Lv.{level} {pct}%"
+    return f"{_APP_ICON_LINK} {_CYAN}DevMon Lv.{level} {pct}%{_RESET}"
 
 
 def _encounter_row(use_emoji: bool) -> str:
@@ -285,16 +288,19 @@ def _encounter_row(use_emoji: bool) -> str:
     `devmon://battle` (component 3 -- registered via `devmon protocol
     install`). Width-safe: "(!)" replaces the ambiguous-width ⚠/⚔ glyphs;
     the em dash (U+2014) is unambiguous width-1. The `[battle]` link label
-    (brackets included) is bold yellow."""
+    (brackets included) is bold yellow. Also carries the [≡] app opener --
+    encounters can sit queued for a long time, and the opener must never
+    disappear with them."""
     prefix = "(!) WILD DEVMON — " if use_emoji else "(!) WILD DEVMON - "
     link = f"{_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
-    return prefix + link
+    return f"{_APP_ICON_LINK} {prefix}{link}"
 
 
 def _encounter_row_compact(use_emoji: bool) -> str:
-    """Narrow-terminal variant of the encounter row: just the clickable
-    `[battle]` link -- identical in emoji and ascii mode (no glyph to swap)."""
-    return f"{_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
+    """Narrow-terminal variant of the encounter row: the clickable
+    `[battle]` link plus the [≡] app opener -- identical in emoji and ascii
+    mode (no glyph to swap)."""
+    return f"{_APP_ICON_LINK} {_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
 
 
 def _effective_cols(config: dict) -> int:

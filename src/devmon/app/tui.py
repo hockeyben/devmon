@@ -96,7 +96,10 @@ class DevMonApp(App):
     """
 
     BINDINGS = [
-        Binding("q", "quit", "Quit", priority=True),
+        # No bare-letter quit: "q" closing the whole app is too easy to hit
+        # by accident (user request 2026-07-08). Closing is the header [x]
+        # button or an explicit ctrl+q chord.
+        Binding("ctrl+q", "quit", "Quit", priority=True),
         Binding("f", "fight", "Fight", show=False),
     ]
 

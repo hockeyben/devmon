@@ -429,7 +429,10 @@ class TestStatuslineRankTag:
         from devmon.commands.statusline import _normal_row_compact
 
         row = _normal_row_compact(20, 40, 100, use_emoji=False)
-        assert "[" not in _strip(row)
+        # The [≡] app opener is present on every variant; only the RANK tag
+        # (a letter abbreviation in brackets) must be absent on compact.
+        stripped = _strip(row).replace("[≡]", "")
+        assert "[" not in stripped
 
     def test_encounter_row_has_no_rank_tag(self):
         from devmon.commands.statusline import _encounter_row, _encounter_row_compact
@@ -616,26 +619,33 @@ class TestStatuslineAppIcon:
         stripped = _strip(row)
         assert stripped.lstrip().startswith("[≡]")
 
-    def test_compact_row_has_no_app_icon(self):
+    def test_compact_row_has_app_icon(self):
+        """The opener must be reachable on EVERY row variant -- a statusline
+        that sits on the compact row would otherwise offer no way into the
+        app (user report 2026-07-08)."""
         from devmon.commands.statusline import _normal_row_compact
 
         for use_emoji in (True, False):
             row = _normal_row_compact(5, 40, 100, use_emoji)
-            assert "devmon://app" not in row
-            assert "≡" not in row
+            assert "devmon://app" in row
+            assert "≡" in _strip(row)
 
-    def test_encounter_rows_have_no_app_icon_and_battle_link_untouched(self):
+    def test_encounter_rows_have_app_icon_and_battle_link_untouched(self):
+        """Encounters can sit queued for a long time; the app opener must not
+        vanish with them. The battle link stays intact alongside it."""
         from devmon.commands.statusline import _encounter_row, _encounter_row_compact
 
         for use_emoji in (True, False):
             full = _encounter_row(use_emoji)
             compact = _encounter_row_compact(use_emoji)
-            assert "devmon://app" not in full
-            assert "devmon://app" not in compact
-            assert "≡" not in full
-            assert "≡" not in compact
+            assert "devmon://app" in full
+            assert "devmon://app" in compact
+            assert "≡" in _strip(full)
+            assert "≡" in _strip(compact)
             assert "devmon://battle" in full
             assert "devmon://battle" in compact
+            self._assert_width_safe(full)
+            self._assert_width_safe(compact)
 
     def test_full_row_with_icon_rank_tag_aura_and_accent_is_width_safe(self):
         from devmon.commands.statusline import _normal_row
