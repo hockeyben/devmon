@@ -80,6 +80,10 @@ DEFAULT_CONFIG: dict = {
         # devmon.engine.sync.sync_game_state() runs triggered by `devmon
         # statusline`, lockfile-guarded -- see commands/statusline.py).
         "statusline_sync_seconds": 30,
+        # Safety margin subtracted from COLUMNS when composing the statusline
+        # row -- Claude Code's statusline area is slightly narrower than the
+        # terminal, and overshooting wraps the line (visible layout break).
+        "statusline_margin": 2,
     },
     "shell": {
         "event_log": _default_event_log(),

@@ -75,7 +75,10 @@ class TestStatuslineRow:
         assert "devmon://battle" in result.output
         assert "WILD DEVMON" in result.output
 
-    def test_right_align_visible_width_matches_columns_minus_one(self, tmp_save_dir, monkeypatch):
+    def test_right_align_respects_columns_minus_margin(self, tmp_save_dir, monkeypatch):
+        """Right edge = COLUMNS - statusline_margin(2) - 1: Claude Code's
+        statusline area is narrower than the raw terminal, so composing to
+        the full COLUMNS wraps the line on smaller windows."""
         from devmon.main import app
         from devmon.daemon.frames import visible_width
 
@@ -85,7 +88,7 @@ class TestStatuslineRow:
 
         assert result.exit_code == 0
         line = result.output.splitlines()[0]
-        assert visible_width(line) == 59
+        assert visible_width(line) == 57
 
     def test_never_raises_on_config_load_failure(self, tmp_save_dir, monkeypatch):
         import devmon.config.loader as loader_mod
@@ -120,7 +123,7 @@ class TestStatuslineChain:
         stripped = _strip(lines[0])
         assert stripped.startswith("chainline")
         assert "Lv." in stripped
-        assert visible_width(lines[0]) == 79  # DevMon hugs the right margin
+        assert visible_width(lines[0]) == 77  # right edge = 80 - margin(2) - 1
 
     def test_narrow_terminal_falls_back_to_own_right_aligned_row(self, tmp_save_dir, monkeypatch):
         from devmon.main import app
@@ -137,7 +140,50 @@ class TestStatuslineChain:
         assert len(lines) == 2  # doesn't fit side by side -> separate rows
         assert _strip(lines[0]).strip() == "123456789012345678901234"
         assert "Lv." in _strip(lines[1])
-        assert visible_width(lines[1]) == 29  # still right-aligned
+        assert "▰" not in lines[1] and "▱" not in lines[1]  # compact: no bar
+        assert visible_width(lines[1]) == 27  # right edge = 30 - margin(2) - 1
+
+    def test_medium_terminal_uses_compact_variant_on_same_line(self, tmp_save_dir, monkeypatch):
+        """When the full strip doesn't fit beside the chain but the compact
+        one does, DevMon stays on the chain line in compact form instead of
+        breaking onto a second row."""
+        from devmon.main import app
+        from devmon.daemon.frames import visible_width
+
+        # effective = 40 - 2 = 38; chain 20 wide; full strip (19) needs
+        # 20+19+1+2 = 42 > 38; compact "⚡Lv.1 0%" (9) needs 32 <= 38.
+        monkeypatch.setenv("COLUMNS", "40")
+        runner = CliRunner()
+        result = runner.invoke(
+            app, ["statusline", "--chain", "echo 12345678901234567890"], input=b"",
+        )
+
+        assert result.exit_code == 0
+        lines = [l for l in result.output.splitlines() if l.strip()]
+        assert len(lines) == 1  # compact variant kept it on one line
+        assert "Lv.1" in _strip(lines[0])
+        assert "▰" not in lines[0] and "▱" not in lines[0]
+        assert visible_width(lines[0]) == 37
+
+    def test_chain_failure_serves_cached_output_no_stutter(self, tmp_save_dir, monkeypatch):
+        """A transiently failing chain must not blank the left side of the
+        statusline: the last successful chain output is served from cache."""
+        import sys as _sys
+        from devmon.main import app
+        from devmon.daemon.frames import visible_width  # noqa: F401
+
+        monkeypatch.setenv("COLUMNS", "80")
+        runner = CliRunner()
+
+        ok = runner.invoke(app, ["statusline", "--chain", "echo leftside"], input=b"")
+        assert ok.exit_code == 0
+        assert "leftside" in _strip(ok.output)
+
+        fail_cmd = f'"{_sys.executable}" -c "import sys; sys.exit(1)"'
+        failed = runner.invoke(app, ["statusline", "--chain", fail_cmd], input=b"")
+        assert failed.exit_code == 0
+        assert "leftside" in _strip(failed.output)  # served from cache
+        assert "Lv." in _strip(failed.output)
 
     def test_chain_failure_still_prints_devmon_row(self, tmp_save_dir):
         from devmon.main import app

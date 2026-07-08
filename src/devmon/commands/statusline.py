@@ -73,29 +73,52 @@ def _read_stdin_payload() -> tuple[bytes, dict]:
     return raw, payload
 
 
+def _chain_cache_path() -> Path:
+    return _runtime_dir() / "statusline.chain.cache"
+
+
+def _read_chain_cache() -> list[str]:
+    try:
+        text = _chain_cache_path().read_text(encoding="utf-8").rstrip()
+        return text.splitlines() if text else []
+    except Exception:
+        return []
+
+
+def _write_chain_cache(lines: list[str]) -> None:
+    try:
+        path = _chain_cache_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def _run_chain(chain: str, raw_stdin: bytes) -> list[str]:
     """Run the user's existing statusline chain command; return its stdout lines.
 
-    Receives the same raw stdin bytes DevMon got. Any exception, timeout, or
-    nonzero exit silently yields no chain output at all -- DevMon's own row
-    (printed by the caller regardless) must never depend on the chain
-    succeeding.
+    Receives the same raw stdin bytes DevMon got. When the chain fails
+    (exception, timeout, nonzero exit, empty output), the LAST SUCCESSFUL
+    chain output is served from a cache file instead of returning nothing --
+    a transiently slow/failed chain otherwise makes the left half of the
+    statusline vanish for one refresh and reappear on the next (visible
+    stutter). DevMon's own row (printed by the caller regardless) never
+    depends on the chain succeeding.
     """
     try:
         result = subprocess.run(
             chain, shell=True, input=raw_stdin, capture_output=True, timeout=3,
         )
-    except Exception:
-        return []
-    if result.returncode != 0:
-        return []
-    try:
+        if result.returncode != 0:
+            return _read_chain_cache()
         text = result.stdout.decode("utf-8", errors="replace").rstrip()
     except Exception:
-        return []
+        return _read_chain_cache()
     if not text:
-        return []
-    return text.splitlines()
+        return _read_chain_cache()
+    lines = text.splitlines()
+    _write_chain_cache(lines)
+    return lines
 
 
 def _normal_row(level: int, earned: int, needed: int, use_emoji: bool) -> str:
@@ -112,6 +135,16 @@ def _normal_row(level: int, earned: int, needed: int, use_emoji: bool) -> str:
     return text
 
 
+def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
+    """Narrow-terminal variant of the idle row: level + percent, no bar."""
+    from devmon.daemon.frames import compute_bar_progress
+
+    _, pct = compute_bar_progress(earned, needed)
+    if use_emoji:
+        return f"⚡Lv.{level} {pct}%"
+    return f"{_CYAN}DevMon Lv.{level} {pct}%{_RESET}"
+
+
 def _encounter_row(use_emoji: bool) -> str:
     """Build the wild-encounter row with a clickable OSC 8 link to
     `devmon://battle` (component 3 -- registered via `devmon protocol
@@ -126,46 +159,70 @@ def _encounter_row(use_emoji: bool) -> str:
     return prefix + link
 
 
-def _terminal_cols() -> int:
-    """Terminal width from the COLUMNS env var (Claude Code sets it before
-    running the statusline command; fallback 80 per the statusline docs)."""
+def _encounter_row_compact(use_emoji: bool) -> str:
+    """Narrow-terminal variant of the encounter row: just the clickable link."""
+    link_label = "⚔ battle" if use_emoji else "! battle"
+    return f"{_BOLD_YELLOW}{_OSC8_OPEN}{link_label}{_OSC8_CLOSE}{_RESET}"
+
+
+def _effective_cols(config: dict) -> int:
+    """Usable statusline width: COLUMNS env (Claude Code sets it; fallback 80)
+    minus a safety margin (ui.statusline_margin, default 2).
+
+    Claude Code's statusline area can be slightly narrower than the raw
+    terminal width (its own horizontal padding); composing to the full
+    COLUMNS then makes the line wrap and the layout visibly break on
+    smaller windows. The margin keeps the right edge safely inside the
+    renderable area.
+    """
     try:
-        return int(os.environ.get("COLUMNS", "80"))
+        cols = int(os.environ.get("COLUMNS", "80"))
     except Exception:
-        return 80
+        cols = 80
+    try:
+        margin = int(config.get("ui", {}).get("statusline_margin", 2))
+    except Exception:
+        margin = 2
+    return max(20, cols - max(0, margin))
 
 
-def _right_align(row: str) -> str:
-    """Pad *row* with leading spaces so it right-aligns to the terminal."""
+def _right_align(row: str, cols: int) -> str:
+    """Pad *row* with leading spaces so it right-aligns to *cols* width."""
     from devmon.daemon.frames import visible_width
 
-    pad = max(0, _terminal_cols() - visible_width(row) - 1)
+    pad = max(0, cols - visible_width(row) - 1)
     return (" " * pad) + row
 
 
 # Minimum breathing room between the chained statusline text and the DevMon
-# row when they share a line. Below this, DevMon drops to its own row.
+# row when they share a line. Below this, the next-smaller row variant is
+# tried; only when no variant fits does DevMon drop to its own row.
 _MIN_GAP = 2
 
 
-def _compose_lines(chain_lines: list[str], row: str) -> list[str]:
-    """Merge the DevMon row onto the right edge of the chain's first line.
+def _compose_lines(chain_lines: list[str], candidates: list[str], cols: int) -> list[str]:
+    """Merge the widest DevMon row variant that fits onto the right edge of
+    the chain's first line.
 
     "Always on the right": DevMon lives on the SAME line as the existing
-    statusline, padded out to the right margin. Only when the two don't fit
-    side by side (narrow terminal) does DevMon fall back to its own
-    right-aligned row below the chain output.
+    statusline, padded out to the right margin. *candidates* is ordered
+    widest-first (full strip, then compact); narrower terminals get the
+    compact variant instead of a broken/wrapped layout. Only when no
+    variant fits beside the chain does DevMon fall back to its own
+    right-aligned row (compact variant) below the chain output.
     """
     from devmon.daemon.frames import visible_width
 
     if not chain_lines:
-        return [_right_align(row)]
+        return [_right_align(candidates[0], cols)]
 
     first = chain_lines[0].rstrip()
-    gap = _terminal_cols() - visible_width(first) - visible_width(row) - 1
-    if gap >= _MIN_GAP:
-        return [first + (" " * gap) + row, *chain_lines[1:]]
-    return [*chain_lines, _right_align(row)]
+    first_width = visible_width(first)
+    for row in candidates:
+        gap = cols - first_width - visible_width(row) - 1
+        if gap >= _MIN_GAP:
+            return [first + (" " * gap) + row, *chain_lines[1:]]
+    return [*chain_lines, _right_align(candidates[-1], cols)]
 
 
 def _runtime_dir() -> Path:
@@ -365,16 +422,17 @@ def statusline(
         snapshot = dict(_DEFAULT_SNAPSHOT)
 
     try:
+        level = snapshot.get("level", 1)
+        earned = snapshot.get("earned", 0)
+        needed = snapshot.get("needed", 1)
         if snapshot.get("encounter"):
-            row = _encounter_row(use_emoji)
+            candidates = [_encounter_row(use_emoji), _encounter_row_compact(use_emoji)]
         else:
-            row = _normal_row(
-                snapshot.get("level", 1),
-                snapshot.get("earned", 0),
-                snapshot.get("needed", 1),
-                use_emoji,
-            )
-        lines = _compose_lines(chain_lines, row)
+            candidates = [
+                _normal_row(level, earned, needed, use_emoji),
+                _normal_row_compact(level, earned, needed, use_emoji),
+            ]
+        lines = _compose_lines(chain_lines, candidates, _effective_cols(config))
     except Exception:
         lines = [*chain_lines, "Lv.1 0%"]
 
