@@ -142,32 +142,30 @@ def test_rank_intern_by_default():
     assert compute_rank(level=1, badge_count=0) == "Intern"
 
 
-def test_rank_requires_both_badges_and_level():
+def test_rank_is_badge_only_level_ignored():
+    """Ranks are badge-count only (user decision 2026-07-08): a level-1
+    player with 6 badges is a Senior Dev, and a level-99 player with 3
+    badges is still just a Junior Dev."""
     from devmon.engine.badges import compute_rank
 
-    # Enough badges (6, satisfies Senior Dev's badge req) but not enough
-    # level -> falls back to the highest rank whose LEVEL req is also met
-    # (Junior Dev only needs level>=1).
-    assert compute_rank(level=1, badge_count=6) == "Junior Dev"
-    # Enough level (20, satisfies Senior Dev's level req) but not enough
-    # badges (3, short of Senior Dev's 6 and Dev's 4) -> falls back to
-    # Junior Dev (needs only 2 badges).
-    assert compute_rank(level=20, badge_count=3) == "Junior Dev"
-    # Both satisfied -> the higher rank.
+    assert compute_rank(level=1, badge_count=6) == "Senior Dev"
+    assert compute_rank(level=99, badge_count=3) == "Junior Dev"
     assert compute_rank(level=20, badge_count=6) == "Senior Dev"
 
 
 def test_rank_boundaries_exact():
     from devmon.engine.badges import compute_rank
 
+    # Level argument is irrelevant (badge-only ranks) -- pinned at 1 to
+    # prove it.
     assert compute_rank(level=1, badge_count=0) == "Intern"
     assert compute_rank(level=1, badge_count=2) == "Junior Dev"
-    assert compute_rank(level=10, badge_count=4) == "Dev"
-    assert compute_rank(level=20, badge_count=6) == "Senior Dev"
-    assert compute_rank(level=30, badge_count=8) == "Staff Eng"
-    assert compute_rank(level=45, badge_count=10) == "Principal"
-    assert compute_rank(level=60, badge_count=11) == "Distinguished"
-    assert compute_rank(level=80, badge_count=12) == "Fellow"
+    assert compute_rank(level=1, badge_count=4) == "Dev"
+    assert compute_rank(level=1, badge_count=6) == "Senior Dev"
+    assert compute_rank(level=1, badge_count=8) == "Staff Eng"
+    assert compute_rank(level=1, badge_count=10) == "Principal"
+    assert compute_rank(level=1, badge_count=11) == "Distinguished"
+    assert compute_rank(level=1, badge_count=12) == "Fellow"
 
 
 def test_rank_highest_satisfied_wins():
@@ -206,7 +204,7 @@ def test_rank_display_adds_prestige_star():
 def test_rank_abbreviations_cover_every_rank():
     from devmon.engine.badges import RANKS, rank_abbreviation
 
-    for name, _, _ in RANKS:
+    for name, _ in RANKS:
         abbrev = rank_abbreviation(name)
         assert 2 <= len(abbrev) <= 3, f"{name}'s abbreviation {abbrev!r} isn't 2-3 chars"
         assert all(ord(ch) < 0x2600 for ch in abbrev), f"{name}'s abbreviation isn't width-safe"

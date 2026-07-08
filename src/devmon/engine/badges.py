@@ -161,17 +161,19 @@ def check_badges(state: "GameState") -> None:
 # Rank derivation
 # ---------------------------------------------------------------------------
 
-# Ordered best-to-worst. Both conditions (badge count AND player level) are
-# required; the highest satisfied rank wins.
-RANKS: list[tuple[str, int, int]] = [
-    ("Fellow", 12, 80),
-    ("Distinguished", 11, 60),
-    ("Principal", 10, 45),
-    ("Staff Eng", 8, 30),
-    ("Senior Dev", 6, 20),
-    ("Dev", 4, 10),
-    ("Junior Dev", 2, 1),
-    ("Intern", 0, 1),
+# Ordered best-to-worst. Ranks are BADGE-COUNT ONLY (user decision
+# 2026-07-08: level gates removed — badges already encode real
+# accomplishment, and several badges carry their own level/scale
+# requirements). The highest satisfied rank wins.
+RANKS: list[tuple[str, int]] = [
+    ("Fellow", 12),
+    ("Distinguished", 11),
+    ("Principal", 10),
+    ("Staff Eng", 8),
+    ("Senior Dev", 6),
+    ("Dev", 4),
+    ("Junior Dev", 2),
+    ("Intern", 0),
 ]
 
 RANK_ABBREVIATIONS: dict[str, str] = {
@@ -189,11 +191,13 @@ statusline rank tag -- see commands/statusline.py's _normal_row."""
 
 
 def compute_rank(level: int, badge_count: int) -> str:
-    """Return the highest rank whose (badge_count, level) requirements are
-    both satisfied. Falls back to "Intern" if somehow nothing matches
-    (unreachable in practice since Intern requires 0 badges / level 1)."""
-    for name, req_badges, req_level in RANKS:
-        if badge_count >= req_badges and level >= req_level:
+    """Return the highest rank whose badge-count requirement is satisfied.
+
+    Ranks are badge-only; `level` is accepted (and ignored) so every
+    existing call site keeps working unchanged. Falls back to "Intern" if
+    somehow nothing matches (unreachable — Intern requires 0 badges)."""
+    for name, req_badges in RANKS:
+        if badge_count >= req_badges:
             return name
     return "Intern"
 
