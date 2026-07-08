@@ -11,7 +11,7 @@ def test_gamestate_round_trip():
     json_str = state.model_dump_json()
     loaded = GameState.model_validate_json(json_str)
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 12
+    assert loaded.schema_version == 13
 
 
 def test_schema_version_present():
@@ -19,7 +19,7 @@ def test_schema_version_present():
     state = GameState(player=PlayerProfile(name="Ash"))
     data = json.loads(state.model_dump_json())
     assert "schema_version" in data
-    assert data["schema_version"] == 12
+    assert data["schema_version"] == 13
 
 
 def test_profile_persist():
@@ -44,7 +44,7 @@ def test_new_game_defaults():
     assert state.player.level == 1
     assert state.player.xp == 0
     assert state.player.currency == 0
-    assert state.schema_version == 12
+    assert state.schema_version == 13
 
 
 def test_forward_compat_missing_field():
@@ -90,7 +90,7 @@ def test_player_profile_has_session_xp_earned():
 def test_schema_version_is_12():
     """TRACK-01: GameState.schema_version defaults to 12 after Phase C bump."""
     state = GameState.new_game("Ash")
-    assert state.schema_version == 12
+    assert state.schema_version == 13
 
 
 def test_last_active_date_round_trips():
@@ -124,7 +124,7 @@ def test_migrate_6_to_7_adds_codex_state():
     result = migrate(v6_data)
     assert "codex_state" in result
     assert result["codex_state"] == {}
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
 
 
 def test_migrate_6_to_7_preserves_existing_codex():
@@ -209,12 +209,12 @@ def test_full_migration_chain_v0_to_v12():
     from devmon.persistence.migrations import migrate
     v0_data = {"player": {"name": "OldTrainer"}}
     result = migrate(v0_data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert "codex_state" in result
     assert "inventory" in result
     assert "pending_evolution_notifications" in result
     assert result.get("indicator_hidden") is False
     state = GameState.model_validate(result)
-    assert state.schema_version == 12
+    assert state.schema_version == 13
     assert state.codex_state == {}
     assert state.inventory == {}

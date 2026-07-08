@@ -96,6 +96,7 @@
         {"item_id": "cloud_essence", "price": 20}
       ],
       "signature_deal_item_id": "great_capsule",
+      "quests": ["cloud_reaches_01"],
       "quest": {
         "id": "skye_cloud_harvest",
         "material_id": "cloud_essence",

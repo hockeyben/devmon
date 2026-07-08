@@ -51,3 +51,42 @@ def quests_command() -> None:
         chain_catalog(), progress_by_species, unlocked_regions, region_names, theme
     )
     console.print(legendary_panel)
+
+    # Task 2: main storyline quest section.
+    from devmon.engine.quest_loader import load_all_quests
+    from devmon.engine.quests import available_quests
+    from devmon.render.story_quests import render_story_quest_section
+
+    all_story_quests = load_all_quests()
+    active_story = [
+        all_story_quests[qid] for qid, status in state.quest_log.items()
+        if status == "active" and qid in all_story_quests
+    ]
+    completed_story = [
+        all_story_quests[qid] for qid, status in state.quest_log.items()
+        if status == "complete" and qid in all_story_quests
+    ]
+    story_panel = render_story_quest_section(
+        active_story, completed_story, available_quests(state), state.quest_objective_progress, theme
+    )
+    console.print(story_panel)
+
+
+@app.command("accept")
+def accept(quest_id: str = typer.Argument(..., help="Storyline quest id to accept")) -> None:
+    """Accept an available main-storyline quest."""
+    from devmon.engine.quests import accept_quest, available_quests
+    from devmon.persistence.save import load as load_state, save as save_state
+
+    state = load_state()
+    if state is None:
+        typer.echo("No save file found. Run some commands first!")
+        raise typer.Exit(1)
+
+    if quest_id not in {q.quest_id for q in available_quests(state)}:
+        typer.echo(f"Quest '{quest_id}' is not currently available to accept.")
+        raise typer.Exit(1)
+
+    accept_quest(state, quest_id)
+    save_state(state)
+    typer.echo(f"Accepted quest: {quest_id}")

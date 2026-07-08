@@ -81,7 +81,7 @@ def visit(name: str = typer.Argument(..., help="NPC name or id")) -> None:
     """Show an in-town NPC's stock, signature deal, and quest."""
     from devmon.config.loader import load_config
     from devmon.engine.item_loader import load_all_items
-    from devmon.engine.npcs import can_turn_in_quest
+    from devmon.engine.npcs import can_turn_in_quest, npc_available_story_quests
     from devmon.render.npcs import render_npc_visit
     from devmon.render.themes import get_theme
 
@@ -102,6 +102,15 @@ def visit(name: str = typer.Argument(..., help="NPC name or id")) -> None:
     quest_available = can_turn_in_quest(state, npc) if npc.quest else False
 
     console.print(render_npc_visit(npc, items_catalog, state.inventory, quest_available, theme))
+
+    # Task 2: main storyline quest offers this NPC has available right now.
+    for story_quest in npc_available_story_quests(state, npc):
+        console.print(
+            f"\n  [bold]{npc.name}[/bold] has a quest for you -- [bold]{story_quest.title}[/bold]\n"
+            f"  {story_quest.narrative.offer}\n"
+            f"  Run [bold]devmon quests accept {story_quest.quest_id}[/bold] to accept.",
+            style="dim white",
+        )
 
 
 @app.command("buy")

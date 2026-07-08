@@ -892,6 +892,12 @@ def battle_cmd() -> None:
                     update_game_quest_progress(state, "battle_win")
                     check_quest_completions(state, _battle_config)
                     check_achievements(state)
+                    # Task 2: main storyline quest progress after battle win
+                    from devmon.engine.quests import QuestEvent, complete_quest, progress_quest
+                    for _completed_quest_id in progress_quest(
+                        state, QuestEvent(type="defeat", region=state.current_region)
+                    ):
+                        complete_quest(state, _completed_quest_id)
                     # Quest/achievement rewards grant XP after the first
                     # level check — re-check so reward XP can level up too.
                     player_leveled = check_player_level_up(state.player, _battle_config) or player_leveled
@@ -1144,6 +1150,12 @@ def battle_cmd() -> None:
                     update_game_quest_progress(state, "battle_win")
                     check_quest_completions(state, _battle_config)
                     check_achievements(state)
+                    # Task 2: main storyline quest progress after battle win
+                    from devmon.engine.quests import QuestEvent, complete_quest, progress_quest
+                    for _completed_quest_id in progress_quest(
+                        state, QuestEvent(type="defeat", region=state.current_region)
+                    ):
+                        complete_quest(state, _completed_quest_id)
                     # Quest/achievement rewards grant XP after the first
                     # level check — re-check so reward XP can level up too.
                     player_leveled = check_player_level_up(state.player, _battle_config) or player_leveled
@@ -1347,6 +1359,12 @@ def battle_cmd() -> None:
                         update_game_quest_progress(state, "rare_capture")
                     check_quest_completions(state, _capture_config)
                     check_achievements(state)
+                    # Task 2: main storyline quest progress after capture
+                    from devmon.engine.quests import QuestEvent, complete_quest, progress_quest
+                    for _completed_quest_id in progress_quest(
+                        state, QuestEvent(type="capture", species_id=wild.template_id)
+                    ):
+                        complete_quest(state, _completed_quest_id)
                     # Re-check: reward XP from quests/achievements can level up
                     player_leveled = check_player_level_up(state.player, _capture_config) or player_leveled
                     # Save BEFORE rendering (T-06-09)

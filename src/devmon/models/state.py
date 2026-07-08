@@ -102,13 +102,22 @@ class GameState(BaseModel):
     Encounter queue added in Phase 5.
     """
 
-    schema_version: int = Field(default=12, description="Save file schema version for migration support")
+    schema_version: int = Field(default=13, description="Save file schema version for migration support")
     player: PlayerProfile
     creature_collection: list[OwnedCreature] = Field(default_factory=list)
 
     # Phase 6 party field (PRTY-01)
     party: list[str] = Field(default_factory=list)
     """Template IDs of active party creatures (max 3). Bootstrap: first owned creature."""
+
+    # Task 2 (schema 13): main storyline quests. Distinct from active_quests
+    # (Phase 9 rotating daily quest board) -- see engine/quests.py.
+    quest_log: dict[str, str] = Field(default_factory=dict)
+    """quest_id -> status ('active' | 'complete'). Absence means not yet accepted."""
+
+    quest_objective_progress: dict[str, dict[str, int]] = Field(default_factory=dict)
+    """quest_id -> {objective_index (str): current count}. Mirrors quest_log's
+    keys once a quest is accepted; see engine.quests.progress_quest."""
 
     # Phase 7 codex tracking (COLL-01)
     codex_state: dict[str, str] = Field(default_factory=dict)

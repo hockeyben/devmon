@@ -9,7 +9,7 @@ Adding a new migration:
   3. Register it in the `migrations` dict inside migrate()
 """
 
-CURRENT_VERSION = 12
+CURRENT_VERSION = 13
 
 
 def migrate(data: dict) -> dict:
@@ -39,6 +39,7 @@ def migrate(data: dict) -> dict:
         9: _migrate_9_to_10,
         10: _migrate_10_to_11,
         11: _migrate_11_to_12,
+        12: _migrate_12_to_13,
     }
 
     while version < CURRENT_VERSION:
@@ -250,4 +251,18 @@ def _migrate_11_to_12(data: dict) -> dict:
     data.setdefault("npc_quests_completed_count", 0)
     data.setdefault("legendary_chain_progress", {})
     data["schema_version"] = 12
+    return data
+
+
+def _migrate_12_to_13(data: dict) -> dict:
+    """Version 12 -> 13: Task 2 adds the main storyline quest system.
+
+    Uses setdefault() so pre-existing values are never overwritten (same
+    pattern as every migration above). Existing players start with an empty
+    quest_log/quest_objective_progress -- available_quests() recomputes
+    eligibility fresh on next load, so nothing needs backfilling.
+    """
+    data.setdefault("quest_log", {})
+    data.setdefault("quest_objective_progress", {})
+    data["schema_version"] = 13
     return data

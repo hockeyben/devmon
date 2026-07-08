@@ -96,7 +96,7 @@ def test_game_state_schema_version_default_is_12():
     from devmon.models.state import GameState
     from devmon.models.state import PlayerProfile
     state = GameState(player=PlayerProfile(name="test"))
-    assert state.schema_version == 12
+    assert state.schema_version == 13
 
 
 def test_game_state_has_inventory_field():
@@ -159,7 +159,7 @@ def test_migrate_full_chain_0_to_12():
     from devmon.persistence.migrations import migrate, CURRENT_VERSION
     data = {"schema_version": 0, "player": {"name": "ancient"}}
     result = migrate(data)
-    assert result["schema_version"] == CURRENT_VERSION == 12
+    assert result["schema_version"] == CURRENT_VERSION == 13
 
 
 # ---------------------------------------------------------------------------

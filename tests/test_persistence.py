@@ -15,7 +15,7 @@ def test_save_persist(tmp_save_dir):
     loaded = load()
     assert loaded is not None
     assert loaded.player.name == "Ash"
-    assert loaded.schema_version == 12
+    assert loaded.schema_version == 13
 
 
 def test_atomic_write(tmp_save_dir):
@@ -37,7 +37,7 @@ def test_schema_version(tmp_save_dir):
     state = GameState.new_game("Ash")
     save(state)
     data = json_mod.loads((tmp_save_dir / "save.json").read_text(encoding="utf-8"))
-    assert data["schema_version"] == 12
+    assert data["schema_version"] == 13
 
 
 def test_data_dir(tmp_save_dir):
@@ -90,10 +90,10 @@ def test_no_save_returns_none(tmp_save_dir):
 
 
 def test_migration_runner_noop():
-    """SAVE-03: Migration runner handles current version (v12 -> v12) cleanly — no-op."""
+    """SAVE-03: Migration runner handles current version (v13 -> v13) cleanly — no-op."""
     from devmon.persistence.migrations import migrate
     data = {
-        "schema_version": 12,
+        "schema_version": 13,
         "player": {
             "name": "Ash",
             "last_active_date": None,
@@ -124,18 +124,20 @@ def test_migration_runner_noop():
         "daily_bonus_pending": False,
         "pending_evolution_notifications": [],
         "indicator_hidden": False,
+        "quest_log": {},
+        "quest_objective_progress": {},
     }
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert result["player"]["name"] == "Ash"
 
 
 def test_migration_from_v0():
-    """SAVE-03: Save without schema_version (v0) is migrated to current version (v12)."""
+    """SAVE-03: Save without schema_version (v0) is migrated to current version (v13)."""
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
 
 
 def test_migration_unknown_version():
@@ -152,7 +154,7 @@ def test_migration_v1_to_v2_adds_phase2_fields():
     from devmon.persistence.migrations import migrate
     data = {"schema_version": 1, "player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert result["player"]["last_active_date"] is None
     assert result["player"]["streak_grace_used"] is False
     assert result["player"]["session_xp_earned"] == 0
@@ -163,7 +165,7 @@ def test_migration_v0_to_v12_full_path():
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ash"}}
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert "last_active_date" in result["player"]
     assert "level_up_pending" in result["player"]
     assert "creature_collection" in result
@@ -188,7 +190,7 @@ def test_migration_v2_to_v12_via_chain():
         }
     }
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert result.get("creature_collection") == []
     assert result.get("encounter_queue") is None
     assert result.get("party") == []
@@ -199,10 +201,10 @@ def test_migration_v2_to_v12_via_chain():
     assert result.get("indicator_hidden") is False
 
 
-def test_current_version_is_12():
-    """TRACK-01: migrations.CURRENT_VERSION equals 12 after Phase C bump."""
+def test_current_version_is_13():
+    """TRACK-01: migrations.CURRENT_VERSION equals 13 after Task 2's quest_log bump."""
     from devmon.persistence.migrations import CURRENT_VERSION
-    assert CURRENT_VERSION == 12
+    assert CURRENT_VERSION == 13
 
 
 def test_migrate_10_to_11():
@@ -210,7 +212,7 @@ def test_migrate_10_to_11():
     from devmon.persistence.migrations import migrate
     data = {"schema_version": 10, "player": {"name": "Test"}}
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert result["indicator_hidden"] is False
 
 
@@ -268,10 +270,40 @@ def test_full_migration_chain_reaches_v12_with_new_fields():
     from devmon.persistence.migrations import migrate
     data = {"player": {"name": "Ancient", "level": 30}}
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert result["player"]["perk_points"] == 29
     assert "badges_earned" in result
     assert "legendary_chain_progress" in result
+
+
+def test_load_migrates_pre_quest_save_with_empty_quest_log(tmp_save_dir):
+    """Task 2: a v12 save (no quest_log key) loads cleanly with an empty
+    quest_log and gets bumped to schema_version 13."""
+    import json
+
+    from devmon.persistence.save import _save_dir, load
+
+    old_save = {
+        "schema_version": 12,
+        "player": {"name": "Ash"},
+    }
+    save_path = _save_dir() / "save.json"
+    save_path.write_text(json.dumps(old_save), encoding="utf-8")
+
+    state = load()
+    assert state is not None
+    assert state.quest_log == {}
+    assert state.schema_version == 13
+
+
+def test_migrate_12_to_13_adds_quest_log():
+    """Task 2: migration 12->13 adds quest_log and quest_objective_progress."""
+    from devmon.persistence.migrations import _migrate_12_to_13
+    data = {"schema_version": 12, "player": {"name": "Test"}}
+    result = _migrate_12_to_13(data)
+    assert result["schema_version"] == 13
+    assert result["quest_log"] == {}
+    assert result["quest_objective_progress"] == {}
 
 
 def test_migrate_v2_to_v3():
@@ -337,9 +369,9 @@ def test_migrate_backfills_nature_and_ivs_for_old_creature():
 
 
 def test_migrate_does_not_bump_schema_version_for_backfill():
-    """CURRENT_VERSION stays 12 — the nature/IV backfill is not a schema migration."""
+    """CURRENT_VERSION stays 13 — the nature/IV backfill is not a schema migration."""
     from devmon.persistence.migrations import CURRENT_VERSION
-    assert CURRENT_VERSION == 12
+    assert CURRENT_VERSION == 13
 
 
 def test_migrate_preserves_existing_nature_and_ivs():

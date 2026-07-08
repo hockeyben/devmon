@@ -159,7 +159,7 @@ def test_migrate_v9_save_to_v12():
         "player": {"name": "Ash"},
     }
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     assert "pending_evolution_notifications" in result
 
 

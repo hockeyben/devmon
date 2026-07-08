@@ -174,3 +174,15 @@ def turn_in_quest(
     # distinct from npc_quest_completions' weekly-overwrite dict above.
     state.npc_quests_completed_count += 1
     return True, f"Quest complete! {npc.name} pays you: {', '.join(reward_parts)}."
+
+
+def npc_available_story_quests(state: "GameState", npc: "NPCDefinition") -> list:
+    """Return this NPC's storyline quest offers (Task 2) that are currently
+    available to the player -- i.e. present in npc.quests AND returned by
+    engine.quests.available_quests(state). Empty for NPCs with no `quests`
+    entries (most of them)."""
+    if not npc.quests:
+        return []
+    from devmon.engine.quests import available_quests
+    offered_ids = set(npc.quests)
+    return [q for q in available_quests(state) if q.quest_id in offered_ids]

@@ -121,7 +121,7 @@ def test_gamestate_schema_version_default_is_12():
     """Test 4a: GameState schema_version default is 12 (Phase C bump)."""
     from devmon.models.state import GameState, PlayerProfile
     state = GameState(player=PlayerProfile(name="Ash"))
-    assert state.schema_version == 12
+    assert state.schema_version == 13
 
 
 def test_gamestate_encounter_queue_none():
@@ -216,11 +216,11 @@ def test_full_migration_chain_0_to_12():
         "player": {"name": "Veteran"},
     }
     result = migrate(data)
-    assert result["schema_version"] == 12
+    assert result["schema_version"] == 13
     # Should be loadable into GameState
     state = GameState.model_validate(result)
     assert state.player.name == "Veteran"
-    assert state.schema_version == 12
+    assert state.schema_version == 13
 
 
 # ---------------------------------------------------------------------------
@@ -228,10 +228,10 @@ def test_full_migration_chain_0_to_12():
 # ---------------------------------------------------------------------------
 
 def test_current_version_invariant():
-    """Test 9: CURRENT_VERSION == 12 == GameState().schema_version (invariant from Phase 1)."""
+    """Test 9: CURRENT_VERSION == 13 == GameState().schema_version (invariant from Phase 1)."""
     from devmon.persistence.migrations import CURRENT_VERSION
     from devmon.models.state import GameState, PlayerProfile
-    assert CURRENT_VERSION == 12
+    assert CURRENT_VERSION == 13
     state = GameState(player=PlayerProfile(name="Ash"))
     assert state.schema_version == CURRENT_VERSION
 

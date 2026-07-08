@@ -107,6 +107,12 @@ def _travel_to(destination: str) -> None:
         raise typer.Exit(code=1)
 
     state.current_region = region_id
+
+    # Task 2: main storyline quest progress on region arrival
+    from devmon.engine.quests import QuestEvent, complete_quest, progress_quest
+    for completed_quest_id in progress_quest(state, QuestEvent(type="region_change", region=region_id)):
+        complete_quest(state, completed_quest_id)
+
     save(state)
 
     arrival = ARRIVAL_LINES.get(region_id, f"You arrive in {region.name}.")

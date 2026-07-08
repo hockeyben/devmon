@@ -1,0 +1,83 @@
+{
+  "_comment": "Main storyline quests (Task 2). One quest per region plus a capstone. Loaded by engine/quest_loader.py; DEVMON_HOME/quests.json entries merge in by quest_id (override/extend). Narrative tone drawn from data/regions.json's region descriptions (docs/STORY.md, once it lands, is the fuller tone reference for future additions). objectives is a list to support future multi-objective quests (e.g. dungeon gauntlets, see docs/ROADMAP-DEPTH.md).",
+  "quests": [
+    {
+      "quest_id": "termina_meadows_01",
+      "title": "First Compile",
+      "region": "termina_meadows",
+      "prerequisites": {"level": 1, "prior_quest": null, "rank": null},
+      "objectives": [{"type": "defeat", "count": 3, "target": "termina_meadows"}],
+      "rewards": {"bits": 50, "xp": 100, "items": [], "creatures": []},
+      "next_quests": ["compiler_wastes_01"],
+      "narrative": {
+        "offer": "The compiler hums, waiting for its first real test. Prove your build works -- defeat three wild DevMon in Termina Meadows.",
+        "complete": "First compile clean. Termina Meadows opens fully to you now."
+      }
+    },
+    {
+      "quest_id": "compiler_wastes_01",
+      "title": "Warnings as Errors",
+      "region": "compiler_wastes",
+      "prerequisites": {"level": 15, "prior_quest": "termina_meadows_01", "rank": null},
+      "objectives": [{"type": "defeat", "count": 5, "target": "compiler_wastes"}],
+      "rewards": {"bits": 120, "xp": 220, "items": [], "creatures": []},
+      "next_quests": ["cloud_reaches_01"],
+      "narrative": {
+        "offer": "The toolchain is rusted through and the build servers won't stop overheating. Win five battles in the Compiler Wastes and clear the warnings before they become errors.",
+        "complete": "Every warning silenced. The Wastes' scorched build flags cool at last."
+      }
+    },
+    {
+      "quest_id": "cloud_reaches_01",
+      "title": "Five Nines",
+      "region": "cloud_reaches",
+      "prerequisites": {"level": 30, "prior_quest": "compiler_wastes_01", "rank": null},
+      "objectives": [{"type": "capture", "count": 2, "target": null}],
+      "rewards": {"bits": 180, "xp": 320, "items": [], "creatures": []},
+      "next_quests": ["kernel_depths_01"],
+      "narrative": {
+        "offer": "The availability zones are drifting again and the SREs need proof your uptime holds. Capture two DevMon to show the redundancy works.",
+        "complete": "Five nines held. The Cloud Reaches trust your failover now."
+      }
+    },
+    {
+      "quest_id": "kernel_depths_01",
+      "title": "Below User-Space",
+      "region": "kernel_depths",
+      "prerequisites": {"level": 50, "prior_quest": "cloud_reaches_01", "rank": null},
+      "objectives": [{"type": "defeat", "count": 8, "target": "kernel_depths"}],
+      "rewards": {"bits": 260, "xp": 480, "items": [], "creatures": []},
+      "next_quests": ["voidnet_01"],
+      "narrative": {
+        "offer": "Below the OS itself, the substrate is dark and the syscalls are raw. Win eight battles in the Kernel Depths to prove you belong this deep.",
+        "complete": "The Depths go quiet around you. You've earned ring zero."
+      }
+    },
+    {
+      "quest_id": "voidnet_01",
+      "title": "Route Unknown",
+      "region": "voidnet",
+      "prerequisites": {"level": 70, "prior_quest": "kernel_depths_01", "rank": null},
+      "objectives": [{"type": "region_change", "count": 1, "target": "voidnet"}],
+      "rewards": {"bits": 400, "xp": 750, "items": [], "creatures": []},
+      "next_quests": ["voidnet_capstone"],
+      "narrative": {
+        "offer": "Packet undeliverable. There is no man page for what lives past the edge of the routing table -- travel to the Voidnet and see for yourself.",
+        "complete": "You've arrived where the routing table ends. Something legendary is watching."
+      }
+    },
+    {
+      "quest_id": "voidnet_capstone",
+      "title": "No Man's Page",
+      "region": "voidnet",
+      "prerequisites": {"level": 70, "prior_quest": "voidnet_01", "rank": null, "mythic_owned": true},
+      "objectives": [{"type": "defeat", "count": 10, "target": "voidnet"}],
+      "rewards": {"bits": 1000, "xp": 2000, "items": ["root_of_all"], "creatures": []},
+      "next_quests": [],
+      "narrative": {
+        "offer": "You've bonded with something the routing table has no entry for. Ten battles in the Voidnet stand between you and understanding what it means.",
+        "complete": "There is no man page for this either. But you wrote one anyway."
+      }
+    }
+  ]
+}

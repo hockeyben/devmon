@@ -74,3 +74,8 @@ class NPCDefinition(BaseModel):
 
     quest: Optional[NPCQuest] = None
     """This NPC's repeatable weekly fetch quest, if any."""
+
+    quests: list[str] = Field(default_factory=list)
+    """Task 2: main-storyline quest_ids this NPC can offer (see
+    data/quests.json / engine/quests.py). Distinct from `quest` above (the
+    Phase A2 repeatable weekly fetch quest) -- most NPCs have an empty list."""

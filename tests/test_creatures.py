@@ -166,7 +166,7 @@ def test_schema_version_is_12():
     """GameState should default to schema_version=12 after Phase C bump."""
     from devmon.models.state import GameState
     state = GameState(player={"name": "Tester"})
-    assert state.schema_version == 12, (
+    assert state.schema_version == 13, (
         f"Expected schema_version=12, got {state.schema_version}. "
         "Did you forget to update GameState.schema_version default?"
     )
