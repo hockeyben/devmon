@@ -59,40 +59,59 @@ BASH_PREEXEC_SOURCE = '[[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh'
 # Appended to $PROFILE by installer --powershell
 POWERSHELL_HOOK_SNIPPET = """\
 $script:_devmon_cmd_start = $null
+$script:_devmon_in_hook = $false
 function _DevmonPrePrompt {
-    $exit = $LASTEXITCODE
-    $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-    $dur = if ($script:_devmon_cmd_start) { $now - $script:_devmon_cmd_start } else { 0 }
-    $script:_devmon_cmd_start = $now
-    $log = if ($env:DEVMON_EVENT_LOG) { $env:DEVMON_EVENT_LOG } else {
-        Join-Path $env:APPDATA 'devmon\\devmon\\events.log'
-    }
-    $cwd = $PWD.Path -replace '\\\\', '/'
-    $entry = "{`"ts`":$now,`"exit`":$exit,`"dur`":$dur,`"cwd`":`"$cwd`",`"type`":`"cmd`"}`n"
-    try { Add-Content -Path $log -Value $entry -NoNewline -ErrorAction SilentlyContinue } catch {}
-    # AI detection (D-04)
-    $lastCmd = (Get-History -Count 1).CommandLine -split ' ' | Select-Object -First 1
-    if ($lastCmd -in @('claude','aider','cursor','copilot')) {
-        $aiEntry = "{`"ts`":$now,`"exit`":0,`"dur`":0,`"cwd`":`"$cwd`",`"type`":`"ai_start`"}`n"
-        try { Add-Content -Path $log -Value $aiEntry -NoNewline -ErrorAction SilentlyContinue } catch {}
-    }
-    # Touch show signal so daemon renders briefly then auto-hides
-    $runtimeDir = if ($env:DEVMON_HOME) { $env:DEVMON_HOME } else { Join-Path $env:TEMP 'devmon\\devmon' }
-    $showFile = Join-Path $runtimeDir 'indicator.show'
-    try { New-Item -ItemType Directory -Path $runtimeDir -Force -ErrorAction SilentlyContinue | Out-Null; [System.IO.File]::WriteAllText($showFile, '') } catch {}
-    # Indicator daemon auto-start (Phase 11)
-    $pidFile = Join-Path $runtimeDir 'indicator.pid'
-    $daemonAlive = $false
-    if (Test-Path $pidFile) {
-        $pidVal = Get-Content $pidFile -ErrorAction SilentlyContinue
-        if ($pidVal) { try { Get-Process -Id $pidVal -ErrorAction Stop | Out-Null; $daemonAlive = $true } catch {} }
-    }
-    if (-not $daemonAlive) {
-        Start-Process -FilePath 'devmon' -ArgumentList 'indicator','start' -WindowStyle Hidden -ErrorAction SilentlyContinue
+    # Reentrancy guard: cmdlets invoked below must never re-trigger the hook
+    if ($script:_devmon_in_hook) { return }
+    $script:_devmon_in_hook = $true
+    try {
+        $exit = $LASTEXITCODE
+        $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        $dur = if ($script:_devmon_cmd_start) { $now - $script:_devmon_cmd_start } else { 0 }
+        $script:_devmon_cmd_start = $now
+        # LOCALAPPDATA matches platformdirs.user_data_dir("devmon", "devmon"),
+        # where devmon's startup backlog processor reads events from.
+        $log = if ($env:DEVMON_EVENT_LOG) { $env:DEVMON_EVENT_LOG } else {
+            Join-Path $env:LOCALAPPDATA 'devmon\\devmon\\events.log'
+        }
+        $logDir = Split-Path -Parent $log
+        if (-not (Test-Path $logDir)) {
+            New-Item -ItemType Directory -Path $logDir -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+        $cwd = $PWD.Path -replace '\\\\', '/'
+        $entry = "{`"ts`":$now,`"exit`":$exit,`"dur`":$dur,`"cwd`":`"$cwd`",`"type`":`"cmd`"}`n"
+        try { Add-Content -Path $log -Value $entry -NoNewline -ErrorAction SilentlyContinue } catch {}
+        # AI detection (D-04)
+        $lastCmd = (Get-History -Count 1).CommandLine -split ' ' | Select-Object -First 1
+        if ($lastCmd -in @('claude','aider','cursor','copilot')) {
+            $aiEntry = "{`"ts`":$now,`"exit`":0,`"dur`":0,`"cwd`":`"$cwd`",`"type`":`"ai_start`"}`n"
+            try { Add-Content -Path $log -Value $aiEntry -NoNewline -ErrorAction SilentlyContinue } catch {}
+        }
+        # Touch show signal so daemon renders briefly then auto-hides
+        $runtimeDir = if ($env:DEVMON_HOME) { $env:DEVMON_HOME } else { Join-Path $env:TEMP 'devmon\\devmon' }
+        $showFile = Join-Path $runtimeDir 'indicator.show'
+        try { New-Item -ItemType Directory -Path $runtimeDir -Force -ErrorAction SilentlyContinue | Out-Null; [System.IO.File]::WriteAllText($showFile, '') } catch {}
+        # Indicator daemon auto-start (Phase 11)
+        $pidFile = Join-Path $runtimeDir 'indicator.pid'
+        $daemonAlive = $false
+        if (Test-Path $pidFile) {
+            $pidVal = Get-Content $pidFile -ErrorAction SilentlyContinue
+            if ($pidVal) { try { Get-Process -Id $pidVal -ErrorAction Stop | Out-Null; $daemonAlive = $true } catch {} }
+        }
+        if (-not $daemonAlive) {
+            try { Start-Process -FilePath 'devmon' -ArgumentList 'indicator','start' -WindowStyle Hidden -ErrorAction SilentlyContinue } catch {}
+        }
+    } finally {
+        $script:_devmon_in_hook = $false
     }
 }
-$ExecutionContext.InvokeCommand.PostCommandLookupAction = {
-    param($cmd, $cmdInfo, $inputObj, $outputObj)
+# Wrap the prompt function (canonical PowerShell pre-prompt hook). The previous
+# PostCommandLookupAction approach used a wrong signature (it passes 2 args,
+# not 4) so it silently never fired — and would have run on every command
+# lookup inside every pipeline if it had.
+if (-not $script:_devmon_orig_prompt) { $script:_devmon_orig_prompt = $function:prompt }
+function prompt {
     _DevmonPrePrompt
+    & $script:_devmon_orig_prompt
 }\
 """

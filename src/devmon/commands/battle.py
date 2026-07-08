@@ -754,6 +754,9 @@ def battle_cmd() -> None:
                     update_game_quest_progress(state, "battle_win")
                     check_quest_completions(state, _battle_config)
                     check_achievements(state)
+                    # Quest/achievement rewards grant XP after the first
+                    # level check — re-check so reward XP can level up too.
+                    player_leveled = check_player_level_up(state.player, _battle_config) or player_leveled
                     # Save BEFORE rendering (Pitfall 4 / T-06-09)
                     save(state)
                     live.stop()
@@ -930,6 +933,9 @@ def battle_cmd() -> None:
                     update_game_quest_progress(state, "battle_win")
                     check_quest_completions(state, _battle_config)
                     check_achievements(state)
+                    # Quest/achievement rewards grant XP after the first
+                    # level check — re-check so reward XP can level up too.
+                    player_leveled = check_player_level_up(state.player, _battle_config) or player_leveled
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     live.stop()
@@ -1080,6 +1086,8 @@ def battle_cmd() -> None:
                         update_game_quest_progress(state, "rare_capture")
                     check_quest_completions(state, _capture_config)
                     check_achievements(state)
+                    # Re-check: reward XP from quests/achievements can level up
+                    player_leveled = check_player_level_up(state.player, _capture_config) or player_leveled
                     # Save BEFORE rendering (T-06-09)
                     save(state)
                     render_capture_screen(console, wild_template.name, wild.rarity, rewards)

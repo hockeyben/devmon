@@ -297,3 +297,8 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     # Check quest completions and achievement unlocks
     check_quest_completions(state, config)
     check_achievements(state)
+
+    # Re-check level-up: quest completions, daily bonuses, and achievement
+    # tiers above all grant player XP after the first check at line ~274 —
+    # without this, reward XP banks past the threshold and never levels.
+    check_player_level_up(profile, config)

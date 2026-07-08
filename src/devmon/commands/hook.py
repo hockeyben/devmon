@@ -22,17 +22,49 @@ console = Console()
 
 
 def _powershell_profile() -> Path:
-    """Return the PowerShell $PROFILE path on Windows."""
-    # Typically: ~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1
+    """Return the PowerShell $PROFILE path on Windows.
+
+    Asks the user's actual shell (pwsh 7 if installed, else Windows
+    PowerShell 5.1) for its real $PROFILE — a hardcoded
+    ~/Documents/PowerShell/... guess breaks under OneDrive Documents
+    redirection and points at the pwsh 7 profile even on machines that
+    only have Windows PowerShell 5.1, silently installing the hook where
+    no shell ever loads it.
+    """
+    import shutil
+    import subprocess
+
+    for exe in ("pwsh", "powershell"):
+        if shutil.which(exe) is None:
+            continue
+        try:
+            result = subprocess.run(
+                [exe, "-NoProfile", "-NonInteractive", "-Command", "$PROFILE"],
+                capture_output=True, text=True, timeout=15,
+            )
+            profile = result.stdout.strip()
+            if result.returncode == 0 and profile:
+                return Path(profile)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+    # Fallback heuristic (non-Windows or query failure)
     return Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
 
 
-# Default rc file locations per shell — function must be defined before this dict
+# Default rc file locations per shell. PowerShell resolution shells out, so
+# it is resolved lazily via _shell_rc_path() — never at import time (devmon
+# startup must stay instant; main.py imports this module on every run).
 _SHELL_RC_PATHS: dict[str, Path] = {
     "bash": Path.home() / ".bashrc",
     "zsh": Path.home() / ".zshrc",
-    "powershell": _powershell_profile(),
 }
+
+
+def _shell_rc_path(shell: str) -> Path:
+    """Resolve the rc/profile path for a shell (lazy for powershell)."""
+    if shell == "powershell":
+        return _powershell_profile()
+    return _SHELL_RC_PATHS[shell]
 
 
 @app.command("install")
@@ -67,7 +99,7 @@ def install(
             installed_any = True
 
     if powershell:
-        rc = _SHELL_RC_PATHS["powershell"]
+        rc = _shell_rc_path("powershell")
         if is_installed(rc):
             console.print(f"[yellow]PowerShell hook already installed in {rc}[/yellow]")
         else:
@@ -94,7 +126,7 @@ def uninstall(
     for shell_name, flag in [("bash", bash), ("zsh", zsh), ("powershell", powershell)]:
         if not flag:
             continue
-        rc = _SHELL_RC_PATHS[shell_name]
+        rc = _shell_rc_path(shell_name)
         if not is_installed(rc):
             console.print(f"[dim]{shell_name} hook not found in {rc} — skipping[/dim]")
         else:

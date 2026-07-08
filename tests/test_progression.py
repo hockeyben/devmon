@@ -104,3 +104,26 @@ def test_streak_breaks_after_grace_exhausted():
     state.player.streak_grace_used = True
     update_streak(state.player, today, min_xp=1, session_xp=50, config=DEFAULT_CONFIG)
     assert state.player.streak_count == 1
+
+
+def test_reward_xp_from_quests_achievements_levels_up():
+    """Reward XP granted by quest/achievement checks after the first level
+    check must still level the player (regression: XP banked past the
+    threshold with the level never advancing)."""
+    from devmon.engine.progression import process_events, xp_for_level
+    from devmon.models.state import GameState
+    from devmon.config.defaults import DEFAULT_CONFIG
+
+    state = GameState.new_game("Tester")
+    # Bank XP just below the level-2 threshold so the event's own XP does
+    # not cross it, then let achievement stats guarantee reward XP that does.
+    state.player.xp = xp_for_level(2, DEFAULT_CONFIG) - 1
+    state.player.total_commands = 49  # Terminal User bronze threshold is 50
+    events = [{"ts": 1, "exit": 0, "dur": 10, "cwd": "/x", "type": "cmd"}]
+
+    process_events(state, events, DEFAULT_CONFIG)
+
+    assert state.player.xp >= xp_for_level(2, DEFAULT_CONFIG)
+    assert state.player.level >= 2, (
+        "reward XP crossed the threshold but the level never advanced"
+    )
