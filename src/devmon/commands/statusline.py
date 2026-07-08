@@ -8,10 +8,20 @@ cost.total_lines_added/removed, workspace.current_dir) and prints:
   1. (optional) the user's existing statusline command's stdout, if
      `--chain` is given -- so DevMon composes with an existing statusline
      chain (e.g. GSD/ccstatusline) instead of replacing it.
-  2. Exactly one right-aligned DevMon row: the Lv./XP-bar strip (reused from
-     `daemon.frames.build_status_strip`), or a WILD DEVMON encounter row
-     with an OSC 8 hyperlink to `devmon://battle` (clickable in terminals
-     that support it -- Windows Terminal: ctrl+click).
+  2. Exactly one right-aligned DevMon row: the Lv./XP-bar strip (built
+     locally, reusing only the bar segment constants from
+     `daemon.frames` -- see module note below on width-safe glyphs), or a
+     WILD DEVMON encounter row with an OSC 8 hyperlink to `devmon://battle`
+     (clickable in terminals that support it -- Windows Terminal:
+     ctrl+click).
+
+Width-safe glyphs: statusline rows use ONLY unambiguous width-1 characters
+(anything below U+2600, plus the ▰▱ bar chars U+25B0/U+25B1) -- never the
+daemon strip's ⚡/⚠/⚔ (ambiguous-width codepoints that terminals render 1 or
+2 cells inconsistently, causing composed padding to overlap adjacent
+statusline text). ANSI color provides the flair instead. This module must
+NOT call `daemon.frames.build_status_strip` for its full row for this
+reason -- that surface is a separate daemon-only concern and stays as-is.
 
 Two side effects run after the row prints, both best-effort and silent on
 any failure:
@@ -48,8 +58,18 @@ import typer
 _OSC8_OPEN = "\033]8;;devmon://battle\033\\"
 _OSC8_CLOSE = "\033]8;;\033\\"
 _BOLD_YELLOW = "\033[1;33m"
+_BRIGHT_YELLOW = "\033[93m"
 _CYAN = "\033[36m"
 _RESET = "\033[0m"
+
+# Width-safe glyph for the idle row's leading marker. U+26A1 (⚡, the daemon
+# strip's glyph) is an AMBIGUOUS-WIDTH codepoint -- terminals render it 1 or
+# 2 cells inconsistently, so padding computed against one width overlaps
+# adjacent statusline text on terminals that render the other. Every
+# character used in a statusline row must be < U+2600 (unambiguous width 1);
+# the ▰▱ bar chars (U+25B0/U+25B1) are below that threshold and stay. Color
+# (not glyph choice) provides the flair instead.
+_UP_ARROW = "↯"  # ↯ -- width-1, colored bright yellow below
 
 
 def _read_stdin_payload() -> tuple[bytes, dict]:
@@ -122,17 +142,33 @@ def _run_chain(chain: str, raw_stdin: bytes) -> list[str]:
 
 
 def _normal_row(level: int, earned: int, needed: int, use_emoji: bool) -> str:
-    """Build the idle Lv./xp-bar row. Kept simple per design doc: ascii mode
-    wraps the whole strip in cyan; emoji mode is left as-is (no extra
-    per-segment styling)."""
-    from devmon.daemon.frames import build_status_strip
-
-    text, _ = build_status_strip(
-        level, earned, needed, encounter=False, use_emoji=use_emoji, glyph_frame_idx=0,
+    """Build the idle Lv./xp-bar row, built locally (not via
+    daemon.frames.build_status_strip -- that surface renders the daemon's
+    own indicator strip and must stay untouched). Width-safe: only U+25B0/
+    U+25B1 bar chars and the U+21AF glyph appear outside ANSI/OSC 8
+    wrappers, both unambiguous width-1 codepoints. Segments/fill chars are
+    still reused from devmon.daemon.frames so the two surfaces render
+    identical bars."""
+    from devmon.daemon.frames import (
+        compute_bar_progress,
+        STRIP_BAR_SEGMENTS,
+        STRIP_BAR_FILLED_EMOJI,
+        STRIP_BAR_EMPTY_EMOJI,
+        STRIP_BAR_FILLED_ASCII,
+        STRIP_BAR_EMPTY_ASCII,
     )
-    if not use_emoji:
-        text = f"{_CYAN}{text}{_RESET}"
-    return text
+
+    filled, pct = compute_bar_progress(earned, needed)
+    empty = STRIP_BAR_SEGMENTS - filled
+
+    if use_emoji:
+        bar = (STRIP_BAR_FILLED_EMOJI * filled) + (STRIP_BAR_EMPTY_EMOJI * empty)
+        glyph = f"{_BRIGHT_YELLOW}{_UP_ARROW}{_RESET}"
+        return f"{glyph} Lv.{level} {bar} {pct}%"
+
+    bar = (STRIP_BAR_FILLED_ASCII * filled) + (STRIP_BAR_EMPTY_ASCII * empty)
+    text = f"DevMon Lv.{level} [{bar}] {pct}%"
+    return f"{_CYAN}{text}{_RESET}"
 
 
 def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
@@ -141,28 +177,26 @@ def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -
 
     _, pct = compute_bar_progress(earned, needed)
     if use_emoji:
-        return f"⚡Lv.{level} {pct}%"
+        glyph = f"{_BRIGHT_YELLOW}{_UP_ARROW}{_RESET}"
+        return f"{glyph} Lv.{level} {pct}%"
     return f"{_CYAN}DevMon Lv.{level} {pct}%{_RESET}"
 
 
 def _encounter_row(use_emoji: bool) -> str:
     """Build the wild-encounter row with a clickable OSC 8 link to
     `devmon://battle` (component 3 -- registered via `devmon protocol
-    install`)."""
-    if use_emoji:
-        prefix = "⚠ WILD DEVMON — "
-        link_label = "⚔ battle"
-    else:
-        prefix = "! WILD DEVMON - "
-        link_label = "battle"
-    link = f"{_BOLD_YELLOW}{_OSC8_OPEN}{link_label}{_OSC8_CLOSE}{_RESET}"
+    install`). Width-safe: "(!)" replaces the ambiguous-width ⚠/⚔ glyphs;
+    the em dash (U+2014) is unambiguous width-1. The `[battle]` link label
+    (brackets included) is bold yellow."""
+    prefix = "(!) WILD DEVMON — " if use_emoji else "(!) WILD DEVMON - "
+    link = f"{_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
     return prefix + link
 
 
 def _encounter_row_compact(use_emoji: bool) -> str:
-    """Narrow-terminal variant of the encounter row: just the clickable link."""
-    link_label = "⚔ battle" if use_emoji else "! battle"
-    return f"{_BOLD_YELLOW}{_OSC8_OPEN}{link_label}{_OSC8_CLOSE}{_RESET}"
+    """Narrow-terminal variant of the encounter row: just the clickable
+    `[battle]` link -- identical in emoji and ascii mode (no glyph to swap)."""
+    return f"{_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
 
 
 def _effective_cols(config: dict) -> int:

@@ -45,6 +45,23 @@ class PlayerProfile(BaseModel):
     level_up_pending: bool = False      # Set True when level threshold crossed; cleared after banner displays
     pending_level_value: int = 0        # The new level to show in the banner
 
+    # Phase 12 — level-curve retune migration + hourly AI XP accounting
+    xp_curve_version: int = 1
+    """Level-curve schema version the banked `xp` value was computed under.
+    Old saves lacking this field default to 1 (pre-Phase-12 1.5-exponent
+    curve) via Pydantic's normal missing-field default -- no explicit save
+    migration entry needed. `engine.progression.migrate_xp_curve` bumps this
+    to CURRENT_XP_CURVE_VERSION (2) on load, rescaling banked XP so a
+    curve retune doesn't strand a mid-level player behind a suddenly-huge
+    gap. Brand-new games start at 2 (see GameState.new_game)."""
+
+    ai_hour_bucket: dict = Field(default_factory=dict)
+    """Hourly progressive-XP accumulator for ai_code events (Phase 12).
+    Keys: "hour" (int epoch-hour = event ts // 3_600_000) and "raw" (float,
+    running sum of raw pre-curve AI-activity XP so far this hour). Reset
+    whenever an event's hour differs from the bucket's stored hour. See
+    `engine.progression.hourly_curve` / `process_events`."""
+
 
 class GameState(BaseModel):
     """Root game state model — all mutable game data.
@@ -120,6 +137,10 @@ class GameState(BaseModel):
     def new_game(cls, player_name: str) -> "GameState":
         """Bootstrap a fresh game state for a new player (SAVE-01 fresh install)."""
         state = cls(player=PlayerProfile(name=player_name))
+        # New games start on the CURRENT level curve (must match
+        # engine.progression.CURRENT_XP_CURVE_VERSION) -- no migration is
+        # ever needed for a player who never earned XP under the old curve.
+        state.player.xp_curve_version = 2
         # Starter kit per D-20: new players get basic capture and healing items
         state.inventory["basic_capsule"] = 5
         state.inventory["small_potion"] = 3

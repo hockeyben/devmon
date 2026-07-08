@@ -93,11 +93,33 @@ def load() -> GameState | None:
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
             raw = migrate(raw)
-            return GameState.model_validate(raw)
+            state = GameState.model_validate(raw)
         except Exception:
             # D-16: Rename corrupt file so it can be investigated, not silently deleted
             corrupted_path = path.parent / (path.name + ".corrupt.bak")
             path.rename(corrupted_path)
             continue
+
+        # Phase 12: level-curve retune migration. Runs on every load() call
+        # (CLI, statusline sync, etc.) so it's transparent regardless of
+        # entry point. Mutates state.player in place if the save predates
+        # CURRENT_XP_CURVE_VERSION; the caller doesn't need to save
+        # immediately -- the next save() call persists the migrated xp.
+        # Best-effort: a migration failure must never turn a valid load
+        # into a lost save (unlike the parse/validate try above, this is
+        # NOT a reason to rename the file as corrupt).
+        try:
+            from devmon.config.loader import load_config
+            config = load_config()
+        except Exception:
+            from devmon.config.defaults import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
+        try:
+            from devmon.engine.progression import migrate_xp_curve
+            migrate_xp_curve(state.player, config)
+        except Exception:
+            pass
+
+        return state
 
     return None

@@ -50,7 +50,12 @@ DEFAULT_CONFIG: dict = {
         "xp_multiplier_growth": 1.2,      # per-minute compounding factor
         "xp_multiplier_cap": 3.0,         # max per-minute multiplier (inflation guard)
         "xp_base_level": 100,             # XP for level 1 -> level 2
-        "xp_level_exponent": 1.5,         # exponential level curve (D-06)
+        "xp_level_exponent": 2.0,         # exponential level curve (D-06). Retuned
+                                           # from 1.5 for the uncapped AI XP rates
+                                           # (Phase 12) -- L10=10,000 L20=40,000
+                                           # L50=250,000. See engine.progression's
+                                           # migrate_xp_curve for the banked-XP
+                                           # save migration this retune requires.
         "xp_min_streak_day": 10,          # minimum XP to count as a coding day (D-08)
         # Flat XP per event type (TRACK-02, TRACK-03):
         "xp_git_commit": 50,              # bonus XP for git_commit event
@@ -60,13 +65,20 @@ DEFAULT_CONFIG: dict = {
         "streak_multiplier_cap": 2.0,     # max streak multiplier at 20 days
         # Claude statusline XP bridge (ai_code events -- metrics diffed from
         # Claude Code's statusline payload, see engine/progression.py).
-        # Progressive with NO hard cap: linear up to xp_ai_burst_knee raw XP
-        # per burst, then knee + 2*sqrt(excess) -- every token counts, but a
-        # mega-burst can't power-level.
+        # Progressive with NO hard cap, applied HOURLY rather than per burst
+        # (Phase 12): bursts land every few seconds, so smoothing per burst
+        # was effectively linear over a long-running multi-agent task --
+        # unbounded per hour. `hourly_curve()` sums each event's raw XP into
+        # a per-epoch-hour bucket on the player profile and curves the
+        # *cumulative hourly total*: linear up to xp_ai_hourly_knee, then
+        # knee + xp_ai_hourly_scale*sqrt(excess) beyond -- every burst always
+        # earns something, but an hour of unattended agent activity can't
+        # out-earn active engaged coding at the same raw pace.
         "xp_ai_lines_per_xp": 2,             # 1 XP per this many changed lines
         "xp_ai_tokens_per_xp": 250,          # 1 XP per this many output tokens
         "xp_ai_active_seconds_per_xp": 45,   # 1 XP per this many API-active seconds
-        "xp_ai_burst_knee": 60,              # linear up to here, sqrt beyond
+        "xp_ai_hourly_knee": 250,            # linear up to here (per hour), sqrt beyond
+        "xp_ai_hourly_scale": 4.0,           # sqrt(excess) multiplier beyond the knee
         "xp_ai_min_burst": 3,                # bank deltas until worth this many XP
     },
     "ui": {

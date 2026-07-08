@@ -12,6 +12,18 @@ Streak logic (D-08, D-09, D-11):
 - Grace period: miss 1 day -> streak preserved, streak_grace_used=True
 - Miss 2 days or grace exhausted -> streak resets to 1
 
+Level curve (Phase 12): xp_for_level = xp_base_level * level^xp_level_exponent
+(exponent 2.0 as of Phase 12, retuned up from 1.5 for the uncapped AI XP
+rates below). migrate_xp_curve() rescales banked XP on load so existing
+saves keep their in-level progress fraction across a curve retune.
+
+AI XP accounting (Phase 12): ai_code events (Claude statusline XP bridge)
+are no longer knee'd per burst -- bursts land every few seconds, so
+per-burst smoothing was effectively linear over a long-running task. XP
+per event is now the MARGINAL award from an HOURLY progressive curve
+(hourly_curve()) applied to a running raw-XP total kept in
+PlayerProfile.ai_hour_bucket. See process_events() and hourly_curve().
+
 Architecture: This module imports from models/ (PlayerProfile, GameState) only.
 It does NOT import from commands/, shell/, or render/.
 The bus singleton is NOT imported here — events are emitted by commands/.
@@ -28,6 +40,16 @@ if TYPE_CHECKING:
 _DEFAULT_SESSION_GAP_MINUTES = 30
 # Flat XP for a successful plain command (type="cmd", exit=0)
 _CMD_BASE_XP = 1
+
+# Level-curve schema version (Phase 12 retune: xp_level_exponent 1.5 -> 2.0).
+# Bump this and extend migrate_xp_curve() if the curve shape changes again.
+CURRENT_XP_CURVE_VERSION = 2
+
+# Old curve params (frozen at their pre-Phase-12 values) -- used ONLY by
+# migrate_xp_curve() to recover a save's progress-within-level before the
+# retune, never by xp_for_level() (which always reads the live config).
+_OLD_XP_BASE_LEVEL = 100
+_OLD_XP_LEVEL_EXPONENT = 1.5
 
 
 def compute_event_xp(event: dict, config: dict) -> int:
@@ -60,29 +82,98 @@ def compute_event_xp(event: dict, config: dict) -> int:
         # (Claude output tokens), "api_ms" (API-active milliseconds).
         # Does NOT increment total_commands (process_events only counts
         # type=="cmd" toward that).
-        return compute_ai_burst_xp(
+        #
+        # NOTE (Phase 12): this is the pure LINEAR raw-XP value with no
+        # progressive curve applied -- a direct-call convenience for
+        # ad-hoc/test scoring. process_events() does NOT route ai_code
+        # events through this function; it applies the hourly progressive
+        # curve via the player's ai_hour_bucket instead (see hourly_curve()
+        # and process_events() below) because per-burst knee smoothing was
+        # effectively linear over a long-running multi-agent task (bursts
+        # land every few seconds -> unbounded XP per hour).
+        return int(compute_ai_raw_xp(
             lines=int(event.get("lines", 0) or 0),
             tokens=int(event.get("tokens", 0) or 0),
             api_ms=int(event.get("api_ms", 0) or 0),
             config=config,
-        )
+        ))
     else:
         # Plain successful command: 1 XP base
         return _CMD_BASE_XP
 
 
+def compute_ai_raw_xp(lines: int, tokens: int, api_ms: int, config: dict) -> float:
+    """Linear blend of Claude activity metrics into raw (pre-curve) XP.
+
+    Blends three metrics additively -- changed lines, Claude output tokens,
+    and API-active time -- with no smoothing applied. This is the shared
+    "how much did this burst actually do" measure; both the direct
+    compute_event_xp() path and the hourly progressive curve
+    (process_events() / hourly_curve()) build on top of it.
+
+    Args:
+        lines: Added+removed line count for this burst.
+        tokens: Claude output tokens for this burst.
+        api_ms: API-active milliseconds for this burst.
+        config: DevMon config dict.
+
+    Returns:
+        Non-negative float raw XP value.
+    """
+    game_cfg = config.get("game", {})
+    per_lines = max(1, int(game_cfg.get("xp_ai_lines_per_xp", 2)))
+    per_tokens = max(1, int(game_cfg.get("xp_ai_tokens_per_xp", 250)))
+    per_seconds = max(1, int(game_cfg.get("xp_ai_active_seconds_per_xp", 45)))
+
+    return (
+        max(0, lines) / per_lines
+        + max(0, tokens) / per_tokens
+        + (max(0, api_ms) / 1000.0) / per_seconds
+    )
+
+
+def hourly_curve(raw: float, config: dict) -> float:
+    """Progressive, uncapped XP curve applied to an HOUR's cumulative raw
+    AI-activity XP (Phase 12) -- NOT per burst.
+
+    Bursts land every few seconds, so smoothing per burst was effectively
+    linear overall: a long-running multi-agent task could earn unbounded XP
+    per hour. Instead, process_events() sums each ai_code event's raw XP
+    into a running per-epoch-hour total on the player profile
+    (PlayerProfile.ai_hour_bucket) and curves that cumulative total: linear
+    up to xp_ai_hourly_knee raw XP, then
+    `knee + xp_ai_hourly_scale * sqrt(excess)` beyond. Monotonic increasing,
+    no hard cap -- every unit of activity always earns something, but the
+    marginal rate drops off past the knee so an hour of unattended agent
+    activity can't out-earn active engaged coding at the same raw pace.
+
+    Args:
+        raw: Cumulative raw XP accumulated so far this hour.
+        config: DevMon config dict.
+
+    Returns:
+        Non-negative float curved XP value.
+    """
+    import math
+
+    game_cfg = config.get("game", {})
+    knee = max(1.0, float(game_cfg.get("xp_ai_hourly_knee", 250)))
+    scale = float(game_cfg.get("xp_ai_hourly_scale", 4.0))
+
+    raw = max(0.0, raw)
+    if raw <= knee:
+        return raw
+    return knee + scale * math.sqrt(raw - knee)
+
+
 def compute_ai_burst_xp(lines: int, tokens: int, api_ms: int, config: dict) -> int:
-    """Progressive, uncapped XP for one burst of Claude activity.
-
-    Blends three metrics into raw XP -- changed lines, Claude output tokens,
-    and API-active time -- then applies a knee curve: linear up to
-    xp_ai_burst_knee, `knee + 2*sqrt(excess)` beyond. Every metric unit
-    always earns (no hard cap), but a mega-burst (e.g. a large agent sweep
-    landing at once) can't power-level the player.
-
-    Also used by the statusline XP bridge to estimate whether banked deltas
-    are worth emitting yet (xp_ai_min_burst) -- keep this the single source
-    of truth for the conversion.
+    """Thin int estimator around compute_ai_raw_xp -- kept for the
+    statusline XP bridge's emit-threshold check (commands/statusline.py:
+    `_xp_bridge`), which only needs a rough estimate of whether banked
+    deltas are worth emitting yet (xp_ai_min_burst). It intentionally does
+    NOT apply the hourly progressive curve: the bridge has no visibility
+    into the player's current hour bucket, and the estimate only gates
+    emission -- the real award happens later via process_events().
 
     Args:
         lines: Added+removed line count since the last emitted burst.
@@ -91,25 +182,9 @@ def compute_ai_burst_xp(lines: int, tokens: int, api_ms: int, config: dict) -> i
         config: DevMon config dict.
 
     Returns:
-        Non-negative integer XP value.
+        Non-negative integer XP estimate.
     """
-    import math
-
-    game_cfg = config.get("game", {})
-    per_lines = max(1, int(game_cfg.get("xp_ai_lines_per_xp", 2)))
-    per_tokens = max(1, int(game_cfg.get("xp_ai_tokens_per_xp", 250)))
-    per_seconds = max(1, int(game_cfg.get("xp_ai_active_seconds_per_xp", 45)))
-
-    raw = (
-        max(0, lines) / per_lines
-        + max(0, tokens) / per_tokens
-        + (max(0, api_ms) / 1000.0) / per_seconds
-    )
-
-    knee = max(1, int(game_cfg.get("xp_ai_burst_knee", 60)))
-    if raw <= knee:
-        return int(raw)
-    return int(knee + 2.0 * math.sqrt(raw - knee))
+    return int(compute_ai_raw_xp(lines, tokens, api_ms, config))
 
 
 def _compute_session_time_xp(duration_ms: int, config: dict) -> int:
@@ -167,8 +242,46 @@ def xp_for_level(level: int, config: dict) -> int:
     """
     game_cfg = config.get("game", {})
     base = float(game_cfg.get("xp_base_level", 100))
-    exponent = float(game_cfg.get("xp_level_exponent", 1.5))
+    exponent = float(game_cfg.get("xp_level_exponent", 2.0))
     return int(base * (level ** exponent))
+
+
+def migrate_xp_curve(profile: "PlayerProfile", config: dict) -> bool:
+    """One-time migration of banked XP when the level curve's shape changes.
+
+    Phase 12 retuned xp_level_exponent from 1.5 to 2.0 (the uncapped AI XP
+    rates leveled far too fast under the old curve). A save's cumulative
+    `xp` was banked under the OLD curve, so re-reading it against the NEW
+    curve without migration would strand a mid-level player behind a
+    suddenly-huge gap (or, less commonly, ahead of where they should be).
+
+    Approach: compute the player's progress FRACTION within their current
+    level under the frozen old curve (base=100, exponent=1.5), then place
+    that same fraction within their current level under the live (new)
+    curve. Level number itself never changes -- only the xp value needed to
+    reproduce the same in-level progress bar.
+
+    Args:
+        profile: PlayerProfile instance to mutate (xp, xp_curve_version).
+        config: DevMon config dict (supplies the CURRENT curve params).
+
+    Returns:
+        True if a migration was performed (profile mutated); False if the
+        profile was already on CURRENT_XP_CURVE_VERSION (no-op).
+    """
+    if profile.xp_curve_version >= CURRENT_XP_CURVE_VERSION:
+        return False
+
+    old_lo = _OLD_XP_BASE_LEVEL * (profile.level ** _OLD_XP_LEVEL_EXPONENT)
+    old_hi = _OLD_XP_BASE_LEVEL * ((profile.level + 1) ** _OLD_XP_LEVEL_EXPONENT)
+    span = old_hi - old_lo
+    frac = 0.0 if span <= 0 else max(0.0, min(1.0, (profile.xp - old_lo) / span))
+
+    new_lo = xp_for_level(profile.level, config)
+    new_hi = xp_for_level(profile.level + 1, config)
+    profile.xp = int(new_lo + frac * (new_hi - new_lo))
+    profile.xp_curve_version = CURRENT_XP_CURVE_VERSION
+    return True
 
 
 def xp_within_level(profile: "PlayerProfile", config: dict) -> tuple[int, int]:
@@ -307,8 +420,37 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
         if event.get("type", "cmd") == "cmd":
             profile.total_commands += 1
 
-        # Award event XP
-        xp = compute_event_xp(event, config)
+        # Award event XP. ai_code events are routed through the hourly
+        # progressive curve (Phase 12) instead of compute_event_xp's flat
+        # per-event path: bursts land every few seconds, so knee-ing each
+        # burst individually was effectively linear over a long-running
+        # multi-agent task (unbounded XP per hour). Instead we track a
+        # running raw-XP total per epoch-hour on the player profile
+        # (ai_hour_bucket) and award only the MARGINAL XP the curve grants
+        # for this event's slice: int(curve(after)) - int(curve(before)).
+        # Summed across a run of events sharing an hour, these marginal
+        # ints telescope EXACTLY to int(curve(total_raw)) -- no cumulative
+        # rounding drift versus scoring the whole hour's raw total at once.
+        if event.get("exit", 1) == 0 and event.get("type") == "ai_code":
+            hour = ts // 3_600_000
+            bucket = profile.ai_hour_bucket
+            if bucket.get("hour") != hour:
+                bucket = {"hour": hour, "raw": 0.0}
+                profile.ai_hour_bucket = bucket
+
+            event_raw = compute_ai_raw_xp(
+                lines=int(event.get("lines", 0) or 0),
+                tokens=int(event.get("tokens", 0) or 0),
+                api_ms=int(event.get("api_ms", 0) or 0),
+                config=config,
+            )
+            before = int(hourly_curve(bucket["raw"], config))
+            bucket["raw"] += event_raw
+            after = int(hourly_curve(bucket["raw"], config))
+            xp = after - before
+        else:
+            xp = compute_event_xp(event, config)
+
         total_event_xp += xp
         session_xp_this_run += xp
 

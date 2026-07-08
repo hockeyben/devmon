@@ -210,7 +210,7 @@ class TestStatuslineEmojiDefault:
         result = runner.invoke(app, ["statusline"], input=b"")
 
         assert result.exit_code == 0
-        assert "⚡" in result.output
+        assert "↯" in result.output
         assert "▰" in result.output or "▱" in result.output
 
     def test_indicator_emoji_false_config_forces_ascii(self, tmp_save_dir):
@@ -363,3 +363,33 @@ class TestStatuslineDoesNotTriggerPrintingBacklog:
 
         runner.invoke(main_mod.app, ["status"])
         assert calls["n"] == 1
+
+
+class TestStatuslineWidthSafeGlyphs:
+    """Every statusline row must use ONLY unambiguous width-1 codepoints
+    (ord < 0x2600) outside ANSI SGR / OSC 8 wrappers -- ambiguous-width
+    glyphs like the daemon strip's ⚡/⚠/⚔ render 1 or 2 cells inconsistently
+    across terminals, so composed right-align padding overlaps adjacent
+    statusline text. The ▰▱ bar chars (U+25B0/U+25B1) are below 0x2600 and
+    pass this check without any special-casing."""
+
+    def _assert_width_safe(self, text: str) -> None:
+        stripped = _strip(text)
+        for ch in stripped:
+            assert ord(ch) < 0x2600, (
+                f"ambiguous-width codepoint {ch!r} (U+{ord(ch):04X}) in row: {text!r}"
+            )
+
+    def test_normal_row_variants_are_width_safe(self):
+        from devmon.commands.statusline import _normal_row, _normal_row_compact
+
+        for use_emoji in (True, False):
+            self._assert_width_safe(_normal_row(5, 40, 100, use_emoji))
+            self._assert_width_safe(_normal_row_compact(5, 40, 100, use_emoji))
+
+    def test_encounter_row_variants_are_width_safe(self):
+        from devmon.commands.statusline import _encounter_row, _encounter_row_compact
+
+        for use_emoji in (True, False):
+            self._assert_width_safe(_encounter_row(use_emoji))
+            self._assert_width_safe(_encounter_row_compact(use_emoji))
