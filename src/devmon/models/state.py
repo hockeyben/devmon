@@ -160,6 +160,15 @@ class GameState(BaseModel):
     any battle loss. A Medibot Module (if owned) fully heals the team every
     time this hits a multiple of 5 — see engine.medibot.record_battle_win."""
 
+    # Phase A2 — economy: crafting, marketplace, NPC merchants
+    npc_quest_completions: dict[str, str] = Field(default_factory=dict)
+    """Weekly NPC fetch-quest turn-in tracking: {quest_id: ISO year-week
+    string, e.g. "2026-W27"}. A quest can be turned in again once the
+    current ISO week no longer matches the stored value — see
+    engine.npcs.can_turn_in_quest/turn_in_quest. Missing in old saves
+    defaults cleanly via default_factory (field-presence-safe, no explicit
+    migration needed — same pattern as pending_auto_battle_reports)."""
+
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":
         """Bootstrap a fresh game state for a new player (SAVE-01 fresh install)."""

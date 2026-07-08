@@ -1,0 +1,9 @@
+{
+  "id": "cooled_slag",
+  "name": "Cooled Slag",
+  "category": "material",
+  "price": 8,
+  "sold_in_shop": false,
+  "effect_description": "Hardened runoff from a build server that ran too hot for too long. Uncommon crafting material.",
+  "icon": "[g]"
+}

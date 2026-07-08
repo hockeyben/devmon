@@ -551,12 +551,13 @@ def test_items_exits_ok(tmp_save_dir):
 # Plan 08-02: Item loader tests
 # ---------------------------------------------------------------------------
 
-def test_item_loader_load_all_items_returns_nine() -> None:
-    """load_all_items() returns exactly 9 items (8 + Phase A1's medibot_module)."""
+def test_item_loader_load_all_items_returns_twenty() -> None:
+    """load_all_items() returns exactly 20 items (9 pre-Phase-A2 + root_capsule
+    + 10 crafting materials)."""
     from devmon.engine.item_loader import load_all_items
 
     items = load_all_items()
-    assert len(items) == 9, f"Expected 9 items, got {len(items)}: {list(items.keys())}"
+    assert len(items) == 20, f"Expected 20 items, got {len(items)}: {list(items.keys())}"
 
 
 def test_item_loader_keys_match_ids() -> None:
@@ -569,11 +570,22 @@ def test_item_loader_keys_match_ids() -> None:
         "great_capsule",
         "ultra_capsule",
         "master_capsule",
+        "root_capsule",
         "small_potion",
         "full_potion",
         "revive",
         "xp_booster",
         "medibot_module",
+        "scrap_silicon",
+        "copper_trace",
+        "binary_dust",
+        "thermal_paste",
+        "cooled_slag",
+        "static_charge",
+        "cloud_essence",
+        "kernel_fragment",
+        "void_shard",
+        "root_of_all",
     }
     assert set(items.keys()) == expected_ids
 

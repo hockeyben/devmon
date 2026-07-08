@@ -4,6 +4,7 @@
   "category": "capsule",
   "price": 30,
   "sold_in_shop": true,
-  "effect_description": "2.0x capture multiplier",
-  "capture_multiplier": 2.0
+  "effect_description": "A powerful pull. Premium engineering, premium price.",
+  "icon": "(0)",
+  "capture_multiplier": 2.5
 }

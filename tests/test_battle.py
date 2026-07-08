@@ -365,8 +365,8 @@ def test_low_hp_increases_capture_chance():
 def test_capture_item_multiplier_affects_chance():
     from devmon.engine.battle_engine import CAPTURE_ITEM_MULTIPLIERS
     assert CAPTURE_ITEM_MULTIPLIERS["basic"] == 1.0
-    assert CAPTURE_ITEM_MULTIPLIERS["great"] == 1.5
-    assert CAPTURE_ITEM_MULTIPLIERS["ultra"] == 2.0
+    assert CAPTURE_ITEM_MULTIPLIERS["great"] == 1.75
+    assert CAPTURE_ITEM_MULTIPLIERS["ultra"] == 2.5
     assert CAPTURE_ITEM_MULTIPLIERS["master"] == 100.0
 
 

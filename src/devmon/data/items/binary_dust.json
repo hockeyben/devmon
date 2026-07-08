@@ -1,0 +1,9 @@
+{
+  "id": "binary_dust",
+  "name": "Binary Dust",
+  "category": "material",
+  "price": 3,
+  "sold_in_shop": false,
+  "effect_description": "Fine residue left behind by a corrupted bitstream. Common crafting material.",
+  "icon": "[b]"
+}

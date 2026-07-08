@@ -1,0 +1,9 @@
+{
+  "id": "copper_trace",
+  "name": "Copper Trace",
+  "category": "material",
+  "price": 3,
+  "sold_in_shop": false,
+  "effect_description": "A hair-thin strand of circuit board copper. Common crafting material.",
+  "icon": "[c]"
+}

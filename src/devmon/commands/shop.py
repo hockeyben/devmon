@@ -18,8 +18,20 @@ from rich.console import Console
 
 from devmon.config.loader import load_config
 from devmon.engine.item_loader import load_all_items
+from devmon.engine.marketplace import (
+    compute_sell_price,
+    get_daily_rotation,
+    hours_until_next_rotation,
+    rotation_price,
+)
 from devmon.persistence.save import load, save
-from devmon.render.shop import render_purchase_confirmation, render_shop_category, render_shop_header
+from devmon.render.shop import (
+    render_purchase_confirmation,
+    render_sell_confirmation,
+    render_shop_category,
+    render_shop_featured,
+    render_shop_header,
+)
 from devmon.render.themes import get_theme
 
 app = typer.Typer()
@@ -79,8 +91,36 @@ def _build_numbered_items(items_catalog, inventory):
     return numbered_grouped, num_to_item
 
 
+def _build_featured_numbered(items_catalog, inventory, rotation, start_num):
+    """Build the numbered featured (daily rotation) list, continuing from start_num.
+
+    Returns:
+        entries: list of (num, ItemDefinition, discounted_price, discount_percent, qty)
+        num_to_featured: dict[int, tuple[ItemDefinition, discounted_price]]
+    """
+    entries = []
+    num_to_featured: dict[int, tuple] = {}
+    n = start_num
+    for r in rotation:
+        item = items_catalog.get(r["item_id"])
+        if item is None:
+            continue
+        price = rotation_price(item.price, r["discount_percent"])
+        qty = inventory.get(item.id, 0)
+        entries.append((n, item, price, r["discount_percent"], qty))
+        num_to_featured[n] = (item, price)
+        n += 1
+    return entries, num_to_featured
+
+
 def _display_shop(state, config, items_catalog):
-    """Print the full shop: header + all category panels."""
+    """Print the full shop: header + all category panels + today's featured rotation.
+
+    Returns:
+        Combined dict[int, tuple[ItemDefinition, price]] for interactive
+        purchase resolution -- base-stock entries use the item's normal
+        price, featured entries use today's (possibly discounted) price.
+    """
     theme = get_theme(config["ui"]["theme"])
     bits = state.player.currency
 
@@ -100,12 +140,31 @@ def _display_shop(state, config, items_catalog):
         )
         console.print(panel)
 
-    return num_to_item
+    combined: dict[int, tuple] = {n: (item, item.price) for n, item in num_to_item.items()}
+
+    rotation = get_daily_rotation()
+    if rotation:
+        next_num = (max(num_to_item.keys()) + 1) if num_to_item else 1
+        featured_entries, num_to_featured = _build_featured_numbered(
+            items_catalog, state.inventory, rotation, next_num
+        )
+        if featured_entries:
+            hours_left = hours_until_next_rotation()
+            console.print(render_shop_featured(featured_entries, hours_left, theme))
+            combined.update(num_to_featured)
+
+    return combined
 
 
-def _do_purchase(state, item, qty: int) -> bool:
-    """Deduct Bits and add item to inventory. Returns True on success."""
-    total_cost = item.price * qty
+def _do_purchase(state, item, qty: int, unit_price: int | None = None) -> bool:
+    """Deduct Bits and add item to inventory. Returns True on success.
+
+    Args:
+        unit_price: Override price per unit (e.g. today's discounted
+            featured price). Defaults to item.price.
+    """
+    price = item.price if unit_price is None else unit_price
+    total_cost = price * qty
     if state.player.currency < total_cost:
         return False
 
@@ -122,7 +181,7 @@ def _interactive_shop():
 
     while True:
         state = _load_state_or_new()
-        num_to_item = _display_shop(state, config, items_catalog)
+        num_to_entry = _display_shop(state, config, items_catalog)
 
         raw = input("  Enter number to buy (or q to quit): ").strip()
 
@@ -136,33 +195,34 @@ def _interactive_shop():
             console.print("  Invalid choice.", style="dim white")
             continue
 
-        item = num_to_item.get(choice)
-        if item is None:
+        entry = num_to_entry.get(choice)
+        if entry is None:
             console.print("  Invalid choice.", style="dim white")
             continue
+        item, unit_price = entry
 
         # Check funds
-        if state.player.currency < item.price:
+        if state.player.currency < unit_price:
             console.print(
-                f"  Not enough Bits. You need {item.price}, you have {state.player.currency}.",
+                f"  Not enough Bits. You need {unit_price}, you have {state.player.currency}.",
                 style="bold red",
             )
             continue
 
         # Purchase
-        success = _do_purchase(state, item, qty=1)
+        success = _do_purchase(state, item, qty=1, unit_price=unit_price)
         if success:
             save(state)
             panel = render_purchase_confirmation(
                 item.name,
                 qty=1,
-                cost=item.price,
+                cost=unit_price,
                 balance=state.player.currency,
             )
             console.print(panel)
         else:
             console.print(
-                f"  Not enough Bits. You need {item.price}, you have {state.player.currency}.",
+                f"  Not enough Bits. You need {unit_price}, you have {state.player.currency}.",
                 style="bold red",
             )
 
@@ -187,16 +247,27 @@ def _quick_purchase(item_id: str, qty: int):
 
     item = items_catalog[item_id]
 
-    # T-08-06: validate item is sold in shop
-    if not item.sold_in_shop:
+    # T-08-06: validate item is sold in shop -- OR is in today's featured
+    # rotation (Phase A2: rarer items/materials that aren't normal base
+    # stock, but ARE purchasable today at the rotation's price).
+    rotation_entry = next(
+        (r for r in get_daily_rotation() if r["item_id"] == item_id), None
+    )
+    if not item.sold_in_shop and rotation_entry is None:
         console.print(
             f"  {item.name} is not available for purchase.",
             style="bold red",
         )
         raise typer.Exit(code=1)
 
+    unit_price = (
+        item.price
+        if rotation_entry is None
+        else rotation_price(item.price, rotation_entry["discount_percent"])
+    )
+
     state = _load_state_or_new()
-    total_cost = item.price * qty
+    total_cost = unit_price * qty
 
     if state.player.currency < total_cost:
         console.print(
@@ -205,7 +276,7 @@ def _quick_purchase(item_id: str, qty: int):
         )
         raise typer.Exit(code=1)
 
-    success = _do_purchase(state, item, qty)
+    success = _do_purchase(state, item, qty, unit_price=unit_price)
     if success:
         save(state)
         panel = render_purchase_confirmation(
@@ -223,12 +294,59 @@ def _quick_purchase(item_id: str, qty: int):
         raise typer.Exit(code=1)
 
 
+def _sell(item_id: str, count: int) -> None:
+    """Sell an item/material back at ~40% of its base value (Phase A2)."""
+    if count < 1:
+        console.print("  Invalid quantity — must be at least 1.", style="bold red")
+        raise typer.Exit(code=1)
+
+    items_catalog = load_all_items()
+    if item_id not in items_catalog:
+        console.print(f"  Unknown item: {item_id}", style="bold red")
+        raise typer.Exit(code=1)
+
+    item = items_catalog[item_id]
+    state = _load_state_or_new()
+    owned = state.inventory.get(item_id, 0)
+    if owned < count:
+        console.print(
+            f"  You only have {owned} {item.name}, can't sell {count}.",
+            style="bold red",
+        )
+        raise typer.Exit(code=1)
+
+    unit_price = compute_sell_price(item.price)
+    if unit_price <= 0:
+        console.print(f"  {item.name} can't be sold.", style="bold red")
+        raise typer.Exit(code=1)
+
+    proceeds = unit_price * count
+    state.inventory[item_id] = owned - count
+    state.player.currency += proceeds
+    save(state)
+
+    panel = render_sell_confirmation(item.name, count, proceeds, state.player.currency)
+    console.print(panel)
+
+
+@app.command("sell")
+def sell_command(
+    item_id: str = typer.Argument(..., help="Item or material ID to sell"),
+    count: int = typer.Argument(1, help="Quantity to sell"),
+) -> None:
+    """Sell an item or material back to the shop at ~40% of its value."""
+    _sell(item_id, count)
+
+
 @app.callback(invoke_without_command=True)
 def shop(
+    ctx: typer.Context,
     buy: str = typer.Option(None, "--buy", help="Item ID to quick-purchase"),
     qty: int = typer.Option(1, "--qty", help="Quantity to purchase"),
 ) -> None:
     """Browse and buy items from the shop."""
+    if ctx.invoked_subcommand is not None:
+        return  # e.g. `devmon shop sell ...` -- let the subcommand handle it
     if buy is not None:
         _quick_purchase(buy, qty)
     else:

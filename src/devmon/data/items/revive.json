@@ -5,6 +5,7 @@
   "price": 15,
   "sold_in_shop": true,
   "effect_description": "Restores fainted creature to 50% HP",
+  "icon": "[R]",
   "hp_restore_percent": 0.5,
   "restores_fainted": true
 }

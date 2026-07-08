@@ -1,0 +1,89 @@
+{
+  "_comment": "Phase A2 NPC merchants. Loaded by engine/npc_loader.py. `region` is data-forward for the upcoming Phase B2 travel system -- NOT gated on it yet, every NPC is reachable regardless of region. Exactly 2 of these 4 are 'in town' on any given day, picked deterministically by engine/npcs.py's date-seeded rotation. Each has a signature_deal_item_id pointing at a stock entry priced below the regular shop, and one repeatable weekly fetch quest.",
+  "npcs": [
+    {
+      "id": "kip",
+      "name": "Kip",
+      "tagline": "Retired kernel dev. Debugged the scheduler so you don't have to.",
+      "region": "kernel_depths",
+      "stock": [
+        {"item_id": "full_potion", "price": 16},
+        {"item_id": "revive", "price": 12},
+        {"item_id": "kernel_fragment", "price": 15}
+      ],
+      "signature_deal_item_id": "revive",
+      "quest": {
+        "id": "kip_kernel_run",
+        "material_id": "kernel_fragment",
+        "qty_required": 5,
+        "reward_currency": 60,
+        "reward_item_id": "full_potion",
+        "reward_item_qty": 2,
+        "description": "Bring me 5 Kernel Fragments and I'll make it worth your while."
+      }
+    },
+    {
+      "id": "voss",
+      "name": "Voss",
+      "tagline": "Startup founder. Everything is pre-seed, including this capsule.",
+      "region": "termina_meadows",
+      "stock": [
+        {"item_id": "basic_capsule", "price": 4},
+        {"item_id": "great_capsule", "price": 10},
+        {"item_id": "xp_booster", "price": 18}
+      ],
+      "signature_deal_item_id": "xp_booster",
+      "quest": {
+        "id": "voss_scrap_drive",
+        "material_id": "scrap_silicon",
+        "qty_required": 8,
+        "reward_currency": 40,
+        "reward_item_id": null,
+        "reward_item_qty": 0,
+        "description": "We're bootstrapped. Bring 8 Scrap Silicon and I'll pay you in runway."
+      }
+    },
+    {
+      "id": "nyx",
+      "name": "Nyx",
+      "tagline": "Night-owl sysadmin. Only replies to pings sent after midnight.",
+      "region": "compiler_wastes",
+      "stock": [
+        {"item_id": "ultra_capsule", "price": 24},
+        {"item_id": "full_potion", "price": 17},
+        {"item_id": "thermal_paste", "price": 6}
+      ],
+      "signature_deal_item_id": "ultra_capsule",
+      "quest": {
+        "id": "nyx_thermal_haul",
+        "material_id": "thermal_paste",
+        "qty_required": 6,
+        "reward_currency": 55,
+        "reward_item_id": "cooled_slag",
+        "reward_item_qty": 3,
+        "description": "The rack's overheating again. 6 Thermal Paste and I'll cut you a deal."
+      }
+    },
+    {
+      "id": "the_intern",
+      "name": "The Intern",
+      "tagline": "Nobody remembers hiring them. They have root on everything.",
+      "region": "voidnet",
+      "stock": [
+        {"item_id": "root_capsule", "price": 650},
+        {"item_id": "void_shard", "price": 40},
+        {"item_id": "root_of_all", "price": 130}
+      ],
+      "signature_deal_item_id": "root_capsule",
+      "quest": {
+        "id": "intern_void_errand",
+        "material_id": "void_shard",
+        "qty_required": 3,
+        "reward_currency": 90,
+        "reward_item_id": "kernel_fragment",
+        "reward_item_qty": 3,
+        "description": "Don't ask where these go. Just bring 3 Void Shards."
+      }
+    }
+  ]
+}

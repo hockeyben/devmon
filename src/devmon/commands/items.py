@@ -109,6 +109,13 @@ def _use_item(use: str) -> None:
             style="dim white",
         )
 
+    elif item.category == "material":
+        # Materials are crafting ingredients — never directly "used" (Phase A2)
+        console.print(
+            f"  {item.name} is a crafting material — use it with: devmon craft",
+            style="dim white",
+        )
+
     elif item.category in ("potion",) or item.restores_fainted:
         # Potions and revives require a target creature — only usable in battle
         console.print(

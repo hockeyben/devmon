@@ -365,11 +365,27 @@ def _auto_fight(state: "GameState", config: dict) -> Optional[str]:
     # notification the same way the capture path does.
     _queue_deferred_evolution_if_ready(state, player_owned)
 
+    # Material drop (Phase A2) -- same drop table as the interactive win
+    # path (commands/battle.py's _roll_and_apply_loot), so the two callers
+    # never drift out of sync.
+    loot_suffix = ""
+    from devmon.engine.loot import roll_loot
+
+    material_id = roll_loot(rarity)
+    if material_id is not None:
+        state.inventory[material_id] = state.inventory.get(material_id, 0) + 1
+        try:
+            from devmon.engine.item_loader import load_all_items
+            material_name = load_all_items()[material_id].name
+        except Exception:
+            material_name = material_id
+        loot_suffix = f" Found {material_name}!"
+
     state.encounter_queue = None
 
     return (
         f"Auto-battle: {lead_name} defeated wild {wild_template.name} ({rarity}) "
-        f"— +{rewards['player_xp']} XP, +{rewards['currency']} bits."
+        f"— +{rewards['player_xp']} XP, +{rewards['currency']} bits.{loot_suffix}"
     )
 
 

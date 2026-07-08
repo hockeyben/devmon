@@ -5,5 +5,6 @@
   "price": 8,
   "sold_in_shop": true,
   "effect_description": "Restores 25% HP",
+  "icon": "[+]",
   "hp_restore_percent": 0.25
 }

@@ -737,6 +737,7 @@ def battle_cmd() -> None:
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
                     medibot_msg = record_battle_win(state)
+                    loot_msg = _roll_and_apply_loot(state, wild.rarity)
                     config = load_config()
                     player_leveled = check_player_level_up(state.player, config)
                     # Distribute XP to all creatures that participated
@@ -768,6 +769,8 @@ def battle_cmd() -> None:
                     render_victory_screen(console, player_template.name, wild_template.name, rewards)
                     if medibot_msg:
                         console.print(f"  [bold green]{medibot_msg}[/bold green]")
+                    if loot_msg:
+                        console.print(f"  [bold cyan]{loot_msg}[/bold cyan]")
                     for name, new_level in leveled_creatures:
                         console.print(
                             f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
@@ -920,6 +923,7 @@ def battle_cmd() -> None:
                     state.player.currency += rewards["currency"]
                     state.player.battles_won += 1
                     medibot_msg = record_battle_win(state)
+                    loot_msg = _roll_and_apply_loot(state, wild.rarity)
                     config = load_config()
                     player_leveled = check_player_level_up(state.player, config)
                     # Distribute XP to all creatures that participated
@@ -951,6 +955,8 @@ def battle_cmd() -> None:
                     render_victory_screen(console, player_template.name, wild_template.name, rewards)
                     if medibot_msg:
                         console.print(f"  [bold green]{medibot_msg}[/bold green]")
+                    if loot_msg:
+                        console.print(f"  [bold cyan]{loot_msg}[/bold cyan]")
                     for name, new_level in leveled_creatures:
                         console.print(
                             f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
@@ -999,7 +1005,8 @@ def battle_cmd() -> None:
 
                 # Build list of owned capsules (filter to those with qty > 0)
                 capsule_ids = [
-                    "basic_capsule", "great_capsule", "ultra_capsule", "master_capsule"
+                    "basic_capsule", "great_capsule", "ultra_capsule",
+                    "master_capsule", "root_capsule",
                 ]
                 owned_capsules = [
                     (cid, state.inventory.get(cid, 0))
@@ -1046,12 +1053,18 @@ def battle_cmd() -> None:
                 consume_item(state.inventory, selected_capsule_id)
                 save(state)
 
-                hp_percent = wild.current_hp / wild.max_hp if wild.max_hp > 0 else 0.01
-                # Compute capture chance — capture_rate NEVER shown to player (T-06-06, D-15)
-                capture_chance = compute_capture_chance(
-                    wild_template.capture_rate, hp_percent, selected_capsule.capture_multiplier
-                )
-                success = attempt_capture(capture_chance)
+                # Guaranteed capsules (root_capsule, master_capsule) bypass the
+                # roll entirely — never even compute a chance for them (D-15,
+                # hard rule: no capture percentages ever surfaced or implied).
+                if selected_capsule.guaranteed:
+                    success = True
+                else:
+                    hp_percent = wild.current_hp / wild.max_hp if wild.max_hp > 0 else 0.01
+                    # Compute capture chance — capture_rate NEVER shown to player (T-06-06, D-15)
+                    capture_chance = compute_capture_chance(
+                        wild_template.capture_rate, hp_percent, selected_capsule.capture_multiplier
+                    )
+                    success = attempt_capture(capture_chance)
 
                 run_capture_animation(
                     console, selected_capsule.name, wild_template.name, wild.rarity, success
@@ -1289,6 +1302,8 @@ def battle_cmd() -> None:
                         continue  # capsules used via choice [3]
                     if item_def.category == "gear":
                         continue  # gear (e.g. Medibot Module) is passive, never "used" (Phase A1)
+                    if item_def.category == "material":
+                        continue  # materials are crafting ingredients, never "used" (Phase A2)
                     if item_def.category == "booster":
                         usable_items.append((item_id, item_def, qty))
                     elif item_def.restores_fainted:
@@ -1451,6 +1466,35 @@ def battle_cmd() -> None:
         save(state)
     except Exception:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Loot helper: material drops on battle wins (Phase A2)
+# ---------------------------------------------------------------------------
+
+def _roll_and_apply_loot(state, rarity: str) -> Optional[str]:
+    """Roll for a material drop and add it to inventory if one occurred.
+
+    Args:
+        state: GameState instance (mutated in-place on a drop).
+        rarity: The defeated wild creature's rarity tier.
+
+    Returns:
+        A player-facing "Found X!" narration string, or None if no drop.
+    """
+    from devmon.engine.loot import roll_loot
+    from devmon.engine.item_loader import load_all_items
+
+    material_id = roll_loot(rarity)
+    if material_id is None:
+        return None
+
+    state.inventory[material_id] = state.inventory.get(material_id, 0) + 1
+    try:
+        name = load_all_items()[material_id].name
+    except Exception:
+        name = material_id
+    return f"Found {name}!"
 
 
 # ---------------------------------------------------------------------------

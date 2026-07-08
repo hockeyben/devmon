@@ -1,0 +1,9 @@
+{
+  "id": "cloud_essence",
+  "name": "Cloud Essence",
+  "category": "material",
+  "price": 20,
+  "sold_in_shop": false,
+  "effect_description": "A condensed wisp of availability-zone vapor. Rare crafting material.",
+  "icon": "[e]"
+}

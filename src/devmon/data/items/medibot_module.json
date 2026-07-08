@@ -4,6 +4,6 @@
   "category": "gear",
   "price": 150,
   "sold_in_shop": true,
-  "effect_description": "Auto-heals your team every 5-win streak",
-  "restores_fainted": false
+  "effect_description": "Auto-heals your team every 5-win streak.",
+  "icon": "<*>"
 }

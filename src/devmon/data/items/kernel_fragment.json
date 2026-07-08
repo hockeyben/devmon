@@ -1,0 +1,9 @@
+{
+  "id": "kernel_fragment",
+  "name": "Kernel Fragment",
+  "category": "material",
+  "price": 20,
+  "sold_in_shop": false,
+  "effect_description": "A shard of raw ring-0 code, still warm. Rare crafting material.",
+  "icon": "[k]"
+}

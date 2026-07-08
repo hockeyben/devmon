@@ -4,6 +4,7 @@
   "category": "capsule",
   "price": 12,
   "sold_in_shop": true,
-  "effect_description": "1.5x capture multiplier",
-  "capture_multiplier": 1.5
+  "effect_description": "A noticeably stronger pull than the basic capsule.",
+  "icon": "(O)",
+  "capture_multiplier": 1.75
 }

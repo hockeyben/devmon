@@ -1,0 +1,9 @@
+{
+  "id": "root_of_all",
+  "name": "Root of All",
+  "category": "material",
+  "price": 150,
+  "sold_in_shop": false,
+  "effect_description": "Sudo access made manifest. Mythic-rare crafting material — the heart of every Root Capsule.",
+  "icon": "[R!]"
+}

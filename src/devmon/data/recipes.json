@@ -1,0 +1,79 @@
+{
+  "_comment": "Phase A2 crafting recipes. Loaded by engine/recipe_loader.py. `materials` maps material item id -> quantity required. result_item_id/result_qty is what devmon craft <id> grants on success. currency_cost is deducted alongside materials. The root_capsule recipe is intentionally brutal -- large quantities of common/uncommon mats plus rare void_shard and mythic-rare root_of_all, meant to take days/weeks of normal play to assemble.",
+  "recipes": [
+    {
+      "id": "recipe_small_potion",
+      "name": "Small Potion (x3)",
+      "description": "Scrap together three field patches from spare parts.",
+      "result_item_id": "small_potion",
+      "result_qty": 3,
+      "materials": {"scrap_silicon": 3, "copper_trace": 2},
+      "currency_cost": 0
+    },
+    {
+      "id": "recipe_full_potion",
+      "name": "Full Potion (x2)",
+      "description": "A proper repair kit, built from cooled runoff and heatsink paste.",
+      "result_item_id": "full_potion",
+      "result_qty": 2,
+      "materials": {"thermal_paste": 3, "cooled_slag": 2},
+      "currency_cost": 0
+    },
+    {
+      "id": "recipe_revive",
+      "name": "Revive (x2)",
+      "description": "A jolt of static charge and cooled slag, enough to restart a fainted devmon.",
+      "result_item_id": "revive",
+      "result_qty": 2,
+      "materials": {"cooled_slag": 3, "static_charge": 2},
+      "currency_cost": 15
+    },
+    {
+      "id": "recipe_great_capsule",
+      "name": "Great Capsule (x2)",
+      "description": "Reinforce a basic housing with extra copper and silicon scrap.",
+      "result_item_id": "great_capsule",
+      "result_qty": 2,
+      "materials": {"copper_trace": 4, "scrap_silicon": 4},
+      "currency_cost": 10
+    },
+    {
+      "id": "recipe_ultra_capsule",
+      "name": "Ultra Capsule",
+      "description": "Premium build: heatsink paste, storm-static charge, and a wisp of cloud essence.",
+      "result_item_id": "ultra_capsule",
+      "result_qty": 1,
+      "materials": {"thermal_paste": 3, "static_charge": 3, "cloud_essence": 1},
+      "currency_cost": 25
+    },
+    {
+      "id": "recipe_medibot_module",
+      "name": "Medibot Module",
+      "description": "Assemble your own auto-heal module instead of buying one outright.",
+      "result_item_id": "medibot_module",
+      "result_qty": 1,
+      "materials": {"kernel_fragment": 5, "cooled_slag": 5, "thermal_paste": 5},
+      "currency_cost": 50
+    },
+    {
+      "id": "recipe_root_capsule",
+      "name": "Root Capsule",
+      "description": "Root-level access, forged from a mountain of scrap and two slivers of Root of All. Not for the impatient.",
+      "result_item_id": "root_capsule",
+      "result_qty": 1,
+      "materials": {
+        "void_shard": 5,
+        "root_of_all": 2,
+        "scrap_silicon": 50,
+        "copper_trace": 50,
+        "binary_dust": 50,
+        "thermal_paste": 20,
+        "cooled_slag": 20,
+        "static_charge": 20,
+        "cloud_essence": 10,
+        "kernel_fragment": 10
+      },
+      "currency_cost": 200
+    }
+  ]
+}

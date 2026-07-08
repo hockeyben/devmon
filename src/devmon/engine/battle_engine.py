@@ -35,8 +35,8 @@ TYPE_CHART: dict[str, dict[str, float]] = {
 
 CAPTURE_ITEM_MULTIPLIERS: dict[str, float] = {
     "basic": 1.0,
-    "great": 1.5,
-    "ultra": 2.0,
+    "great": 1.75,
+    "ultra": 2.5,
     "master": 100.0,
 }
 

@@ -4,6 +4,7 @@
   "category": "capsule",
   "price": 5,
   "sold_in_shop": true,
-  "effect_description": "1.0x capture multiplier",
+  "effect_description": "A standard capture capsule. Reliable, nothing fancy.",
+  "icon": "(o)",
   "capture_multiplier": 1.0
 }

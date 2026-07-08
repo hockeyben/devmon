@@ -97,10 +97,11 @@ def render_shop_category(
     grid.add_column(justify="right", no_wrap=True)       # owned qty
 
     for num, item, qty in items:
+        icon_prefix = f"{item.icon} " if item.icon else ""
         if num == 0:
             # Earn-only item — no number, dim italic throughout, no qty shown.
             marker = Text("")
-            name_cell = Text(item.name, style="dim italic")
+            name_cell = Text(f"{icon_prefix}{item.name}", style="dim italic")
             price_cell = Text("(earn only)", style="dim italic")
             qty_cell = Text("")
         else:
@@ -108,7 +109,7 @@ def render_shop_category(
             row_style = "white" if affordable else "dim"
 
             marker = Text(f"[{num}]", style=row_style)
-            name_cell = Text(item.name, style=row_style)
+            name_cell = Text(f"{icon_prefix}{item.name}", style=row_style)
 
             price_cell = Text()
             price_style = _CURRENCY if affordable else f"dim {_CURRENCY}"
@@ -128,6 +129,94 @@ def render_shop_category(
         box=box.ROUNDED,
         padding=(0, 1),
         expand=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase A2: Featured (daily rotation) panel
+# ---------------------------------------------------------------------------
+
+def render_shop_featured(
+    entries: list[tuple[int, "ItemDefinition", int, int, int]],
+    hours_left: int,
+    theme: dict,
+) -> Panel:
+    """Render the daily rotating "Featured" panel.
+
+    Entries are (number, ItemDefinition, discounted_price, discount_percent,
+    quantity_owned) tuples — draws from rarer items/materials not in the
+    always-available base stock. One entry typically carries a discount.
+
+    Args:
+        entries: List of featured rotation entries, already numbered to
+            continue from the base-stock numbering.
+        hours_left: Hours remaining until the rotation refreshes.
+        theme: Theme dict.
+
+    Returns:
+        Rich Panel titled "Featured -- new stock in Xh".
+    """
+    grid = Table.grid(expand=True, padding=(0, 1))
+    grid.add_column()                                  # [n] marker
+    grid.add_column(ratio=1)                            # item name
+    grid.add_column(justify="right", no_wrap=True)      # price
+    grid.add_column(justify="right", no_wrap=True)      # owned qty
+
+    for num, item, price, discount_percent, qty in entries:
+        icon_prefix = f"{item.icon} " if item.icon else ""
+        marker = Text(f"[{num}]", style="white")
+        name_cell = Text(f"{icon_prefix}{item.name}", style="white")
+        if discount_percent > 0:
+            name_cell.append("  (deal!)", style="bold green")
+
+        price_cell = Text(f"{price} Bits", style=_CURRENCY)
+        qty_cell = Text(f"x{qty}", style="dim")
+
+        grid.add_row(marker, name_cell, price_cell, qty_cell)
+
+    return Panel(
+        grid,
+        title=f"[bold]Featured[/bold] [dim]-- new stock in {hours_left}h[/dim]",
+        border_style=theme["border"],
+        box=box.ROUNDED,
+        padding=(0, 1),
+        expand=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase A2: Sell confirmation panel
+# ---------------------------------------------------------------------------
+
+def render_sell_confirmation(item_name: str, qty: int, proceeds: int, balance: int) -> Panel:
+    """Render the sell confirmation panel (mirrors render_purchase_confirmation).
+
+    Args:
+        item_name: Display name of the sold item.
+        qty: Quantity sold.
+        proceeds: Total Bits received.
+        balance: New Bits balance after the sale.
+
+    Returns:
+        Rich Panel with sale details.
+    """
+    heading = Text(f"  {item_name} x{qty}", style="white")
+
+    grid = Table.grid(padding=(0, 1))
+    grid.add_column(style="dim white")
+    grid.add_column(justify="right", no_wrap=True)
+    grid.add_row("  Proceeds:", Text(f"+{proceeds} Bits", style=f"bold {_CURRENCY}"))
+    grid.add_row("  Balance:", Text(f"{balance} Bits", style=f"bold {_CURRENCY}"))
+
+    body = Group(heading, grid)
+
+    return Panel(
+        body,
+        title="[bold green]Sold[/bold green]",
+        border_style="green",
+        box=box.ROUNDED,
+        padding=(0, 1),
+        expand=False,
     )
 
 
@@ -202,12 +291,13 @@ def render_items_inventory(
     Returns:
         Rich Panel with full inventory.
     """
-    CATEGORY_ORDER = ["capsule", "potion", "booster", "gear"]
+    CATEGORY_ORDER = ["capsule", "potion", "booster", "gear", "material"]
     CATEGORY_LABELS = {
         "capsule": "Capsules",
         "potion": "Potions",
         "booster": "Boosters",
         "gear": "Gear",
+        "material": "Materials",
     }
 
     # Group items by category
@@ -248,8 +338,9 @@ def render_items_inventory(
                 qty = inventory.get(item.id, 0)
                 item_style = "white" if qty > 0 else "dim white"
 
-                # Build item row: name (effect) | qty
-                name_cell = Text(f"  {item.name}", style=item_style)
+                # Build item row: icon name (effect) | qty
+                icon_prefix = f"{item.icon} " if item.icon else ""
+                name_cell = Text(f"  {icon_prefix}{item.name}", style=item_style)
                 if item.effect_description:
                     name_cell.append(f" ({item.effect_description})", style="dim white")
                 qty_cell = Text(f"x{qty}", style="dim")

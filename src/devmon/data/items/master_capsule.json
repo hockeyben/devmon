@@ -4,6 +4,8 @@
   "category": "capsule",
   "price": 0,
   "sold_in_shop": false,
-  "effect_description": "Guaranteed capture",
-  "capture_multiplier": 100.0
+  "effect_description": "Legendary engineering. It never fails.",
+  "icon": "(M)",
+  "capture_multiplier": 1.0,
+  "guaranteed": true
 }

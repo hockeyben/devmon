@@ -1,0 +1,11 @@
+{
+  "id": "root_capsule",
+  "name": "Root Capsule",
+  "category": "capsule",
+  "price": 800,
+  "sold_in_shop": false,
+  "effect_description": "Forged from root-level access. It never fails.",
+  "icon": "(R)",
+  "capture_multiplier": 1.0,
+  "guaranteed": true
+}

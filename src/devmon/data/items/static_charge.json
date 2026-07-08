@@ -1,0 +1,9 @@
+{
+  "id": "static_charge",
+  "name": "Static Charge",
+  "category": "material",
+  "price": 8,
+  "sold_in_shop": false,
+  "effect_description": "A crackling residual charge skimmed off a storm-side antenna array. Uncommon crafting material.",
+  "icon": "[z]"
+}

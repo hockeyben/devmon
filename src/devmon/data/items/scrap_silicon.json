@@ -1,0 +1,9 @@
+{
+  "id": "scrap_silicon",
+  "name": "Scrap Silicon",
+  "category": "material",
+  "price": 3,
+  "sold_in_shop": false,
+  "effect_description": "Chipped wafer fragments salvaged from a dead board. Common crafting material.",
+  "icon": "[s]"
+}

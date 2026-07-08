@@ -5,6 +5,7 @@
   "price": 25,
   "sold_in_shop": true,
   "effect_description": "1.5x XP for 30 minutes",
+  "icon": "{^}",
   "xp_multiplier": 1.5,
   "duration_minutes": 30
 }

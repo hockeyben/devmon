@@ -1,0 +1,9 @@
+{
+  "id": "thermal_paste",
+  "name": "Thermal Paste",
+  "category": "material",
+  "price": 8,
+  "sold_in_shop": false,
+  "effect_description": "Scraped from an overclocked heatsink. Uncommon crafting material.",
+  "icon": "[t]"
+}

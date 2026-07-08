@@ -19,6 +19,8 @@ import typer
 from devmon import __version__
 from devmon.commands import battle as battle_cmd
 from devmon.commands import candy as candy_cmd
+from devmon.commands import craft as craft_cmd
+from devmon.commands import npcs as npcs_cmd
 from devmon.commands import heal as heal_cmd
 from devmon.commands import indicator as indicator_cmd
 from devmon.commands import collection as collection_cmd_mod
@@ -64,6 +66,8 @@ app.add_typer(heal_cmd.app, name="heal")
 app.add_typer(candy_cmd.app, name="candy")
 app.add_typer(quests_cmd.app, name="quests")
 app.add_typer(achievements_cmd.app, name="achievements")
+app.add_typer(craft_cmd.app, name="craft")
+app.add_typer(npcs_cmd.app, name="npcs")
 app.add_typer(indicator_cmd.app, name="indicator")
 app.add_typer(protocol_cmd.app, name="protocol")
 app.command(name="statusline")(statusline_cmd.statusline)

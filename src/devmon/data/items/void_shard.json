@@ -1,0 +1,9 @@
+{
+  "id": "void_shard",
+  "name": "Void Shard",
+  "category": "material",
+  "price": 50,
+  "sold_in_shop": false,
+  "effect_description": "A splinter of null pulled from beyond the routing table. Epic crafting material.",
+  "icon": "[v]"
+}
