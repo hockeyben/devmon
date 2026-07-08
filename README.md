@@ -1,4 +1,8 @@
-# DevMon
+<p align="center">
+  <img src="art/logo/devmon-logo.png" alt="DevMon logo" width="180">
+</p>
+
+<h1 align="center">DevMon</h1>
 
 **Coding should feel rewarding.** DevMon is a gamified terminal experience
 where your real coding activity powers a creature-collection RPG. As you
