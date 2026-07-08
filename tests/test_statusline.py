@@ -104,16 +104,40 @@ class TestStatuslineRow:
 
 
 class TestStatuslineChain:
-    def test_chain_success_prints_before_devmon_row(self, tmp_save_dir):
+    def test_chain_and_devmon_row_share_one_line_devmon_at_right_edge(self, tmp_save_dir, monkeypatch):
+        """'Always on the right': DevMon merges onto the chain's first line,
+        padded out to the right margin, instead of printing its own row."""
         from devmon.main import app
+        from devmon.daemon.frames import visible_width
 
+        monkeypatch.setenv("COLUMNS", "80")
         runner = CliRunner()
         result = runner.invoke(app, ["statusline", "--chain", "echo chainline"], input=b"")
 
         assert result.exit_code == 0
         lines = [l for l in result.output.splitlines() if l.strip()]
-        assert lines[0].strip() == "chainline"
-        assert len(lines) >= 2  # chain line + the DevMon row
+        assert len(lines) == 1  # merged: chain text + DevMon row on ONE line
+        stripped = _strip(lines[0])
+        assert stripped.startswith("chainline")
+        assert "Lv." in stripped
+        assert visible_width(lines[0]) == 79  # DevMon hugs the right margin
+
+    def test_narrow_terminal_falls_back_to_own_right_aligned_row(self, tmp_save_dir, monkeypatch):
+        from devmon.main import app
+        from devmon.daemon.frames import visible_width
+
+        monkeypatch.setenv("COLUMNS", "30")
+        runner = CliRunner()
+        result = runner.invoke(
+            app, ["statusline", "--chain", "echo 123456789012345678901234"], input=b"",
+        )
+
+        assert result.exit_code == 0
+        lines = [l for l in result.output.splitlines() if l.strip()]
+        assert len(lines) == 2  # doesn't fit side by side -> separate rows
+        assert _strip(lines[0]).strip() == "123456789012345678901234"
+        assert "Lv." in _strip(lines[1])
+        assert visible_width(lines[1]) == 29  # still right-aligned
 
     def test_chain_failure_still_prints_devmon_row(self, tmp_save_dir):
         from devmon.main import app
@@ -125,6 +149,36 @@ class TestStatuslineChain:
         assert result.exit_code == 0
         assert result.output.strip() != ""
         assert "Lv." in _strip(result.output)
+
+
+class TestStatuslineEmojiDefault:
+    def test_defaults_to_emoji_without_wt_session(self, tmp_save_dir, monkeypatch):
+        """Claude Code's statusline subprocess doesn't inherit WT_SESSION, so
+        the daemon's detect_emoji_support() would wrongly pick ascii on
+        Windows -- the statusline must default to emoji regardless of env."""
+        from devmon.main import app
+
+        monkeypatch.delenv("WT_SESSION", raising=False)
+        monkeypatch.delenv("COLORTERM", raising=False)
+        runner = CliRunner()
+        result = runner.invoke(app, ["statusline"], input=b"")
+
+        assert result.exit_code == 0
+        assert "⚡" in result.output
+        assert "▰" in result.output or "▱" in result.output
+
+    def test_indicator_emoji_false_config_forces_ascii(self, tmp_save_dir):
+        from devmon.main import app
+
+        (tmp_save_dir / "config.toml").write_text(
+            '[ui]\nindicator_emoji = false\n', encoding="utf-8",
+        )
+        runner = CliRunner()
+        result = runner.invoke(app, ["statusline"], input=b"")
+
+        assert result.exit_code == 0
+        assert "⚡" not in result.output
+        assert "DevMon Lv." in _strip(result.output)
 
 
 class TestStatuslineXpBridge:

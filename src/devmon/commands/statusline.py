@@ -73,11 +73,11 @@ def _read_stdin_payload() -> tuple[bytes, dict]:
     return raw, payload
 
 
-def _run_chain(chain: str, raw_stdin: bytes) -> None:
-    """Run the user's existing statusline chain command and print its stdout.
+def _run_chain(chain: str, raw_stdin: bytes) -> list[str]:
+    """Run the user's existing statusline chain command; return its stdout lines.
 
     Receives the same raw stdin bytes DevMon got. Any exception, timeout, or
-    nonzero exit silently skips chain output entirely -- DevMon's own row
+    nonzero exit silently yields no chain output at all -- DevMon's own row
     (printed by the caller regardless) must never depend on the chain
     succeeding.
     """
@@ -86,17 +86,16 @@ def _run_chain(chain: str, raw_stdin: bytes) -> None:
             chain, shell=True, input=raw_stdin, capture_output=True, timeout=3,
         )
     except Exception:
-        return
+        return []
     if result.returncode != 0:
-        return
+        return []
     try:
         text = result.stdout.decode("utf-8", errors="replace").rstrip()
     except Exception:
-        return
+        return []
     if not text:
-        return
-    for line in text.splitlines():
-        print(line)
+        return []
+    return text.splitlines()
 
 
 def _normal_row(level: int, earned: int, needed: int, use_emoji: bool) -> str:
@@ -127,17 +126,46 @@ def _encounter_row(use_emoji: bool) -> str:
     return prefix + link
 
 
+def _terminal_cols() -> int:
+    """Terminal width from the COLUMNS env var (Claude Code sets it before
+    running the statusline command; fallback 80 per the statusline docs)."""
+    try:
+        return int(os.environ.get("COLUMNS", "80"))
+    except Exception:
+        return 80
+
+
 def _right_align(row: str) -> str:
-    """Pad *row* with leading spaces so it right-aligns to the terminal's
-    COLUMNS env var (fallback 80, as Claude Code's statusline docs specify)."""
+    """Pad *row* with leading spaces so it right-aligns to the terminal."""
     from devmon.daemon.frames import visible_width
 
-    try:
-        cols = int(os.environ.get("COLUMNS", "80"))
-    except Exception:
-        cols = 80
-    pad = max(0, cols - visible_width(row) - 1)
+    pad = max(0, _terminal_cols() - visible_width(row) - 1)
     return (" " * pad) + row
+
+
+# Minimum breathing room between the chained statusline text and the DevMon
+# row when they share a line. Below this, DevMon drops to its own row.
+_MIN_GAP = 2
+
+
+def _compose_lines(chain_lines: list[str], row: str) -> list[str]:
+    """Merge the DevMon row onto the right edge of the chain's first line.
+
+    "Always on the right": DevMon lives on the SAME line as the existing
+    statusline, padded out to the right margin. Only when the two don't fit
+    side by side (narrow terminal) does DevMon fall back to its own
+    right-aligned row below the chain output.
+    """
+    from devmon.daemon.frames import visible_width
+
+    if not chain_lines:
+        return [_right_align(row)]
+
+    first = chain_lines[0].rstrip()
+    gap = _terminal_cols() - visible_width(first) - visible_width(row) - 1
+    if gap >= _MIN_GAP:
+        return [first + (" " * gap) + row, *chain_lines[1:]]
+    return [*chain_lines, _right_align(row)]
 
 
 def _runtime_dir() -> Path:
@@ -297,11 +325,12 @@ def statusline(
     except Exception:
         raw_stdin, payload = b"", {}
 
+    chain_lines: list[str] = []
     if chain:
         try:
-            _run_chain(chain, raw_stdin)
+            chain_lines = _run_chain(chain, raw_stdin)
         except Exception:
-            pass
+            chain_lines = []
 
     try:
         from devmon.config.loader import load_config
@@ -310,22 +339,30 @@ def statusline(
         from devmon.config.defaults import DEFAULT_CONFIG
         config = DEFAULT_CONFIG
 
+    # Emoji: unlike the plain-terminal daemon, the statusline always runs
+    # inside Claude Code, which requires a modern UTF-8 terminal -- but its
+    # statusline subprocess doesn't inherit WT_SESSION/COLORTERM, so
+    # detect_emoji_support() wrongly falls back to ascii on Windows here.
+    # Default to emoji; ui.indicator_emoji stays the explicit override.
+    try:
+        override = config.get("ui", {}).get("indicator_emoji")
+        use_emoji = True if override is None else bool(override)
+    except Exception:
+        use_emoji = True
+
     save_path: Optional[Path] = None
     try:
         from devmon.daemon.indicator import (
             _resolve_save_path,
-            detect_emoji_support,
             read_indicator_snapshot,
         )
 
         save_path = _resolve_save_path()
         snapshot = read_indicator_snapshot(save_path, config)
-        use_emoji = detect_emoji_support()
     except Exception:
         from devmon.daemon.indicator import _DEFAULT_SNAPSHOT
 
         snapshot = dict(_DEFAULT_SNAPSHOT)
-        use_emoji = False
 
     try:
         if snapshot.get("encounter"):
@@ -337,11 +374,12 @@ def statusline(
                 snapshot.get("needed", 1),
                 use_emoji,
             )
-        line = _right_align(row)
+        lines = _compose_lines(chain_lines, row)
     except Exception:
-        line = "Lv.1 0%"
+        lines = [*chain_lines, "Lv.1 0%"]
 
-    print(line)
+    for line in lines:
+        print(line)
 
     # Side effects below never affect the row already printed above.
     try:
