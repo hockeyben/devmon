@@ -20,7 +20,7 @@ import typer
 
 app = typer.Typer()
 
-VALID_RARITIES = ["common", "uncommon", "rare", "epic", "legendary"]
+VALID_RARITIES = ["common", "uncommon", "rare", "epic", "legendary", "mythic"]
 
 
 def _parse_rarities(raw: str) -> list[str]:

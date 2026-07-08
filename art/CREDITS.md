@@ -81,3 +81,6 @@ and are licensed **CC BY-SA** by their respective artists (see each monster page
 | thermal_kite | [av8r](https://wiki.tuxemon.org/index.php?title=Av8r) |
 | tidal_wraith | [shnark](https://wiki.tuxemon.org/index.php?title=Shnark) |
 | titanium_beetle | [katacoon](https://wiki.tuxemon.org/index.php?title=Katacoon) |
+| chronogit | [seraphice](https://wiki.tuxemon.org/index.php?title=Seraphice) |
+| rootd | [moloch](https://wiki.tuxemon.org/index.php?title=Moloch) |
+| singulon | [trojerror](https://wiki.tuxemon.org/index.php?title=Trojerror) |

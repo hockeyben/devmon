@@ -550,6 +550,14 @@ def auto_resolve_encounter(state: "GameState", config: dict) -> Optional[str]:
     if getattr(state.encounter_queue, "is_boss_pin", False):
         return None
 
+    # Phase E hard rule: auto-battle/auto-skip NEVER touches a mythic
+    # encounter, regardless of any auto_fight_rarities/auto_skip_rarities
+    # configuration the player may have set. A mythic must always be
+    # fought (or fled from) by the player's own `devmon battle` -- this is
+    # the rarest event in the game and must never be silently resolved.
+    if state.encounter_queue.rarity == "mythic":
+        return None
+
     game_cfg = config.get("game", {}) if config else {}
     fight_enabled = bool(game_cfg.get("auto_fight_enabled", False))
     fight_rarities = set(game_cfg.get("auto_fight_rarities", []) or [])

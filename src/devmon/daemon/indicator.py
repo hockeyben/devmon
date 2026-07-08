@@ -255,7 +255,42 @@ _DEFAULT_SNAPSHOT = {
     "encounter": False,
     "badges": 0,
     "prestige": 0,
+    "accent": "bright_yellow",
+    "aura_active": False,
 }
+
+
+def _resolve_accent(data: dict) -> str:
+    """Resolve the equipped skin's statusline_accent from raw save JSON
+    (Phase E). Falls back to bright-yellow (the pre-Phase-E glyph color) on
+    any error or unknown skin id -- never raises."""
+    try:
+        from devmon.engine.skins import DEFAULT_SKIN_ID, load_all_skins
+
+        skin_id = data.get("skins_equipped") or DEFAULT_SKIN_ID
+        skins = load_all_skins()
+        skin = skins.get(skin_id) or skins.get(DEFAULT_SKIN_ID)
+        if skin is not None:
+            return skin.statusline_accent
+    except Exception:
+        pass
+    return "bright_yellow"
+
+
+def _resolve_aura_active(data: dict) -> bool:
+    """True if the raw save JSON's creature_collection contains at least one
+    mythic species (Phase E aura). Raw dict scan only -- no Pydantic model
+    instantiation (mirrors this module's D-05 speed convention)."""
+    try:
+        from devmon.engine.mythic import MYTHIC_SPECIES_IDS
+
+        owned_ids = {
+            c.get("template_id") for c in (data.get("creature_collection") or [])
+            if isinstance(c, dict)
+        }
+        return bool(owned_ids & set(MYTHIC_SPECIES_IDS))
+    except Exception:
+        return False
 
 
 def read_indicator_snapshot(save_path: Path, config: dict) -> dict:
@@ -267,7 +302,9 @@ def read_indicator_snapshot(save_path: Path, config: dict) -> dict:
 
     Returns:
         dict with keys: level (int), earned (int), needed (int),
-        hidden (bool), encounter (bool).
+        hidden (bool), encounter (bool), badges (int), prestige (int),
+        accent (str -- Phase E equipped-skin statusline accent name),
+        aura_active (bool -- Phase E, True if any mythic is owned).
     """
     try:
         raw = save_path.read_text(encoding="utf-8")
@@ -284,6 +321,8 @@ def read_indicator_snapshot(save_path: Path, config: dict) -> dict:
             "encounter": data.get("encounter_queue") is not None,
             "badges": len(data.get("badges_earned") or []),
             "prestige": int(player.get("prestige_count", 0)),
+            "accent": _resolve_accent(data),
+            "aura_active": _resolve_aura_active(data),
         }
     except Exception:
         return dict(_DEFAULT_SNAPSHOT)

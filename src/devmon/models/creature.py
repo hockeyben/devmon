@@ -32,7 +32,7 @@ _MARKUP_RE = re.compile(r"\[[^\[\]]*\]")
 # ---------------------------------------------------------------------------
 
 CreatureType = Literal["Fire", "Water", "Earth", "Electric", "Shadow", "Ice", "Psychic", "Nature"]
-CreatureRarity = Literal["common", "uncommon", "rare", "epic", "legendary"]
+CreatureRarity = Literal["common", "uncommon", "rare", "epic", "legendary", "mythic"]
 
 
 # ---------------------------------------------------------------------------

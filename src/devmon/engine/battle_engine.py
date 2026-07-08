@@ -282,6 +282,7 @@ _RARITY_MULTIPLIERS: dict[str, float] = {
     "rare": 1.5,
     "epic": 2.0,
     "legendary": 3.0,
+    "mythic": 5.0,
 }
 
 

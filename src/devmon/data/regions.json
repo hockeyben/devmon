@@ -122,12 +122,15 @@
       ],
       "order": 5,
       "species": [
+        "chronogit",
         "eldritch_pointer",
         "heisen_bug",
         "kernel_panic_wyrm",
         "null_terminator",
         "recursion_hydra",
+        "rootd",
         "segmentation_lord",
+        "singulon",
         "thorn_ancient",
         "void_leviathan"
       ]

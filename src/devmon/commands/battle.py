@@ -313,7 +313,7 @@ def _panel_with_art(panel, art_frame) -> object:
 
 
 def _animate_wild_entrance(
-    live, turn, last_narration, menu, wild_panel, player_panel, wild_template, art_width
+    live, turn, last_narration, menu, wild_panel, player_panel, wild_template, art_width, particles=None
 ) -> None:
     """Play the bottom-up reveal animation for the wild creature panel.
 
@@ -326,6 +326,12 @@ def _animate_wild_entrance(
     dimensions, causing the panel to visibly resize when the intro ends.
     The wild creature always renders front-view (view="front" — only the
     player's own creature shows its back, see render_battle_creature_panel).
+
+    `particles` (Phase E — terminal skins): optional list of width-safe
+    glyph strings from the player's equipped skin (see
+    engine.skins.SkinDefinition.particle_style). None (the default, and
+    every pre-Phase-E call site) reproduces the exact prior animation with
+    no particle scattering.
     """
     from devmon.render.animation import entrance_frames, play
     from devmon.render.battle import BATTLE_ART_MAX_ROWS, build_battle_renderable
@@ -334,6 +340,7 @@ def _animate_wild_entrance(
     frames = entrance_frames(
         CreatureImage(wild_template.id, width=art_width, view="front", max_rows=BATTLE_ART_MAX_ROWS),
         steps=4,
+        particles=particles,
     )
     if not frames:
         return
@@ -359,6 +366,7 @@ def _animate_attack_exchange(
     attacker: str,
     attack_fn,
     art_width: int,
+    particles=None,
 ):
     """Play a lunge (attacker) + shake/flash (defender) animation around one attack.
 
@@ -374,6 +382,11 @@ def _animate_attack_exchange(
     animates from its back-view sprite (view="back") and the wild creature
     from its front-view sprite (view="front"), regardless of which side is
     currently attacking or defending — matching render_battle_creature_panel.
+
+    `particles` (Phase E — terminal skins): optional list of width-safe
+    glyph strings from the player's equipped skin, sprinkled into the
+    defender's damage-flash frame (see render.animation.flash_frames).
+    None (the default, and every pre-Phase-E call site) is a pure no-op.
     """
     if not anim_enabled:
         return attack_fn()
@@ -422,7 +435,10 @@ def _animate_attack_exchange(
     defender_image = CreatureImage(
         defender_template.id, width=art_width, view=defender_view, max_rows=BATTLE_ART_MAX_ROWS
     )
-    for frames in (shake_frames(defender_image, amplitude=1, cycles=2), flash_frames(defender_image, pulses=1)):
+    for frames in (
+        shake_frames(defender_image, amplitude=1, cycles=2),
+        flash_frames(defender_image, pulses=1, particles=particles),
+    ):
         if not frames:
             continue
         if attacker == "player":
@@ -537,6 +553,17 @@ def battle_cmd() -> None:
         raise typer.Exit()
 
     entry = state.encounter_queue
+
+    # Phase E — terminal skins: the equipped skin's particle glyph set,
+    # sprinkled into the entrance/flash animations below (None when
+    # animations are disabled or the skin catalog can't be resolved --
+    # both are pure no-ops, identical to every pre-Phase-E battle).
+    particles: Optional[list] = None
+    try:
+        from devmon.engine.skins import equipped_skin as _equipped_skin
+        particles = _equipped_skin(state).particle_style or None
+    except Exception:
+        particles = None
 
     # Phase 11: Signal daemon to hide during battle (SC4)
     state.indicator_hidden = True
@@ -701,7 +728,8 @@ def battle_cmd() -> None:
             if not intro_played:
                 if anim_enabled:
                     _animate_wild_entrance(
-                        live, turn, last_narration, menu, wild_panel, player_panel, wild_template, art_width
+                        live, turn, last_narration, menu, wild_panel, player_panel, wild_template, art_width,
+                        particles=particles,
                     )
                 intro_played = True
 
@@ -801,24 +829,28 @@ def battle_cmd() -> None:
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
                             wild_template, player_template, "player", _player_attacks, art_width,
+                        particles=particles,
                         )
                         if not wild_fainted:
                             player_fainted = _animate_attack_exchange(
                                 live, anim_enabled, turn, last_narration, menu,
                                 _build_wild_panel, _build_player_panel,
                                 wild_template, player_template, "wild", _wild_attacks, art_width,
+                            particles=particles,
                             )
                     else:
                         player_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
                             wild_template, player_template, "wild", _wild_attacks, art_width,
+                        particles=particles,
                         )
                         if not player_fainted:
                             wild_fainted = _animate_attack_exchange(
                                 live, anim_enabled, turn, last_narration, menu,
                                 _build_wild_panel, _build_player_panel,
                                 wild_template, player_template, "player", _player_attacks, art_width,
+                            particles=particles,
                             )
 
                 last_narration = " | ".join(narration_parts)
@@ -1050,24 +1082,28 @@ def battle_cmd() -> None:
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
                             wild_template, player_template, "player", _player_special, art_width,
+                        particles=particles,
                         )
                         if not wild_fainted:
                             player_fainted = _animate_attack_exchange(
                                 live, anim_enabled, turn, last_narration, menu,
                                 _build_wild_panel, _build_player_panel,
                                 wild_template, player_template, "wild", _wild_attacks_special, art_width,
+                            particles=particles,
                             )
                     else:
                         player_fainted = _animate_attack_exchange(
                             live, anim_enabled, turn, last_narration, menu,
                             _build_wild_panel, _build_player_panel,
                             wild_template, player_template, "wild", _wild_attacks_special, art_width,
+                        particles=particles,
                         )
                         if not player_fainted:
                             wild_fainted = _animate_attack_exchange(
                                 live, anim_enabled, turn, last_narration, menu,
                                 _build_wild_panel, _build_player_panel,
                                 wild_template, player_template, "player", _player_special, art_width,
+                            particles=particles,
                             )
 
                 last_narration = " | ".join(narration_parts)
@@ -1232,8 +1268,11 @@ def battle_cmd() -> None:
                     # capture_multiplier ("capsules grip tighter" -- never
                     # surfaced as a number, per the hard no-capture-% rule).
                     from devmon.engine.perks import capture_multiplier_bonus
+                    from devmon.engine.auras import capture_multiplier as mythic_capture_multiplier
                     effective_capture_multiplier = (
-                        selected_capsule.capture_multiplier * capture_multiplier_bonus(state)
+                        selected_capsule.capture_multiplier
+                        * capture_multiplier_bonus(state)
+                        * mythic_capture_multiplier(state)
                     )
                     # Compute capture chance — capture_rate NEVER shown to player (T-06-06, D-15)
                     capture_chance = compute_capture_chance(

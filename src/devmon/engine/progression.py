@@ -477,7 +477,12 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
     # xp_multiplier_bonus's docstring for why this is scoped to this call
     # site rather than every XP-granting path).
     from devmon.engine.perks import xp_multiplier_bonus
-    final_xp = int(final_xp * xp_multiplier_bonus(state))
+    # Phase E: ChronoGit's mythic aura (+10% all player XP) is a SEPARATE
+    # multiplicative factor stacked alongside the perk/prestige multiplier
+    # above (see engine.auras.xp_multiplier's docstring) -- not folded
+    # additively into it.
+    from devmon.engine.auras import xp_multiplier as mythic_xp_multiplier
+    final_xp = int(final_xp * xp_multiplier_bonus(state) * mythic_xp_multiplier(state))
 
     # XP booster multiplier (D-08)
     from devmon.engine.item_engine import is_booster_active
@@ -521,6 +526,12 @@ def process_events(state: "GameState", events: list[dict], config: dict) -> None
 
     check_badges(state)
     advance_material_offerings(state)
+
+    # Phase E: skin unlock checks (mirrors check_badges -- queues a pending
+    # notification instead of granting perk points).
+    from devmon.engine.skins import check_skin_unlocks
+
+    check_skin_unlocks(state)
 
     # Re-check level-up: quest completions, daily bonuses, and achievement
     # tiers above all grant player XP after the first check at line ~274 —

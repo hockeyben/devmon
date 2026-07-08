@@ -42,6 +42,7 @@ _BAR_WIDTH = 20
 # ---------------------------------------------------------------------------
 
 RARITY_ORDER: dict[str, int] = {
+    "mythic": -1,
     "legendary": 0,
     "epic": 1,
     "rare": 2,
@@ -103,6 +104,22 @@ def _print_codex_progress_line(discovered: int, total: int, theme: dict[str, str
     if theme is None:
         theme = get_theme("neon")
     console.print(_codex_progress_text(discovered, total, theme))
+
+
+def _print_active_auras_line(state: GameState, theme: dict[str, str] | None = None) -> None:
+    """Print active mythic aura(s), each prefixed with a width-safe '+'
+    marker (Phase E). Silent (prints nothing) when no mythic is owned."""
+    from devmon.engine.auras import active_aura_names
+
+    auras = active_aura_names(state)
+    if not auras:
+        return
+    if theme is None:
+        theme = get_theme("neon")
+    line = Text()
+    line.append("Auras: ", style=theme["stat_key"])
+    line.append(" ".join(f"+{name}" for name in auras), style="green")
+    console.print(line)
 
 
 def _load_theme() -> dict[str, str]:
@@ -224,6 +241,7 @@ def _show_collection_table(state: GameState, sort: str, theme: dict[str, str] | 
     discovered_ids = captured_ids | encountered_ids
     discovered = len(discovered_ids)
     _print_codex_progress_line(discovered, total, theme)
+    _print_active_auras_line(state, theme)
 
 
 # ---------------------------------------------------------------------------

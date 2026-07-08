@@ -462,7 +462,17 @@ def _spawn_encounter(
     if config is None:
         config = {}
 
+    from devmon.engine.mythic import MYTHIC_SPECIES_IDS
+
     registry = load_all_creatures()
+    # Phase E hard rule: mythics NEVER appear through the normal rarity
+    # roll. They're listed in the bundled region data's "voidnet" species
+    # membership for codex/travel bookkeeping only -- excluding them here,
+    # from the registry every subsequent step (candidate pool, available
+    # rarities, and select_creature_for_rarity's own "any creature" last-
+    # resort fallback) draws from, is what actually enforces that rule
+    # rather than merely relying on rarity-key absence upstream.
+    registry = {cid: t for cid, t in registry.items() if cid not in MYTHIC_SPECIES_IDS}
     region_id = getattr(state, "current_region", None) or DEFAULT_REGION_ID
     pool_registry = region_candidate_registry(region_id, registry)
 

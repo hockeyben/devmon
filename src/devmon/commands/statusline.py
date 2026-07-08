@@ -69,7 +69,36 @@ _RESET = "\033[0m"
 # character used in a statusline row must be < U+2600 (unambiguous width 1);
 # the ▰▱ bar chars (U+25B0/U+25B1) are below that threshold and stay. Color
 # (not glyph choice) provides the flair instead.
-_UP_ARROW = "↯"  # ↯ -- width-1, colored bright yellow below
+_UP_ARROW = "↯"  # ↯ -- width-1, colored by the equipped skin's accent below
+
+# Phase E — terminal skins: the equipped skin's statusline_accent (see
+# data/skins.json / models.skin.SkinDefinition) colors the ↯ glyph and the
+# bar's FILLED segments (SGR only -- no new glyphs). Unrecognized/missing
+# accent names fall back to the pre-Phase-E bright-yellow glyph color.
+_ACCENT_ANSI: dict[str, str] = {
+    "white": "\033[37m",
+    "cyan": _CYAN,
+    "yellow": "\033[33m",
+    "bright_yellow": _BRIGHT_YELLOW,
+    "bright_magenta": "\033[95m",
+    "magenta": "\033[35m",
+    "bright_red": "\033[91m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+}
+
+
+def _accent_code(name: "str | None") -> str:
+    """Resolve a skin's statusline_accent name to its ANSI SGR code,
+    defaulting to bright-yellow (the pre-Phase-E glyph color) when the name
+    is missing or unrecognized."""
+    return _ACCENT_ANSI.get(name or "", _BRIGHT_YELLOW)
+
+
+# Width-safe, dim marker appended after the percent on the FULL row only
+# when the player owns at least one mythic (an active aura) -- a single
+# extra character, never a new glyph (ord('+') well below 0x2600).
+_AURA_MARKER = " \033[2m+\033[0m"
 
 
 def _read_stdin_payload() -> tuple[bytes, dict]:
@@ -166,6 +195,8 @@ def _normal_row(
     use_emoji: bool,
     badge_count: int = 0,
     prestige_count: int = 0,
+    accent: "str | None" = None,
+    aura_active: bool = False,
 ) -> str:
     """Build the idle Lv./xp-bar row, built locally (not via
     daemon.frames.build_status_strip -- that surface renders the daemon's
@@ -179,6 +210,14 @@ def _normal_row(
     the same engine.badges.compute_rank(level, badge_count) as `devmon
     status`/`devmon badges` so the tag always agrees with the full rank name
     shown elsewhere.
+
+    Phase E (terminal skins): `accent` is the equipped skin's
+    statusline_accent name (see _accent_code) -- it colors the ↯ glyph and
+    the bar's FILLED segments only (SGR, no new glyphs). None (the default)
+    reproduces the pre-Phase-E bright-yellow glyph exactly. `aura_active`
+    appends a single dim '+' marker after the percent when True (an owned
+    mythic's aura is active) -- False (the default) is a byte-identical
+    no-op versus the pre-Phase-E row.
     """
     from devmon.daemon.frames import (
         compute_bar_progress,
@@ -192,15 +231,23 @@ def _normal_row(
     filled, pct = compute_bar_progress(earned, needed)
     empty = STRIP_BAR_SEGMENTS - filled
     rank_tag = f"\033[2m{_rank_tag(level, badge_count, prestige_count)}\033[0m"
+    accent_code = _accent_code(accent)
+    marker = _AURA_MARKER if aura_active else ""
 
     if use_emoji:
-        bar = (STRIP_BAR_FILLED_EMOJI * filled) + (STRIP_BAR_EMPTY_EMOJI * empty)
-        glyph = f"{_BRIGHT_YELLOW}{_UP_ARROW}{_RESET}"
-        return f"{rank_tag}{glyph} Lv.{level} {bar} {pct}%"
+        bar = (
+            f"{accent_code}{STRIP_BAR_FILLED_EMOJI * filled}{_RESET}"
+            + (STRIP_BAR_EMPTY_EMOJI * empty)
+        )
+        glyph = f"{accent_code}{_UP_ARROW}{_RESET}"
+        return f"{rank_tag}{glyph} Lv.{level} {bar} {pct}%{marker}"
 
-    bar = (STRIP_BAR_FILLED_ASCII * filled) + (STRIP_BAR_EMPTY_ASCII * empty)
+    bar = (
+        f"{accent_code}{STRIP_BAR_FILLED_ASCII * filled}{_RESET}{_CYAN}"
+        + (STRIP_BAR_EMPTY_ASCII * empty)
+    )
     text = f"DevMon Lv.{level} [{bar}] {pct}%"
-    return f"{rank_tag}{_CYAN}{text}{_RESET}"
+    return f"{rank_tag}{_CYAN}{text}{_RESET}{marker}"
 
 
 def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
@@ -534,11 +581,16 @@ def statusline(
         needed = snapshot.get("needed", 1)
         badge_count = snapshot.get("badges", 0)
         prestige_count = snapshot.get("prestige", 0)
+        accent = snapshot.get("accent")
+        aura_active = bool(snapshot.get("aura_active", False))
         if snapshot.get("encounter"):
             candidates = [_encounter_row(use_emoji), _encounter_row_compact(use_emoji)]
         else:
             candidates = [
-                _normal_row(level, earned, needed, use_emoji, badge_count, prestige_count),
+                _normal_row(
+                    level, earned, needed, use_emoji, badge_count, prestige_count,
+                    accent=accent, aura_active=aura_active,
+                ),
                 _normal_row_compact(level, earned, needed, use_emoji),
             ]
         lines = _compose_lines(chain_lines, candidates, _effective_cols(config))

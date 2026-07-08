@@ -19,6 +19,7 @@ from devmon.models.badge import BadgeUnlock
 from devmon.models.creature import OwnedCreature
 from devmon.models.encounter import EncounterEntry
 from devmon.models.quest import ActiveQuest, AchievementUnlock, QuestCompletion
+from devmon.models.skin import SkinUnlock
 
 
 class PlayerProfile(BaseModel):
@@ -249,6 +250,23 @@ class GameState(BaseModel):
     post-failure retry gate), "boss_ready" (bool -- step 3 reached, the boss
     may be pinned), "completed" (bool -- the boss has been captured). See
     engine.legendary_quests for the full state machine."""
+
+    # Phase E — terminal skins (obtainable cosmetics)
+    skins_owned: list[str] = Field(default_factory=lambda: ["neon"])
+    """Skin ids the player owns (engine.skins catalog). "neon" is always
+    present -- a plain list default makes this field-presence-safe for old
+    saves (Pydantic backfills ["neon"] for anyone who saved before Phase E,
+    same pattern as current_region), and engine.skins.owned_skin_ids()
+    defensively re-adds "neon" even against a hand-edited save missing it."""
+
+    skins_equipped: str = "neon"
+    """Currently equipped skin id (`devmon skins equip <id>`). Falls back to
+    "neon" via engine.skins.equipped_skin() if the stored id is somehow
+    unknown/unowned."""
+
+    pending_skin_unlocks: list[SkinUnlock] = Field(default_factory=list)
+    """Skin-unlock notifications awaiting display on next invocation
+    (mirrors pending_badge_unlocks)."""
 
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":

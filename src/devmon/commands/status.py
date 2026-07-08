@@ -111,6 +111,19 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
         # feel when the optional booster row is absent.
         identity_grid.add_row(Text(""), Text(""))
 
+    # Phase E — equipped terminal skin + active mythic auras.
+    from devmon.engine.skins import equipped_skin
+    try:
+        skin_name = equipped_skin(state).name
+    except Exception:
+        skin_name = "Neon"
+    identity_grid.add_row(Text("Skin"), Text(skin_name, style=theme["stat_value"]))
+
+    from devmon.engine.auras import active_aura_names
+    auras = active_aura_names(state)
+    aura_text = " ".join(f"+{name}" for name in auras) if auras else "none"
+    identity_grid.add_row(Text("Auras"), Text(aura_text, style="green" if auras else "dim white"))
+
     identity_content = Group(Text(p.name, style=theme["title"]), Text(""), identity_grid)
 
     identity_panel = Panel(

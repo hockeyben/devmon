@@ -437,6 +437,159 @@ class TestStatuslineRankTag:
         assert "[Sr]" not in _strip(_encounter_row(False))
         assert "[Sr]" not in _strip(_encounter_row_compact(False))
 
+
+class TestStatuslineSkinAccentAndAuraMarker:
+    """Phase E: the equipped skin's statusline_accent colors the ↯ glyph and
+    filled bar segments (SGR only); an active mythic aura appends a single
+    dim '+' marker after the percent on the FULL row only. Both are pure
+    no-ops when omitted (every pre-Phase-E call site)."""
+
+    def _assert_width_safe(self, text: str) -> None:
+        import re
+
+        ansi_re = re.compile(r"\033\[[0-9;]*m")
+        stripped = ansi_re.sub("", text)
+        for ch in stripped:
+            assert ord(ch) < 0x2600, (
+                f"ambiguous-width codepoint {ch!r} (U+{ord(ch):04X}) in row: {text!r}"
+            )
+
+    def test_default_row_omits_marker_and_matches_prior_bright_yellow(self):
+        from devmon.commands.statusline import _BRIGHT_YELLOW, _normal_row
+
+        row_default = _normal_row(5, 40, 100, use_emoji=True)
+        row_explicit = _normal_row(5, 40, 100, use_emoji=True, accent=None, aura_active=False)
+        assert row_default == row_explicit
+        assert _BRIGHT_YELLOW in row_default  # unrecognized/None accent falls back
+
+    def test_aura_marker_appears_only_when_active(self):
+        from devmon.commands.statusline import _normal_row
+
+        with_aura = _normal_row(5, 40, 100, use_emoji=True, aura_active=True)
+        without_aura = _normal_row(5, 40, 100, use_emoji=True, aura_active=False)
+        assert with_aura != without_aura
+        assert "+" in with_aura
+        assert "+" not in without_aura
+
+    def test_aura_marker_and_accent_are_width_safe(self):
+        from devmon.commands.statusline import _normal_row
+
+        for use_emoji in (True, False):
+            row = _normal_row(
+                20, 40, 100, use_emoji, badge_count=6, prestige_count=1,
+                accent="bright_magenta", aura_active=True,
+            )
+            self._assert_width_safe(row)
+
+    def test_accent_colors_filled_bar_segments(self):
+        from devmon.commands.statusline import _normal_row
+
+        row = _normal_row(5, 50, 100, use_emoji=True, accent="bright_magenta")
+        assert "\033[95m" in row  # bright_magenta SGR code wraps the filled segments
+
+    def test_unknown_accent_name_is_safe_and_width_safe(self):
+        from devmon.commands.statusline import _normal_row
+
+        row = _normal_row(5, 50, 100, use_emoji=False, accent="not_a_real_skin_color")
+        self._assert_width_safe(row)
+
+    def test_statusline_command_surfaces_equipped_skin_accent(self, tmp_save_dir):
+        import json as _json
+
+        from devmon.main import app
+        from typer.testing import CliRunner
+
+        save_path = tmp_save_dir / "save.json"
+        save_path.write_text(
+            _json.dumps({
+                "player": {"level": 5, "xp": 100},
+                "encounter_queue": None,
+                "indicator_hidden": False,
+                "skins_equipped": "voidwave",
+            }),
+            encoding="utf-8",
+        )
+        runner = CliRunner()
+        result = runner.invoke(app, ["statusline"], input=b"{}")
+        assert result.exit_code == 0
+        assert "\033[95m" in result.output  # voidwave's bright_magenta accent
+
+    def test_statusline_command_surfaces_active_aura_marker(self, tmp_save_dir):
+        import json as _json
+
+        from devmon.main import app
+        from typer.testing import CliRunner
+
+        save_path = tmp_save_dir / "save.json"
+        save_path.write_text(
+            _json.dumps({
+                "player": {"level": 5, "xp": 100},
+                "encounter_queue": None,
+                "indicator_hidden": False,
+                "creature_collection": [{"template_id": "rootd", "level": 90}],
+            }),
+            encoding="utf-8",
+        )
+        runner = CliRunner()
+        result = runner.invoke(app, ["statusline"], input=b"{}")
+        assert result.exit_code == 0
+        assert " +" in _strip(result.output) or "+" in result.output
+
+
+class TestStatuslineIndicatorSnapshotPhaseE:
+    def test_snapshot_default_accent_and_aura_when_no_save(self, tmp_save_dir):
+        from devmon.daemon.indicator import _DEFAULT_SNAPSHOT
+
+        assert _DEFAULT_SNAPSHOT["accent"] == "bright_yellow"
+        assert _DEFAULT_SNAPSHOT["aura_active"] is False
+
+    def test_snapshot_resolves_equipped_skin_accent(self, tmp_save_dir):
+        import json as _json
+
+        from devmon.daemon.indicator import read_indicator_snapshot
+
+        save_path = tmp_save_dir / "save.json"
+        save_path.write_text(
+            _json.dumps({"player": {"level": 1, "xp": 0}, "skins_equipped": "root_access"}),
+            encoding="utf-8",
+        )
+        snapshot = read_indicator_snapshot(save_path, {})
+        assert snapshot["accent"] == "bright_red"
+
+    def test_snapshot_detects_owned_mythic(self, tmp_save_dir):
+        import json as _json
+
+        from devmon.daemon.indicator import read_indicator_snapshot
+
+        save_path = tmp_save_dir / "save.json"
+        save_path.write_text(
+            _json.dumps({
+                "player": {"level": 1, "xp": 0},
+                "creature_collection": [{"template_id": "chronogit", "level": 90}],
+            }),
+            encoding="utf-8",
+        )
+        snapshot = read_indicator_snapshot(save_path, {})
+        assert snapshot["aura_active"] is True
+
+    def test_snapshot_no_mythic_owned(self, tmp_save_dir):
+        import json as _json
+
+        from devmon.daemon.indicator import read_indicator_snapshot
+
+        save_path = tmp_save_dir / "save.json"
+        save_path.write_text(
+            _json.dumps({
+                "player": {"level": 1, "xp": 0},
+                "creature_collection": [{"template_id": "bugbyte", "level": 5}],
+            }),
+            encoding="utf-8",
+        )
+        snapshot = read_indicator_snapshot(save_path, {})
+        assert snapshot["aura_active"] is False
+
+
+class TestStatuslineRankTagIntegration:
     def test_statusline_command_shows_rank_tag_for_badged_player(self, tmp_save_dir):
         import json
         from devmon.main import app

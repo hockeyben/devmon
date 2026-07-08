@@ -1,0 +1,72 @@
+{
+  "id": "rootd",
+  "name": "Rootd",
+  "species": "The Unstarted Daemon",
+  "rarity": "mythic",
+  "allowed_rarities": [
+    "mythic"
+  ],
+  "type": "Shadow",
+  "level_range": [
+    92,
+    99
+  ],
+  "base_hp": 300,
+  "base_attack": 112,
+  "base_defense": 128,
+  "base_speed": 58,
+  "capture_rate": 0.02,
+  "flavor_text": "It has no PID. No parent process spawned it, no init script called it, and no signal has ever managed to reap it. Rootd was never started -- it simply always was, holding the root of every process tree that will ever fork.",
+  "ascii_art": [
+    "[dim magenta]  .-'''-.   [/dim magenta]",
+    "[bold magenta] /  ###  \\ [/bold magenta]",
+    "[bold magenta]|  #(::)# |[/bold magenta]",
+    "[magenta] \\  ###  / [/magenta]",
+    "[dim magenta]  '-...-'   [/dim magenta]",
+    "[dim white]   PID 0    [/dim white]",
+    "[dim magenta]  /|   |\\   [/dim magenta]",
+    "[dim magenta] //   \\\\  [/dim magenta]"
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "dim magenta",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Orphaned Fork",
+      "damage_multiplier": 1.7,
+      "type": "Shadow",
+      "learn_level": 90,
+      "status_chance": 0.35
+    },
+    {
+      "name": "Zombie Process",
+      "damage_multiplier": 2.0,
+      "type": "Shadow",
+      "learn_level": 93,
+      "status_chance": 0.4
+    },
+    {
+      "name": "Kernel Panic Whisper",
+      "damage_multiplier": 1.8,
+      "type": "Psychic",
+      "learn_level": 95
+    },
+    {
+      "name": "Init Never Called",
+      "damage_multiplier": 2.3,
+      "type": "Shadow",
+      "learn_level": 97,
+      "status_chance": 0.45
+    },
+    {
+      "name": "Unkillable Daemon",
+      "damage_multiplier": 2.7,
+      "type": "Shadow",
+      "learn_level": 99,
+      "status_chance": 0.5
+    }
+  ]
+}

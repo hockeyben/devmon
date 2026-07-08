@@ -67,9 +67,17 @@ def sync_game_state(config: dict) -> None:
 
         process_ai_events(state, events)
         check_expiry(state)
+
+        # Phase E: attempt a mythic encounter first (mirrors main.py's
+        # ordering -- it should win the single encounter-queue slot over an
+        # ordinary wild spawn). no-ops unless every hard condition holds.
+        from devmon.engine.mythic import maybe_spawn_mythic
+        spawned_mythic = maybe_spawn_mythic(state, config, events=events) is not None
+
         # Pass this batch's events through for Phase B2 biome modifiers
         # (mirrors main.py's _process_event_log_on_startup wiring).
-        tick_encounter(state, config, events=events)
+        if not spawned_mythic:
+            tick_encounter(state, config, events=events)
 
         # Auto-fight/auto-skip resolution (engine/auto_battle.py). Report
         # stays queued in pending_auto_battle_reports -- this quiet path

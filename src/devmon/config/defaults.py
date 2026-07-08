@@ -97,6 +97,7 @@ DEFAULT_CONFIG: dict = {
             "rare": 4,
             "epic": 8,
             "legendary": 15,
+            "mythic": 40,
         },
         # Candy spending (`devmon candy feed`): XP granted per candy fed,
         # routed through engine.battle_engine.apply_creature_xp.
@@ -115,6 +116,10 @@ DEFAULT_CONFIG: dict = {
         "biome_night_shift_multiplier": 2.0,   # Shadow/Psychic weight 22:00-06:00 local
         "biome_rift_chance": 0.25,             # temporal rift rarity-tier bump chance
         "biome_language_multiplier": 1.5,      # workspace-language type weight boost
+        # Phase E — mythic encounter roll (engine/mythic.py). Only even
+        # attempted when ALL of: player in voidnet, local time 00:00-04:00
+        # OR a 14+ day streak, and a temporal-rift trigger fired this tick.
+        "mythic_spawn_chance": 0.05,
         # Phase C fold-in fix: `devmon battle` used to unconditionally fully
         # heal the party after every battle outcome. Now that healing is a
         # real system (potions/Repo Center/Medibot), that free heal is

@@ -27,6 +27,7 @@ DROP_CHANCE: dict[str, float] = {
     "rare": 0.70,
     "epic": 0.85,
     "legendary": 0.95,
+    "mythic": 1.0,
 }
 
 # Weighted material pool per rarity: list of (material_item_id, weight).
@@ -61,6 +62,10 @@ DROP_POOL: dict[str, list[tuple[str, int]]] = {
         ("kernel_fragment", 2),
         ("root_of_all", 1),
     ],
+    "mythic": [
+        ("void_shard", 5),
+        ("kernel_fragment", 2),
+    ],
 }
 
 
@@ -87,7 +92,11 @@ def roll_loot(
     chance = DROP_CHANCE.get(rarity, DROP_CHANCE["common"])
     if state is not None:
         from devmon.engine.perks import loot_chance_bonus
-        chance = min(1.0, chance + loot_chance_bonus(state))
+        from devmon.engine.auras import material_drop_chance_bonus
+        # Phase E: Rootd's mythic aura (+10% material drop chance) stacks
+        # additively alongside the loot_hoarder perk bonus at this same
+        # site (both are additive bonuses to one probability).
+        chance = min(1.0, chance + loot_chance_bonus(state) + material_drop_chance_bonus(state))
     if rng_source.random() >= chance:
         return None
 

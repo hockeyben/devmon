@@ -26,7 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ART_DIR = REPO_ROOT / "art"
 REGIONS_PATH = REPO_ROOT / "src" / "devmon" / "data" / "regions.json"
 
-VALID_RARITIES = {"common", "uncommon", "rare", "epic", "legendary"}
+VALID_RARITIES = {"common", "uncommon", "rare", "epic", "legendary", "mythic"}
 VALID_TYPES = {"Fire", "Water", "Earth", "Electric", "Shadow", "Ice", "Psychic", "Nature"}
 EXPECTED_REGION_IDS = {
     "termina_meadows", "compiler_wastes", "cloud_reaches", "kernel_depths", "voidnet",
@@ -54,7 +54,7 @@ def _load_regions() -> dict:
 def test_all_creatures_load_through_creature_loader():
     """Every bundled creature JSON must validate via load_all_creatures()."""
     registry = _load_registry()
-    assert len(registry) == 75, f"Expected 75 creatures post-Phase-B1, got {len(registry)}"
+    assert len(registry) == 78, f"Expected 78 creatures post-Phase-E, got {len(registry)}"
     for cid, template in registry.items():
         assert template.id == cid
         assert template.rarity in VALID_RARITIES
@@ -131,9 +131,9 @@ def test_region_species_counts_match_roster_plan():
         "compiler_wastes": 15,
         "cloud_reaches": 15,
         "kernel_depths": 13,
-        "voidnet": 8,
+        "voidnet": 11,
     }
-    assert sum(counts.values()) == 75
+    assert sum(counts.values()) == 78
 
 
 # ---------------------------------------------------------------------------

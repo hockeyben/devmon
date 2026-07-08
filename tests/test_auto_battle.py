@@ -721,11 +721,15 @@ def test_settings_auto_fight_off(runner, tmp_devmon_home):
 def test_settings_auto_fight_invalid_rarity_rejected(runner, tmp_devmon_home):
     from devmon.main import app
 
+    # "mythic" became a valid tier in Phase E (settings rarity lists accept
+    # it, even though auto-battle's own hard guard never actually touches a
+    # mythic encounter regardless of config) -- use a genuinely bogus tier
+    # here instead.
     result = runner.invoke(
-        app, ["settings", "auto-fight", "--rarities", "common,mythic"]
+        app, ["settings", "auto-fight", "--rarities", "common,bogus"]
     )
     assert result.exit_code != 0
-    assert "mythic" in result.output.lower() or "mythic" in str(result.exception)
+    assert "bogus" in result.output.lower() or "bogus" in str(result.exception)
 
 
 def test_settings_auto_skip_on_and_rarities_round_trip(runner, tmp_devmon_home):

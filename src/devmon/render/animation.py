@@ -19,8 +19,9 @@ that must never make the terminal feel slow.
 """
 from __future__ import annotations
 
+import random as _random_module
 import time
-from typing import TYPE_CHECKING, Callable, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from rich.color import Color
 from rich.segment import Segment
@@ -126,15 +127,70 @@ def _brighten_style(style: "Style | None", amount: float) -> "Style | None":
 
 
 # ---------------------------------------------------------------------------
+# Particle scattering (Phase E — per-skin battle particle style)
+# ---------------------------------------------------------------------------
+
+_PARTICLE_DENSITY = 0.08
+"""Fraction of currently-blank cells that get a particle glyph per sprinkle
+pass — low enough to read as ambient texture, not visual noise."""
+
+
+def _sprinkle_particles(
+    rows: Sequence[Row],
+    glyphs: "Sequence[str] | None",
+    density: float = _PARTICLE_DENSITY,
+    rng=None,
+) -> list[Row]:
+    """Return a copy of `rows` with particle glyphs scattered into blank
+    (" ", None) cells only — never overwrites an opaque art cell, so the
+    creature's own shape is always untouched.
+
+    `glyphs` is the equipped skin's particle_style list (e.g. Voidwave's
+    dim "~"). None or an empty sequence is a pure no-op — returns `rows`
+    unchanged (as a shallow copy of the outer list, so callers can always
+    treat the return value as a fresh frame regardless).
+
+    `rng` defaults to the stdlib `random` module, resolved at CALL time
+    (not bound as a default-argument value) so tests can deterministically
+    monkeypatch this module's `_random_module` name.
+    """
+    if not glyphs:
+        return list(rows)
+    if rng is None:
+        rng = _random_module
+
+    sprinkled: list[Row] = []
+    for row in rows:
+        new_row = list(row)
+        for i, (char, _style) in enumerate(new_row):
+            if char == " " and rng.random() < density:
+                glyph = rng.choice(list(glyphs))
+                new_row[i] = (glyph, Style(dim=True))
+        sprinkled.append(new_row)
+    return sprinkled
+
+
+# ---------------------------------------------------------------------------
 # Frame-transform primitives
 # ---------------------------------------------------------------------------
 
-def entrance_frames(image: "CreatureImage | Sequence[Row]", steps: int = 4) -> list[_HalfBlockFrame]:
+def entrance_frames(
+    image: "CreatureImage | Sequence[Row]",
+    steps: int = 4,
+    particles: "Optional[Sequence[str]]" = None,
+) -> list[_HalfBlockFrame]:
     """Reveal a creature bottom-up over `steps` frames.
 
     Each successive frame shows progressively more rows, counted from the
     bottom, with the remaining (not-yet-revealed) rows blanked out. The
     final frame reveals every row. Used for the wild-encounter intro.
+
+    `particles` (Phase E — terminal skins): optional glyph list from the
+    player's equipped skin (see engine.skins.SkinDefinition.particle_style),
+    sprinkled into the still-blank rows of every frame BEFORE the final
+    (fully-revealed) one — reads as ambient energy materializing ahead of
+    the creature, e.g. Voidwave scattering dim "~" around the art frame.
+    None (the default, and every pre-Phase-E call site) is a pure no-op.
 
     Returns an empty list when the source has no rows (e.g. no PNG art).
     """
@@ -155,6 +211,8 @@ def entrance_frames(image: "CreatureImage | Sequence[Row]", steps: int = 4) -> l
         prev_visible = visible
         hidden = n - visible
         frame_rows = [_blank_row(width) for _ in range(hidden)] + rows[hidden:]
+        if particles and i < steps:
+            frame_rows = _sprinkle_particles(frame_rows, particles)
         frames.append(_HalfBlockFrame(frame_rows, width))
     return frames
 
@@ -195,9 +253,18 @@ def shake_frames(
 
 
 def flash_frames(
-    image: "CreatureImage | Sequence[Row]", pulses: int = 1, amount: float = 0.6
+    image: "CreatureImage | Sequence[Row]",
+    pulses: int = 1,
+    amount: float = 0.6,
+    particles: "Optional[Sequence[str]]" = None,
 ) -> list[_HalfBlockFrame]:
-    """Brighten every opaque cell toward white and back — for damage impact."""
+    """Brighten every opaque cell toward white and back — for damage impact.
+
+    `particles` (Phase E — terminal skins): optional glyph list from the
+    player's equipped skin, sprinkled into the bright pulse frame only
+    (the settle-back frame stays clean). None (the default, and every
+    pre-Phase-E call site) is a pure no-op.
+    """
     rows, width = _rows_and_width(image)
     if not rows or width <= 0:
         return []
@@ -209,10 +276,11 @@ def flash_frames(
         ]
         for row in rows
     ]
+    sprinkled_bright_rows = _sprinkle_particles(bright_rows, particles)
 
     frames: list[_HalfBlockFrame] = []
     for _ in range(max(1, pulses)):
-        frames.append(_HalfBlockFrame(bright_rows, width))
+        frames.append(_HalfBlockFrame(sprinkled_bright_rows, width))
         frames.append(_HalfBlockFrame(rows, width))
     return frames
 

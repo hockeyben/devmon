@@ -1,0 +1,71 @@
+{
+  "id": "singulon",
+  "name": "Singulon",
+  "species": "The Irreconcilable Diff",
+  "rarity": "mythic",
+  "allowed_rarities": [
+    "mythic"
+  ],
+  "type": "Electric",
+  "level_range": [
+    92,
+    99
+  ],
+  "base_hp": 222,
+  "base_attack": 142,
+  "base_defense": 86,
+  "base_speed": 98,
+  "capture_rate": 0.03,
+  "flavor_text": "Two histories tried to become one and neither survived the attempt. Singulon is what's left standing in the wreckage of a merge that both sides swore was clean.",
+  "ascii_art": [
+    "[dim yellow]  <<<<<<<     [/dim yellow]",
+    "[bold yellow] [ ??? ]    [/bold yellow]",
+    "[yellow] =======     [/yellow]",
+    "[bold yellow] [ ??? ]    [/bold yellow]",
+    "[dim yellow]  >>>>>>>     [/dim yellow]",
+    "[dim white]  0 conflicts [/dim white]",
+    "[dim yellow]   |     |    [/dim yellow]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "dim yellow",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Merge Conflict Cascade",
+      "damage_multiplier": 1.8,
+      "type": "Electric",
+      "learn_level": 90,
+      "status_chance": 0.35
+    },
+    {
+      "name": "Diverged Branch Surge",
+      "damage_multiplier": 2.1,
+      "type": "Electric",
+      "learn_level": 93,
+      "status_chance": 0.42
+    },
+    {
+      "name": "Recursive Rebase",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 95
+    },
+    {
+      "name": "Irreconcilable Diff",
+      "damage_multiplier": 2.3,
+      "type": "Electric",
+      "learn_level": 97,
+      "status_chance": 0.48
+    },
+    {
+      "name": "Final Commit",
+      "damage_multiplier": 2.9,
+      "type": "Electric",
+      "learn_level": 99,
+      "status_chance": 0.5
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "_comment": "Terminal cosmetic skins (Phase E). 'Neon' is always owned; the other five unlock via a badge, a region reached, mythic ownership, or prestige. See engine/skins.py for the unlock-check pipeline and models/skin.py for field docs.",
+  "schema_version": 1,
+  "skins": [
+    {
+      "id": "neon",
+      "name": "Neon",
+      "theme_variant": "neon",
+      "statusline_accent": "bright_yellow",
+      "particle_style": [],
+      "unlock_type": "always",
+      "unlock_param": null,
+      "flavor": "The default DevMon look -- cyan and magenta, always on."
+    },
+    {
+      "id": "monochrome",
+      "name": "Monochrome Terminal",
+      "theme_variant": "monochrome",
+      "statusline_accent": "white",
+      "particle_style": [".", "'"],
+      "unlock_type": "badge",
+      "unlock_param": "terminal_veteran",
+      "flavor": "Green-on-black, exactly like the terminal that started it all."
+    },
+    {
+      "id": "solarized_abyss",
+      "name": "Solarized Abyss",
+      "theme_variant": "solarized_abyss",
+      "statusline_accent": "cyan",
+      "particle_style": ["~", "."],
+      "unlock_type": "region",
+      "unlock_param": "kernel_depths",
+      "flavor": "The muted, low-light palette of a system that never sees daylight."
+    },
+    {
+      "id": "voidwave",
+      "name": "Voidwave",
+      "theme_variant": "voidwave",
+      "statusline_accent": "bright_magenta",
+      "particle_style": ["~", "*", "."],
+      "unlock_type": "region",
+      "unlock_param": "voidnet",
+      "flavor": "Static bleeding in from beyond the routing table."
+    },
+    {
+      "id": "root_access",
+      "name": "Root Access",
+      "theme_variant": "root_access",
+      "statusline_accent": "bright_red",
+      "particle_style": ["#", "+", "."],
+      "unlock_type": "mythic",
+      "unlock_param": null,
+      "flavor": "Every permission bit set. Nothing left to sudo."
+    },
+    {
+      "id": "prestige_gold",
+      "name": "Prestige Gold",
+      "theme_variant": "prestige_gold",
+      "statusline_accent": "yellow",
+      "particle_style": ["*", "o", "."],
+      "unlock_type": "prestige",
+      "unlock_param": "1",
+      "flavor": "Gold trim for a trainer who has done this all before."
+    }
+  ]
+}

@@ -35,6 +35,7 @@ from devmon.commands import prompt as prompt_cmd
 from devmon.commands import protocol as protocol_cmd
 from devmon.commands import settings as settings_cmd
 from devmon.commands import shop as shop_cmd
+from devmon.commands import skins as skins_cmd
 from devmon.commands import status as status_cmd
 from devmon.commands import statusline as statusline_cmd
 from devmon.commands import quests as quests_cmd
@@ -78,6 +79,7 @@ app.add_typer(perks_cmd.app, name="perks")
 app.add_typer(prestige_cmd.app, name="prestige")
 app.add_typer(indicator_cmd.app, name="indicator")
 app.add_typer(protocol_cmd.app, name="protocol")
+app.add_typer(skins_cmd.app, name="skins")
 app.command(name="statusline")(statusline_cmd.statusline)
 
 
@@ -161,10 +163,20 @@ def _process_event_log_on_startup() -> None:
         # Check encounter expiry first (D-09) — clear stale encounters before ticking
         expiry_msg = check_expiry(state)
 
+        # Phase E: attempt a mythic encounter FIRST, before the normal roll
+        # or the legendary boss pin below — it is the rarest possible event
+        # in the game and should win the single encounter-queue slot over
+        # an ordinary wild spawn. no-ops (returns None, mutates nothing)
+        # unless ALL of its hard conditions hold (see engine.mythic).
+        from devmon.engine.mythic import maybe_spawn_mythic
+        notification_msg = maybe_spawn_mythic(state, config, events=events)
+
         # Tick encounter timer (D-01, D-02, D-03) — may spawn new encounter.
         # Pass this batch's events through for Phase B2 biome modifiers
         # (temporal-rift git_commit detection + workspace language sniff).
-        notification_msg = tick_encounter(state, config, events=events)
+        # Skipped entirely if a mythic just claimed the queue above.
+        if notification_msg is None:
+            notification_msg = tick_encounter(state, config, events=events)
 
         # Phase C: pin a legendary quest chain's boss encounter the moment
         # it's ready and the queue is free (bypasses the normal spawn RNG
@@ -262,6 +274,22 @@ def _process_event_log_on_startup() -> None:
                 for unlock in state.pending_badge_unlocks:
                     console.print(render_badge_unlock_panel(unlock, theme))
                 state.pending_badge_unlocks = []
+                save_state(state)
+        except Exception:
+            pass  # Never block the user's terminal workflow
+
+        # Phase E: deferred skin-unlock notifications (mirrors the badge
+        # unlock block above) -- includes the equip-hint command.
+        try:
+            if state.pending_skin_unlocks:
+                from devmon.engine.skins import unlock_hint
+
+                for unlock in state.pending_skin_unlocks:
+                    console.print(
+                        f"[bold green]Skin unlocked: {unlock.skin_name}[/bold green] "
+                        f"-- {unlock_hint(unlock.skin_id)}"
+                    )
+                state.pending_skin_unlocks = []
                 save_state(state)
         except Exception:
             pass  # Never block the user's terminal workflow

@@ -1,0 +1,69 @@
+{
+  "id": "chronogit",
+  "name": "ChronoGit",
+  "species": "Keeper of Forced Pushes",
+  "rarity": "mythic",
+  "allowed_rarities": [
+    "mythic"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    92,
+    99
+  ],
+  "base_hp": 250,
+  "base_attack": 118,
+  "base_defense": 96,
+  "base_speed": 104,
+  "capture_rate": 0.025,
+  "flavor_text": "Every branch you ever force-pushed away still exists somewhere in its reflog. ChronoGit remembers the commits history forgot, and it is not required to give any of them back.",
+  "ascii_art": [
+    "[dim cyan]   .~~~.    [/dim cyan]",
+    "[bold cyan]  ( o.o )   [/bold cyan]",
+    "[cyan]  <)   (>   [/cyan]",
+    "[bold cyan] /|HEAD~1|\\ [/bold cyan]",
+    "[dim cyan] //     \\\\  [/dim cyan]",
+    "[dim white]  reflog: * [/dim white]",
+    "[dim cyan]   '\\   /'   [/dim cyan]"
+  ],
+  "primary_color": "bold cyan",
+  "accent_color": "dim cyan",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Force-Pushed Timeline",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 90
+    },
+    {
+      "name": "Detached HEAD State",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 92
+    },
+    {
+      "name": "Frozen Reflog",
+      "damage_multiplier": 1.8,
+      "type": "Ice",
+      "learn_level": 95,
+      "status_chance": 0.4
+    },
+    {
+      "name": "Rebase Paradox",
+      "damage_multiplier": 2.1,
+      "type": "Shadow",
+      "learn_level": 97,
+      "status_chance": 0.45
+    },
+    {
+      "name": "Every Commit At Once",
+      "damage_multiplier": 2.6,
+      "type": "Psychic",
+      "learn_level": 99
+    }
+  ]
+}
