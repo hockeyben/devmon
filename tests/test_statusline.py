@@ -56,7 +56,7 @@ class TestStatuslineRow:
         assert result.exit_code == 0
         assert "Lv.5" in _strip(result.output)
 
-    def test_encounter_save_has_osc8_link_to_battle(self, tmp_save_dir):
+    def test_encounter_save_shows_battle_label_without_osc8(self, tmp_save_dir):
         from devmon.main import app
 
         save_path = tmp_save_dir / "save.json"
@@ -72,8 +72,9 @@ class TestStatuslineRow:
         result = runner.invoke(app, ["statusline"], input=b"{}")
 
         assert result.exit_code == 0
-        assert "devmon://battle" in result.output
+        assert "[battle]" in _strip(result.output)
         assert "WILD DEVMON" in result.output
+        assert "\x1b]8" not in result.output
 
     def test_right_align_respects_columns_minus_margin(self, tmp_save_dir, monkeypatch):
         """Right edge = COLUMNS - statusline_margin(2) - 1: Claude Code's
@@ -365,6 +366,40 @@ class TestStatuslineDoesNotTriggerPrintingBacklog:
         assert calls["n"] == 1
 
 
+class TestStatuslineNoOsc8:
+    """OSC 8 hyperlinks were removed from every row builder -- no rendered
+    row may contain an OSC 8 escape sequence anywhere."""
+
+    def test_no_row_variant_contains_osc8(self):
+        from devmon.commands.statusline import (
+            _normal_row,
+            _normal_row_compact,
+            _encounter_row,
+            _encounter_row_compact,
+        )
+
+        rows = [
+            _normal_row(5, 40, 100, True),
+            _normal_row(5, 40, 100, False),
+            _normal_row_compact(5, 40, 100, True),
+            _normal_row_compact(5, 40, 100, False),
+            _encounter_row(True),
+            _encounter_row(False),
+            _encounter_row_compact(True),
+            _encounter_row_compact(False),
+        ]
+        for row in rows:
+            assert "\x1b]8" not in row
+
+    def test_statusline_command_output_has_no_osc8(self, tmp_save_dir):
+        from devmon.main import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["statusline"], input=b"")
+        assert result.exit_code == 0
+        assert "\x1b]8" not in result.output
+
+
 class TestStatuslineWidthSafeGlyphs:
     """Every statusline row must use ONLY unambiguous width-1 codepoints
     (ord < 0x2600) outside ANSI SGR / OSC 8 wrappers -- ambiguous-width
@@ -604,13 +639,13 @@ class TestStatuslineAppIcon:
                 f"ambiguous-width codepoint {ch!r} (U+{ord(ch):04X}) in row: {text!r}"
             )
 
-    def test_full_row_has_app_icon_link(self):
+    def test_full_row_has_app_icon(self):
         from devmon.commands.statusline import _normal_row
 
         for use_emoji in (True, False):
             row = _normal_row(5, 40, 100, use_emoji)
-            assert "devmon://app" in row
             assert "≡" in _strip(row)
+            assert "\x1b]8" not in row
 
     def test_app_icon_is_leftmost_visible_glyph_of_full_row(self):
         from devmon.commands.statusline import _normal_row
@@ -627,23 +662,24 @@ class TestStatuslineAppIcon:
 
         for use_emoji in (True, False):
             row = _normal_row_compact(5, 40, 100, use_emoji)
-            assert "devmon://app" in row
             assert "≡" in _strip(row)
+            assert "\x1b]8" not in row
 
-    def test_encounter_rows_have_app_icon_and_battle_link_untouched(self):
+    def test_encounter_rows_have_app_icon_and_battle_label_untouched(self):
         """Encounters can sit queued for a long time; the app opener must not
-        vanish with them. The battle link stays intact alongside it."""
+        vanish with them. The battle label stays intact alongside it (no
+        longer OSC 8-linked)."""
         from devmon.commands.statusline import _encounter_row, _encounter_row_compact
 
         for use_emoji in (True, False):
             full = _encounter_row(use_emoji)
             compact = _encounter_row_compact(use_emoji)
-            assert "devmon://app" in full
-            assert "devmon://app" in compact
             assert "≡" in _strip(full)
             assert "≡" in _strip(compact)
-            assert "devmon://battle" in full
-            assert "devmon://battle" in compact
+            assert "[battle]" in _strip(full)
+            assert "[battle]" in _strip(compact)
+            assert "\x1b]8" not in full
+            assert "\x1b]8" not in compact
             self._assert_width_safe(full)
             self._assert_width_safe(compact)
 

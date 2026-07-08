@@ -120,6 +120,71 @@ def load() -> GameState | None:
         except Exception:
             pass
 
+        # Runtime repair (not a schema migration -- field shapes are already
+        # valid, this purges *content* that no longer resolves against the
+        # current creature catalog, e.g. after a creature was renamed/removed
+        # upstream). Best-effort: a repair failure must never turn a valid
+        # load into a lost save.
+        try:
+            _repair_unknown_creatures(state)
+        except Exception:
+            pass
+
         return state
 
     return None
+
+
+def _repair_unknown_creatures(state: GameState) -> None:
+    """Purge owned creatures / party slots / a queued encounter whose
+    template_id is no longer present in the creature catalog.
+
+    Mutates `state` in place. Idempotent: a save with no unknown ids is
+    left byte-for-byte equivalent. If the party ends up empty but the
+    player still owns at least one valid creature, the first valid one is
+    promoted into the party so the player is never left partyless.
+
+    Best-effort logged (print to stderr) -- mirrors this module's existing
+    silent-failure style; there is no dedicated logging framework here.
+    """
+    try:
+        from devmon.engine.creature_loader import load_all_creatures
+        known_ids = set(load_all_creatures().keys())
+    except Exception:
+        # Catalog itself failed to load -- do not purge anything, since we
+        # can't tell known from unknown ids.
+        return
+
+    removed_ids: list[str] = []
+    valid_creatures = []
+    for creature in state.creature_collection:
+        if creature.template_id in known_ids:
+            valid_creatures.append(creature)
+        else:
+            removed_ids.append(creature.template_id)
+    if removed_ids:
+        state.creature_collection = valid_creatures
+
+    if state.party:
+        valid_party_ids = {c.template_id for c in state.creature_collection}
+        new_party = [tid for tid in state.party if tid in valid_party_ids]
+        if new_party != state.party:
+            state.party = new_party
+
+    if not state.party and state.creature_collection:
+        state.party = [state.creature_collection[0].template_id]
+
+    if state.encounter_queue is not None and state.encounter_queue.template_id not in known_ids:
+        removed_ids.append(state.encounter_queue.template_id)
+        state.encounter_queue = None
+
+    if removed_ids:
+        try:
+            import sys
+            print(
+                f"devmon: save repair — removed unknown creature template_id(s): "
+                f"{sorted(set(removed_ids))}",
+                file=sys.stderr,
+            )
+        except Exception:
+            pass

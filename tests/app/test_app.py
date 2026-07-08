@@ -152,6 +152,47 @@ async def test_dashboard_party_hp_not_dashes_when_creature_present(tmp_save_dir,
 
 
 # ---------------------------------------------------------------------------
+# Save repair: unknown template_id must never crash the app across tabs
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_app_survives_unknown_template_id_across_all_tabs(tmp_save_dir, app_factory):
+    """A save containing a creature template_id no longer present in the
+    catalog is purged at load time (see persistence.save._repair_unknown_creatures)
+    -- the app must boot and every tab must be reachable without raising."""
+    from textual.widgets import TabbedContent
+
+    state = _seeded_state()
+    state.creature_collection.append(
+        OwnedCreature(template_id="totally_not_a_real_creature", level=3)
+    )
+    save_state(state)
+
+    app = app_factory()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        tabs = app.query_one("#main-tabs", TabbedContent)
+        expected_tabs = [
+            "tab-dashboard",
+            "tab-collection",
+            "tab-economy",
+            "tab-world",
+            "tab-progression",
+            "tab-settings",
+        ]
+        for tab_id in expected_tabs:
+            tabs.active = tab_id
+            await pilot.pause()
+
+        assert not any(
+            c.template_id == "totally_not_a_real_creature"
+            for c in app.state.creature_collection
+        )
+
+
+# ---------------------------------------------------------------------------
 # Header close control
 # ---------------------------------------------------------------------------
 
@@ -472,14 +513,23 @@ def test_play_spawns_new_terminal_window(monkeypatch, tmp_devmon_home):
     monkeypatch.setattr(
         app_cmd_mod.shutil, "which",
         lambda name: r"C:\fake\wt.exe" if name.startswith("wt")
-        else (r"C:\fake\devmon.exe" if name == "devmon" else None),
+        else (
+            r"C:\fake\devmon.exe" if name == "devmon"
+            else (r"C:\fake\powershell.exe" if name == "powershell" else None)
+        ),
     )
     monkeypatch.setattr(app_cmd_mod.sys, "platform", "win32")
 
     result = CliRunner().invoke(main_app, ["play"])
     assert result.exit_code == 0, result.output
     assert spawned["argv"][:3] == [r"C:\fake\wt.exe", "-w", "new"]
-    assert spawned["argv"][3:] == [r"C:\fake\devmon.exe", "app"]
+    # devmon runs THROUGH powershell (not as wt's direct child) so the
+    # window stays open on a crash -- see _build_play_command docstring.
+    assert spawned["argv"][3] == r"C:\fake\powershell.exe"
+    assert "-Command" in spawned["argv"]
+    ps_command = spawned["argv"][spawned["argv"].index("-Command") + 1]
+    assert r'& "C:\fake\devmon.exe" app' in ps_command
+    assert "$LASTEXITCODE" in ps_command
     assert "own terminal window" in result.output
 
 
@@ -494,8 +544,26 @@ def test_play_falls_back_to_new_console_without_wt(monkeypatch, tmp_devmon_home)
     argv, flags = app_cmd_mod._build_play_command()
     assert argv[0] == r"C:\fake\powershell.exe"
     assert any("app" in part for part in argv)
+    assert any("$LASTEXITCODE" in part for part in argv)
     import subprocess as _sp
     assert flags == getattr(_sp, "CREATE_NEW_CONSOLE", 0)
+
+
+def test_build_play_command_clean_exit_has_no_read_host_before_guard(monkeypatch, tmp_devmon_home):
+    """The Read-Host prompt must live INSIDE the $LASTEXITCODE guard only --
+    a clean (0) exit closes the window exactly as before, no prompt."""
+    import devmon.commands.app as app_cmd_mod
+
+    monkeypatch.setattr(
+        app_cmd_mod.shutil, "which",
+        lambda name: r"C:\fake\wt.exe" if name.startswith("wt")
+        else (r"C:\fake\devmon.exe" if name == "devmon" else r"C:\fake\powershell.exe"),
+    )
+    argv, _flags = app_cmd_mod._build_play_command()
+    ps_command = argv[argv.index("-Command") + 1]
+    guard_index = ps_command.index("if ($LASTEXITCODE)")
+    read_host_index = ps_command.index("Read-Host")
+    assert read_host_index > guard_index
 
 
 def test_play_spawn_failure_is_reported(monkeypatch, tmp_devmon_home):

@@ -11,6 +11,34 @@ import typer
 
 app = typer.Typer()
 
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+
+def _get_process_image_name(pid: int) -> "str | None":
+    """Windows-only: return the full image path of the process with *pid*,
+    or None if the process can't be opened (already gone / access denied).
+
+    Extracted as its own function so `stop()`'s safety check is easily
+    mockable in tests -- it's the only piece of this module that needs
+    ctypes, kept isolated from the actual kill decision.
+    """
+    import ctypes
+    import ctypes.wintypes
+
+    kernel32 = ctypes.windll.kernel32
+    handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    if not handle:
+        return None
+    try:
+        buf_len = ctypes.wintypes.DWORD(32768)
+        buf = ctypes.create_unicode_buffer(buf_len.value)
+        ok = kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(buf_len))
+        if not ok:
+            return None
+        return buf.value
+    finally:
+        kernel32.CloseHandle(handle)
+
 
 @app.command()
 def start(
@@ -99,7 +127,17 @@ def stop() -> None:
     if pid is not None:
         try:
             if sys.platform == "win32":
-                os.kill(pid, 9)  # SIGKILL equivalent on Windows
+                # Safety check before os.kill(pid, 9): pid reuse means the
+                # pid file's process could by now be an unrelated process
+                # (e.g. reused by the OS after the daemon died uncleanly).
+                # Only kill if the process image name still looks like a
+                # devmon/python process; if it can't be opened at all, the
+                # process is already gone -- nothing to kill either way.
+                image_name = _get_process_image_name(pid)
+                if image_name is not None:
+                    lowered = image_name.lower()
+                    if "python" in lowered or "devmon" in lowered:
+                        os.kill(pid, 9)  # SIGKILL equivalent on Windows
             else:
                 import signal
                 os.kill(pid, signal.SIGTERM)

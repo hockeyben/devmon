@@ -487,6 +487,99 @@ class TestShellHookIntegration:
         assert "-not (Test-Path $disabledFile)" in POWERSHELL_HOOK_SNIPPET
 
 
+class TestIndicatorStopSafety:
+    """Phase-fix: `devmon indicator stop` must not os.kill a reused PID that
+    is no longer the daemon process -- verify the process image name first
+    on Windows (see indicator._get_process_image_name)."""
+
+    def test_stop_kills_when_image_name_matches(self, tmp_path, monkeypatch):
+        import subprocess
+        from typer.testing import CliRunner
+        import devmon.commands.indicator as indicator_mod
+        from devmon.daemon import pid as pid_mod
+
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        monkeypatch.setattr(pid_mod, "is_alive", lambda *a, **k: True)
+        monkeypatch.setattr(pid_mod, "read_pid", lambda *a, **k: 4242)
+        removed = {"called": False}
+        monkeypatch.setattr(pid_mod, "remove_pid", lambda *a, **k: removed.__setitem__("called", True))
+
+        monkeypatch.setattr(indicator_mod.sys, "platform", "win32")
+        monkeypatch.setattr(
+            indicator_mod, "_get_process_image_name",
+            lambda pid: r"C:\Python312\python.exe",
+        )
+        killed = {}
+
+        def _fake_kill(pid, sig):
+            killed["pid"] = pid
+            killed["sig"] = sig
+
+        monkeypatch.setattr(os, "kill", _fake_kill)
+
+        runner = CliRunner()
+        result = runner.invoke(indicator_mod.app, ["stop"])
+
+        assert result.exit_code == 0
+        assert killed == {"pid": 4242, "sig": 9}
+        assert removed["called"] is True
+
+    def test_stop_skips_kill_when_image_name_does_not_match(self, tmp_path, monkeypatch):
+        from typer.testing import CliRunner
+        import devmon.commands.indicator as indicator_mod
+        from devmon.daemon import pid as pid_mod
+
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        monkeypatch.setattr(pid_mod, "is_alive", lambda *a, **k: True)
+        monkeypatch.setattr(pid_mod, "read_pid", lambda *a, **k: 4242)
+        removed = {"called": False}
+        monkeypatch.setattr(pid_mod, "remove_pid", lambda *a, **k: removed.__setitem__("called", True))
+
+        monkeypatch.setattr(indicator_mod.sys, "platform", "win32")
+        monkeypatch.setattr(
+            indicator_mod, "_get_process_image_name",
+            lambda pid: r"C:\Windows\System32\notepad.exe",
+        )
+
+        def _fail_kill(pid, sig):
+            raise AssertionError("os.kill must not be called for a non-matching process")
+
+        monkeypatch.setattr(os, "kill", _fail_kill)
+
+        runner = CliRunner()
+        result = runner.invoke(indicator_mod.app, ["stop"])
+
+        assert result.exit_code == 0
+        assert removed["called"] is True
+
+    def test_stop_process_gone_skips_kill_removes_pid_file(self, tmp_path, monkeypatch):
+        """OpenProcess failing (process already gone) -> _get_process_image_name
+        returns None -> kill is skipped, pid file is still removed."""
+        from typer.testing import CliRunner
+        import devmon.commands.indicator as indicator_mod
+        from devmon.daemon import pid as pid_mod
+
+        monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+        monkeypatch.setattr(pid_mod, "is_alive", lambda *a, **k: True)
+        monkeypatch.setattr(pid_mod, "read_pid", lambda *a, **k: 4242)
+        removed = {"called": False}
+        monkeypatch.setattr(pid_mod, "remove_pid", lambda *a, **k: removed.__setitem__("called", True))
+
+        monkeypatch.setattr(indicator_mod.sys, "platform", "win32")
+        monkeypatch.setattr(indicator_mod, "_get_process_image_name", lambda pid: None)
+
+        def _fail_kill(pid, sig):
+            raise AssertionError("os.kill must not be called when the process is gone")
+
+        monkeypatch.setattr(os, "kill", _fail_kill)
+
+        runner = CliRunner()
+        result = runner.invoke(indicator_mod.app, ["stop"])
+
+        assert result.exit_code == 0
+        assert removed["called"] is True
+
+
 class TestIndicatorOffMode:
     """Phase 11.1 requirement 5: `devmon indicator start` in off mode."""
 

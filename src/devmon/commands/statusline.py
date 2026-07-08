@@ -11,9 +11,10 @@ cost.total_lines_added/removed, workspace.current_dir) and prints:
   2. Exactly one right-aligned DevMon row: the Lv./XP-bar strip (built
      locally, reusing only the bar segment constants from
      `daemon.frames` -- see module note below on width-safe glyphs), or a
-     WILD DEVMON encounter row with an OSC 8 hyperlink to `devmon://battle`
-     (clickable in terminals that support it -- Windows Terminal:
-     ctrl+click).
+     WILD DEVMON encounter row with a plain (non-hyperlinked) "[battle]"
+     label -- OSC 8 hyperlinks were removed (see fix note below); the icon
+     and label text render identically, just without the clickable escape
+     sequences.
 
 Width-safe glyphs: statusline rows use ONLY unambiguous width-1 characters
 (anything below U+2600, plus the ▰▱ bar chars U+25B0/U+25B1) -- never the
@@ -53,18 +54,11 @@ from typing import Optional
 
 import typer
 
-# OSC 8 hyperlink wrapper + bold-yellow styling for the clickable "battle"
-# word in the wild-encounter row (design doc component 3).
-_OSC8_OPEN = "\033]8;;devmon://battle\033\\"
-_OSC8_CLOSE = "\033]8;;\033\\"
-
-# OSC 8 hyperlink wrapper for the clickable app-opener icon at the start of
-# the FULL idle row (see _APP_ICON_LINK below) -- a SEPARATE link target
-# (devmon://app) from the battle link above; kept as its own pair of
-# constants rather than reusing/renaming _OSC8_OPEN/_OSC8_CLOSE so those keep
-# targeting battle unambiguously.
-_OSC8_APP_OPEN = "\033]8;;devmon://app\033\\"
-_OSC8_APP_CLOSE = "\033]8;;\033\\"
+# OSC 8 hyperlinks were removed from every row builder below (some terminals
+# mis-render the escape sequences, corrupting the statusline row). The
+# "battle" label and app-opener icon keep their exact visible text/styling
+# (bold-yellow "[battle]", dim "[≡]") -- just no longer wrapped in a
+# clickable OSC 8 link.
 _BOLD_YELLOW = "\033[1;33m"
 _BRIGHT_YELLOW = "\033[93m"
 _CYAN = "\033[36m"
@@ -108,16 +102,14 @@ def _accent_code(name: "str | None") -> str:
 # extra character, never a new glyph (ord('+') well below 0x2600).
 _AURA_MARKER = " \033[2m+\033[0m"
 
-# Clickable app-opener icon: the very first visible glyph of the FULL idle
-# row only (never the compact row, never either encounter row variant --
-# that link stays untouched). U+2261 "IDENTICAL TO" (ord 0x2261 < 0x2600) is
-# width-safe under this file's own glyph rule. Dim-styled (not bold/colored
-# like the battle link) since this is a secondary, always-present affordance
-# rather than an urgent call to action. Wrapped in its own OSC 8 link to
-# devmon://app (see _OSC8_APP_OPEN/_CLOSE above) -- clicking it opens the new
-# `devmon app` Textual UI via `devmon protocol dispatch`.
+# App-opener icon: the very first visible glyph of the FULL idle row only
+# (never the compact row, never either encounter row variant). U+2261
+# "IDENTICAL TO" (ord 0x2261 < 0x2600) is width-safe under this file's own
+# glyph rule. Dim-styled (not bold/colored like the battle label) since this
+# is a secondary, always-present affordance rather than an urgent call to
+# action. No longer OSC 8-linked (see removal note above) -- plain dim text.
 _APP_ICON = "≡"
-_APP_ICON_LINK = f"\033[2m{_OSC8_APP_OPEN}[{_APP_ICON}]{_OSC8_APP_CLOSE}\033[0m"
+_APP_ICON_LINK = f"\033[2m[{_APP_ICON}]\033[0m"
 
 
 def _read_stdin_payload() -> tuple[bytes, dict]:
@@ -284,23 +276,22 @@ def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -
 
 
 def _encounter_row(use_emoji: bool) -> str:
-    """Build the wild-encounter row with a clickable OSC 8 link to
-    `devmon://battle` (component 3 -- registered via `devmon protocol
-    install`). Width-safe: "(!)" replaces the ambiguous-width ⚠/⚔ glyphs;
-    the em dash (U+2014) is unambiguous width-1. The `[battle]` link label
-    (brackets included) is bold yellow. Also carries the [≡] app opener --
-    encounters can sit queued for a long time, and the opener must never
-    disappear with them."""
+    """Build the wild-encounter row with a bold-yellow `[battle]` label
+    (component 3 -- registered via `devmon protocol install`; no longer
+    OSC 8-linked, see removal note above). Width-safe: "(!)" replaces the
+    ambiguous-width ⚠/⚔ glyphs; the em dash (U+2014) is unambiguous width-1.
+    Also carries the [≡] app opener -- encounters can sit queued for a long
+    time, and the opener must never disappear with them."""
     prefix = "(!) WILD DEVMON — " if use_emoji else "(!) WILD DEVMON - "
-    link = f"{_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
-    return f"{_APP_ICON_LINK} {prefix}{link}"
+    label = f"{_BOLD_YELLOW}[battle]{_RESET}"
+    return f"{_APP_ICON_LINK} {prefix}{label}"
 
 
 def _encounter_row_compact(use_emoji: bool) -> str:
-    """Narrow-terminal variant of the encounter row: the clickable
-    `[battle]` link plus the [≡] app opener -- identical in emoji and ascii
-    mode (no glyph to swap)."""
-    return f"{_APP_ICON_LINK} {_BOLD_YELLOW}{_OSC8_OPEN}[battle]{_OSC8_CLOSE}{_RESET}"
+    """Narrow-terminal variant of the encounter row: the `[battle]` label
+    plus the [≡] app opener -- identical in emoji and ascii mode (no glyph
+    to swap)."""
+    return f"{_APP_ICON_LINK} {_BOLD_YELLOW}[battle]{_RESET}"
 
 
 def _effective_cols(config: dict) -> int:

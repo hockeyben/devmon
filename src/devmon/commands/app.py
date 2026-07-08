@@ -71,17 +71,32 @@ def _build_play_command() -> "tuple[list[str], int]":
     2. PowerShell in a fresh console (CREATE_NEW_CONSOLE) as the fallback
        on machines without wt.exe.
 
+    Both paths run `devmon app` THROUGH powershell (never as wt's direct
+    child) so the window stays open on a crash: `devmon app` exits nonzero
+    on an unhandled exception (see app_command's re-raise), and without this
+    wrapper wt/the console closes immediately -- the user just sees "it
+    closed" with no chance to read the "details in app.log" pointer. A
+    CLEAN exit (code 0) still closes the window exactly as before -- the
+    `if ($LASTEXITCODE)` guard only fires on a nonzero exit.
+
     The devmon executable is resolved from PATH for a robust absolute path
     (mirrors commands/protocol.py's resolution style), falling back to the
     bare name.
     """
     devmon_exe = shutil.which("devmon") or "devmon"
+    ps = shutil.which("powershell") or "powershell"
+    ps_command = (
+        f'& "{devmon_exe}" app; '
+        f'if ($LASTEXITCODE) {{ '
+        f'Write-Host "DevMon exited with an error - details in app.log"; '
+        f'Read-Host "Press Enter to close" '
+        f'}}'
+    )
     wt = shutil.which("wt.exe") or shutil.which("wt")
     if wt:
-        return [wt, "-w", "new", devmon_exe, "app"], 0
-    ps = shutil.which("powershell") or "powershell"
+        return [wt, "-w", "new", ps, "-NoLogo", "-Command", ps_command], 0
     create_new_console = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
-    return [ps, "-NoLogo", "-Command", f'& "{devmon_exe}" app'], create_new_console
+    return [ps, "-NoLogo", "-Command", ps_command], create_new_console
 
 
 @play_app.callback(invoke_without_command=True)

@@ -412,6 +412,95 @@ def test_owned_creature_loads_with_backfilled_individuality_via_load(tmp_save_di
     assert set(owned.ivs.keys()) == {"hp", "attack", "defense", "speed"}
 
 
+# --- Save-load repair: purge unknown creature template_ids (see save._repair_unknown_creatures) ---
+
+def test_load_purges_unknown_template_ids_and_refills_party(tmp_save_dir):
+    """A save with unknown template_ids in collection + party + encounter_queue
+    loads cleanly: unknown entries are gone, valid ones are kept, and the
+    party is auto-refilled from a remaining valid creature."""
+    import json
+
+    from devmon.persistence.save import _save_dir, load
+
+    old_save = {
+        "schema_version": 12,
+        "player": {"name": "Ash"},
+        "creature_collection": [
+            {"template_id": "bugbyte", "level": 5, "xp": 0},
+            {"template_id": "totally_not_a_real_creature", "level": 5, "xp": 0},
+        ],
+        "party": ["totally_not_a_real_creature"],
+        "encounter_queue": {
+            "template_id": "also_not_real",
+            "encounter_level": 3,
+            "encounter_type": "normal",
+            "rarity": "common",
+            "queued_at": 0.0,
+        },
+    }
+    save_path = _save_dir() / "save.json"
+    save_path.write_text(json.dumps(old_save), encoding="utf-8")
+
+    state = load()
+    assert state is not None
+    ids = [c.template_id for c in state.creature_collection]
+    assert ids == ["bugbyte"]
+    assert state.party == ["bugbyte"]
+    assert state.encounter_queue is None
+
+
+def test_load_keeps_valid_party_and_encounter_untouched(tmp_save_dir):
+    """A save with no unknown ids is left byte-for-byte equivalent (idempotent)."""
+    import json
+
+    from devmon.persistence.save import _save_dir, load
+
+    old_save = {
+        "schema_version": 12,
+        "player": {"name": "Ash"},
+        "creature_collection": [{"template_id": "bugbyte", "level": 5, "xp": 0}],
+        "party": ["bugbyte"],
+        "encounter_queue": {
+            "template_id": "bugbyte",
+            "encounter_level": 3,
+            "encounter_type": "normal",
+            "rarity": "common",
+            "queued_at": 0.0,
+        },
+    }
+    save_path = _save_dir() / "save.json"
+    save_path.write_text(json.dumps(old_save), encoding="utf-8")
+
+    state = load()
+    assert state is not None
+    assert [c.template_id for c in state.creature_collection] == ["bugbyte"]
+    assert state.party == ["bugbyte"]
+    assert state.encounter_queue is not None
+    assert state.encounter_queue.template_id == "bugbyte"
+
+
+def test_load_no_valid_creature_leaves_party_empty(tmp_save_dir):
+    """If every owned creature is unknown, the party ends up empty too --
+    there's nothing valid left to promote."""
+    import json
+
+    from devmon.persistence.save import _save_dir, load
+
+    old_save = {
+        "schema_version": 12,
+        "player": {"name": "Ash"},
+        "creature_collection": [{"template_id": "not_real", "level": 5, "xp": 0}],
+        "party": ["not_real"],
+    }
+    save_path = _save_dir() / "save.json"
+    save_path.write_text(json.dumps(old_save), encoding="utf-8")
+
+    state = load()
+    assert state is not None
+    assert state.creature_collection == []
+    assert state.party == []
+
+
 def test_default_config_has_all_phase2_game_keys():
     """D-05 through D-10: DEFAULT_CONFIG game section has all required Phase 2 keys."""
     from devmon.config.defaults import DEFAULT_CONFIG
