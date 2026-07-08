@@ -1,0 +1,67 @@
+{
+  "id": "slag_hound",
+  "name": "SlagHound",
+  "species": "Foundry Cur",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Fire",
+  "level_range": [
+    19,
+    24
+  ],
+  "base_hp": 72,
+  "base_attack": 29,
+  "base_defense": 24,
+  "base_speed": 30,
+  "capture_rate": 0.275,
+  "flavor_text": "Trained to sniff out memory leaks in the build furnace. Bites first, garbage-collects later.",
+  "ascii_art": [
+    "[bold red]   ___   [/bold red]",
+    "[bold red]  /^^\\  [/bold red]",
+    "[orange1] ( o  o ) [/orange1]",
+    "[bold red] |  ^  | [/bold red]",
+    "[orange1]  \\____/  [/orange1]",
+    "[bold red]  ^~~^~~^  [/bold red]",
+    "[dim]SlagHound[/dim]"
+  ],
+  "primary_color": "bold red",
+  "accent_color": "orange1",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Compile Flare",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 19
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 21
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 22
+    },
+    {
+      "name": "Thermal Throttle",
+      "damage_multiplier": 1.9,
+      "type": "Fire",
+      "learn_level": 24
+    },
+    {
+      "name": "Segfault Blaze",
+      "damage_multiplier": 2.2,
+      "type": "Fire",
+      "learn_level": 27
+    }
+  ]
+}

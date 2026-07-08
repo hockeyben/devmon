@@ -1,0 +1,61 @@
+{
+  "id": "arc_falcon",
+  "name": "ArcFalcon",
+  "species": "Voltage Raptor",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Electric",
+  "level_range": [
+    33,
+    38
+  ],
+  "base_hp": 55,
+  "base_attack": 26,
+  "base_defense": 19,
+  "base_speed": 26,
+  "capture_rate": 0.399,
+  "flavor_text": "Dives through load balancers at terminal velocity, arcing between nodes faster than any failover script.",
+  "ascii_art": [
+    "[bold yellow]   ___   [/bold yellow]",
+    "[bold yellow]  />>\\  [/bold yellow]",
+    "[gold1] ( o  o ) [/gold1]",
+    "[bold yellow] |  >  | [/bold yellow]",
+    "[gold1]  \\____/  [/gold1]",
+    "[bold yellow]  >~~>~~>  [/bold yellow]",
+    "[dim]ArcFalcon[/dim]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "gold1",
+  "evolves_from": "static_sprite",
+  "evolves_to": "storm_raptor",
+  "evolution_level_threshold": 35,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Ping Jolt",
+      "damage_multiplier": 1.3,
+      "type": "Electric",
+      "learn_level": 33
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 35
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 36
+    },
+    {
+      "name": "Short Circuit",
+      "damage_multiplier": 1.9,
+      "type": "Electric",
+      "learn_level": 38
+    }
+  ]
+}

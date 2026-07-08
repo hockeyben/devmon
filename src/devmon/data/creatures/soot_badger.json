@@ -1,0 +1,61 @@
+{
+  "id": "soot_badger",
+  "name": "SootBadger",
+  "species": "Chimney Digger",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Fire",
+  "level_range": [
+    15,
+    19
+  ],
+  "base_hp": 31,
+  "base_attack": 13,
+  "base_defense": 11,
+  "base_speed": 16,
+  "capture_rate": 0.606,
+  "flavor_text": "Burrows through log files searching for the one stack trace that actually matters.",
+  "ascii_art": [
+    "[bold black]   ___   [/bold black]",
+    "[bold black]  /**\\  [/bold black]",
+    "[grey39] ( o  o ) [/grey39]",
+    "[bold black] |  *  | [/bold black]",
+    "[grey39]  \\____/  [/grey39]",
+    "[bold black]  *~~*~~*  [/bold black]",
+    "[dim]SootBadger[/dim]"
+  ],
+  "primary_color": "bold black",
+  "accent_color": "grey39",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Compile Flare",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 15
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 16
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 18
+    },
+    {
+      "name": "Thermal Throttle",
+      "damage_multiplier": 1.9,
+      "type": "Fire",
+      "learn_level": 19
+    }
+  ]
+}

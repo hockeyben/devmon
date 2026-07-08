@@ -1,0 +1,67 @@
+{
+  "id": "heisen_bug",
+  "name": "HeisenBug",
+  "species": "Observer Effect",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    70,
+    82
+  ],
+  "base_hp": 164,
+  "base_attack": 77,
+  "base_defense": 63,
+  "base_speed": 61,
+  "capture_rate": 0.075,
+  "flavor_text": "Vanishes the instant you attach a debugger to it. Exists only in production, only when nobody's watching.",
+  "ascii_art": [
+    "[bold magenta]   ___   [/bold magenta]",
+    "[bold magenta]  /??\\  [/bold magenta]",
+    "[bright_magenta] ( o  o ) [/bright_magenta]",
+    "[bold magenta] |  ?  | [/bold magenta]",
+    "[bright_magenta]  \\____/  [/bright_magenta]",
+    "[bold magenta]  ?~~?~~?  [/bold magenta]",
+    "[dim]HeisenBug[/dim]"
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Race Condition",
+      "damage_multiplier": 1.3,
+      "type": "Psychic",
+      "learn_level": 70
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 74
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 78
+    },
+    {
+      "name": "Recursive Loop",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 82
+    },
+    {
+      "name": "Call Stack Collapse",
+      "damage_multiplier": 2.2,
+      "type": "Psychic",
+      "learn_level": 85
+    }
+  ]
+}

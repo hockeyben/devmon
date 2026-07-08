@@ -1,0 +1,67 @@
+{
+  "id": "segmentation_lord",
+  "name": "SegmentationLord",
+  "species": "Fault of All Faults",
+  "rarity": "legendary",
+  "allowed_rarities": [
+    "legendary"
+  ],
+  "type": "Shadow",
+  "level_range": [
+    80,
+    95
+  ],
+  "base_hp": 235,
+  "base_attack": 98,
+  "base_defense": 97,
+  "base_speed": 67,
+  "capture_rate": 0.022,
+  "flavor_text": "Every crash report that was ever silently discarded eventually becomes part of it. It remembers all of them.",
+  "ascii_art": [
+    "[bold white]   ___   [/bold white]",
+    "[bold white]  /XX\\  [/bold white]",
+    "[bold magenta] ( o  o ) [/bold magenta]",
+    "[bold white] |  X  | [/bold white]",
+    "[bold magenta]  \\____/  [/bold magenta]",
+    "[bold white]  X~~X~~X  [/bold white]",
+    "[dim]SegmentationLord[/dim]"
+  ],
+  "primary_color": "bold white",
+  "accent_color": "bold magenta",
+  "evolves_from": "eldritch_pointer",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Null Reference",
+      "damage_multiplier": 1.3,
+      "type": "Shadow",
+      "learn_level": 80
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 85
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 90
+    },
+    {
+      "name": "Orphaned Process",
+      "damage_multiplier": 1.9,
+      "type": "Shadow",
+      "learn_level": 95
+    },
+    {
+      "name": "Zombie Thread Strike",
+      "damage_multiplier": 2.2,
+      "type": "Shadow",
+      "learn_level": 99
+    }
+  ]
+}

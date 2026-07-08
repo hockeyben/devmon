@@ -45,6 +45,18 @@
       "damage_multiplier": 1.6,
       "type": "Shadow",
       "learn_level": 5
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 10
+    },
+    {
+      "name": "Zombie Thread Strike",
+      "damage_multiplier": 2.2,
+      "type": "Shadow",
+      "learn_level": 15
     }
   ]
 }

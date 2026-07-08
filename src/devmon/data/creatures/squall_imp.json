@@ -1,0 +1,61 @@
+{
+  "id": "squall_imp",
+  "name": "SquallImp",
+  "species": "Gust Sprite",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Water",
+  "level_range": [
+    30,
+    35
+  ],
+  "base_hp": 38,
+  "base_attack": 16,
+  "base_defense": 13,
+  "base_speed": 20,
+  "capture_rate": 0.508,
+  "flavor_text": "Small enough to slip through a firewall rule nobody remembers writing. Mostly harmless, mostly.",
+  "ascii_art": [
+    "[bold cyan]   ___   [/bold cyan]",
+    "[bold cyan]  /**\\  [/bold cyan]",
+    "[blue] ( o  o ) [/blue]",
+    "[bold cyan] |  *  | [/bold cyan]",
+    "[blue]  \\____/  [/blue]",
+    "[bold cyan]  *~~*~~*  [/bold cyan]",
+    "[dim]SquallImp[/dim]"
+  ],
+  "primary_color": "bold cyan",
+  "accent_color": "blue",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Buffer Flush",
+      "damage_multiplier": 1.3,
+      "type": "Water",
+      "learn_level": 30
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 32
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 33
+    },
+    {
+      "name": "Deadlock Deluge",
+      "damage_multiplier": 1.9,
+      "type": "Water",
+      "learn_level": 35
+    }
+  ]
+}

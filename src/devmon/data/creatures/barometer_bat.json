@@ -1,0 +1,61 @@
+{
+  "id": "barometer_bat",
+  "name": "BarometerBat",
+  "species": "Pressure Sensor",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    33,
+    38
+  ],
+  "base_hp": 62,
+  "base_attack": 27,
+  "base_defense": 20,
+  "base_speed": 26,
+  "capture_rate": 0.38,
+  "flavor_text": "Can sense a pager alert three hours before it fires. Nobody listens to it until it's too late.",
+  "ascii_art": [
+    "[bold magenta]   ___   [/bold magenta]",
+    "[bold magenta]  /??\\  [/bold magenta]",
+    "[grey70] ( o  o ) [/grey70]",
+    "[bold magenta] |  ?  | [/bold magenta]",
+    "[grey70]  \\____/  [/grey70]",
+    "[bold magenta]  ?~~?~~?  [/bold magenta]",
+    "[dim]BarometerBat[/dim]"
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "grey70",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Race Condition",
+      "damage_multiplier": 1.3,
+      "type": "Psychic",
+      "learn_level": 33
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 35
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 36
+    },
+    {
+      "name": "Recursive Loop",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 38
+    }
+  ]
+}

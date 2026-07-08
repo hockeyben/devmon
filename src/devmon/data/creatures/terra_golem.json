@@ -48,6 +48,18 @@
       "damage_multiplier": 2.5,
       "type": "Earth",
       "learn_level": 10
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 15
+    },
+    {
+      "name": "Bedrock Fracture",
+      "damage_multiplier": 2.2,
+      "type": "Earth",
+      "learn_level": 20
     }
   ]
 }

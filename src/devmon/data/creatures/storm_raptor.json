@@ -1,0 +1,67 @@
+{
+  "id": "storm_raptor",
+  "name": "StormRaptor",
+  "species": "Overclock Harrier",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Electric",
+  "level_range": [
+    35,
+    42
+  ],
+  "base_hp": 89,
+  "base_attack": 37,
+  "base_defense": 26,
+  "base_speed": 35,
+  "capture_rate": 0.245,
+  "flavor_text": "Circles high above the data center, waiting for the exact millisecond a rate limiter fails.",
+  "ascii_art": [
+    "[bold yellow]   ___   [/bold yellow]",
+    "[bold yellow]  /^^\\  [/bold yellow]",
+    "[orange3] ( o  o ) [/orange3]",
+    "[bold yellow] |  ^  | [/bold yellow]",
+    "[orange3]  \\____/  [/orange3]",
+    "[bold yellow]  ^~~^~~^  [/bold yellow]",
+    "[dim]StormRaptor[/dim]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "orange3",
+  "evolves_from": "arc_falcon",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Ping Jolt",
+      "damage_multiplier": 1.3,
+      "type": "Electric",
+      "learn_level": 35
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 37
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 40
+    },
+    {
+      "name": "Short Circuit",
+      "damage_multiplier": 1.9,
+      "type": "Electric",
+      "learn_level": 42
+    },
+    {
+      "name": "Grid Overload",
+      "damage_multiplier": 2.2,
+      "type": "Electric",
+      "learn_level": 45
+    }
+  ]
+}

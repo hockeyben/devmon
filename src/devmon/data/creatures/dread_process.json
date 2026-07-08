@@ -1,0 +1,67 @@
+{
+  "id": "dread_process",
+  "name": "DreadProcess",
+  "species": "Zombie Thread",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Shadow",
+  "level_range": [
+    58,
+    66
+  ],
+  "base_hp": 133,
+  "base_attack": 60,
+  "base_defense": 52,
+  "base_speed": 49,
+  "capture_rate": 0.085,
+  "flavor_text": "Its parent process died hours ago. It never got the memo, and it never will.",
+  "ascii_art": [
+    "[bold white]   ___   [/bold white]",
+    "[bold white]  /XX\\  [/bold white]",
+    "[grey23] ( o  o ) [/grey23]",
+    "[bold white] |  X  | [/bold white]",
+    "[grey23]  \\____/  [/grey23]",
+    "[bold white]  X~~X~~X  [/bold white]",
+    "[dim]DreadProcess[/dim]"
+  ],
+  "primary_color": "bold white",
+  "accent_color": "grey23",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Null Reference",
+      "damage_multiplier": 1.3,
+      "type": "Shadow",
+      "learn_level": 58
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 61
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 63
+    },
+    {
+      "name": "Orphaned Process",
+      "damage_multiplier": 1.9,
+      "type": "Shadow",
+      "learn_level": 66
+    },
+    {
+      "name": "Zombie Thread Strike",
+      "damage_multiplier": 2.2,
+      "type": "Shadow",
+      "learn_level": 69
+    }
+  ]
+}

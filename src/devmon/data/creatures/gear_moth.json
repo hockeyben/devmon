@@ -1,0 +1,67 @@
+{
+  "id": "gear_moth",
+  "name": "GearMoth",
+  "species": "Cog Devourer",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Earth",
+  "level_range": [
+    21,
+    27
+  ],
+  "base_hp": 94,
+  "base_attack": 47,
+  "base_defense": 36,
+  "base_speed": 35,
+  "capture_rate": 0.112,
+  "flavor_text": "Chews through legacy machinery for sustenance. Entire toolchains have gone dark overnight after it passed through.",
+  "ascii_art": [
+    "[bold yellow]   ___   [/bold yellow]",
+    "[bold yellow]  /%%\\  [/bold yellow]",
+    "[grey70] ( o  o ) [/grey70]",
+    "[bold yellow] |  %  | [/bold yellow]",
+    "[grey70]  \\____/  [/grey70]",
+    "[bold yellow]  %~~%~~%  [/bold yellow]",
+    "[dim]GearMoth[/dim]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "grey70",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Root Slam",
+      "damage_multiplier": 1.3,
+      "type": "Earth",
+      "learn_level": 21
+    },
+    {
+      "name": "Dependency Crush",
+      "damage_multiplier": 1.6,
+      "type": "Earth",
+      "learn_level": 23
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 25
+    },
+    {
+      "name": "Monolith Drop",
+      "damage_multiplier": 1.9,
+      "type": "Earth",
+      "learn_level": 27
+    },
+    {
+      "name": "Bedrock Fracture",
+      "damage_multiplier": 2.2,
+      "type": "Earth",
+      "learn_level": 30
+    }
+  ]
+}

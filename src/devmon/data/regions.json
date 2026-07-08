@@ -1,0 +1,136 @@
+{
+  "_comment": "Region -> species mapping for DevMon's Phase B2 travel system (devmon travel). This file is PURE DATA in Phase B1 — no code loads it yet. Each region has a name, description, an approximate level_band [min, max] used as a design guideline for spawn/level tuning in a later phase, a display 'order', and the list of creature ids (matching src/devmon/data/creatures/{id}.json) that belong to it. Every creature in the roster belongs to exactly one region. level_band is aspirational/loose for the 27 pre-Phase-B1 species (their creature.level_range predates the region system); it is authoritative for all Phase-B1-and-later species.",
+  "schema_version": 1,
+  "regions": {
+    "termina_meadows": {
+      "name": "Termina Meadows",
+      "description": "Rolling starter fields where every developer's journey begins. Low-stakes, high-grass-touching.",
+      "level_band": [
+        1,
+        15
+      ],
+      "order": 1,
+      "species": [
+        "boulder_golem",
+        "bugbyte",
+        "byte_hare",
+        "char_byte",
+        "cron_cub",
+        "cron_stag",
+        "ember_fox",
+        "ember_kit",
+        "frost_fang",
+        "frost_pup",
+        "hex_owl",
+        "hex_owlet",
+        "pebblite",
+        "pixel_pup",
+        "shade_spectre",
+        "shade_wisp",
+        "shade_wraith",
+        "splash_byte",
+        "stack_kitten",
+        "thorn_sprout",
+        "thorn_vine",
+        "tide_byte",
+        "volt_ferret",
+        "zap_kit"
+      ]
+    },
+    "compiler_wastes": {
+      "name": "Compiler Wastes",
+      "description": "A cracked, industrial badland of overheating build servers and rusted-out toolchains.",
+      "level_band": [
+        15,
+        30
+      ],
+      "order": 2,
+      "species": [
+        "coolant_eel",
+        "crucible_titan",
+        "cyber_beetle",
+        "forge_wyrm",
+        "gear_moth",
+        "iron_carapace",
+        "latency_phantom",
+        "molten_forge",
+        "ping_wisp",
+        "rust_mite",
+        "slag_hound",
+        "soot_badger",
+        "spark_forge",
+        "stackcat",
+        "terra_golem"
+      ]
+    },
+    "cloud_reaches": {
+      "name": "Cloud Reaches",
+      "description": "Windswept altitude where availability zones drift like weather fronts. Sky, storm, and static.",
+      "level_band": [
+        30,
+        50
+      ],
+      "order": 3,
+      "species": [
+        "arc_falcon",
+        "barometer_bat",
+        "cumulus_drake",
+        "depth_byte",
+        "frost_gull",
+        "glacial_albatross",
+        "jetstream_fox",
+        "mist_wing",
+        "nimbus_hawk",
+        "squall_imp",
+        "static_sprite",
+        "storm_raptor",
+        "thermal_kite",
+        "thunder_ferret",
+        "tidal_wraith"
+      ]
+    },
+    "kernel_depths": {
+      "name": "Kernel Depths",
+      "description": "Below user-space, below the OS itself — a dark, cave-like substrate of raw memory and metal.",
+      "level_band": [
+        50,
+        70
+      ],
+      "order": 4,
+      "species": [
+        "abyss_moth",
+        "alloy_grub",
+        "cache_imp",
+        "crypt_bat",
+        "dread_process",
+        "echo_wisp",
+        "kernel_wraith",
+        "magma_core",
+        "null_moth",
+        "ore_golem",
+        "phantom_daemon",
+        "segfault_ghoul",
+        "titanium_beetle"
+      ]
+    },
+    "voidnet": {
+      "name": "The Voidnet",
+      "description": "The eldritch endgame beyond the edge of the routing table. Legendaries roam here, mostly undocumented.",
+      "level_band": [
+        70,
+        95
+      ],
+      "order": 5,
+      "species": [
+        "eldritch_pointer",
+        "heisen_bug",
+        "kernel_panic_wyrm",
+        "null_terminator",
+        "recursion_hydra",
+        "segmentation_lord",
+        "thorn_ancient",
+        "void_leviathan"
+      ]
+    }
+  }
+}

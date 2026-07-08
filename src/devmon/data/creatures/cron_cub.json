@@ -1,0 +1,61 @@
+{
+  "id": "cron_cub",
+  "name": "CronCub",
+  "species": "Scheduled Pup",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Nature",
+  "level_range": [
+    1,
+    5
+  ],
+  "base_hp": 29,
+  "base_attack": 11,
+  "base_defense": 9,
+  "base_speed": 14,
+  "capture_rate": 0.625,
+  "flavor_text": "Wakes up on the dot every day at 3 AM to run a job nobody remembers writing. Extremely loyal to its crontab.",
+  "ascii_art": [
+    "[bold green]   ___   [/bold green]",
+    "[bold green]  /^^\\  [/bold green]",
+    "[green] ( o  o ) [/green]",
+    "[bold green] |  ^  | [/bold green]",
+    "[green]  \\____/  [/green]",
+    "[bold green]  ^~~^~~^  [/bold green]",
+    "[dim]CronCub[/dim]"
+  ],
+  "primary_color": "bold green",
+  "accent_color": "green",
+  "evolves_from": null,
+  "evolves_to": "cron_stag",
+  "evolution_level_threshold": 3,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Branch Whip",
+      "damage_multiplier": 1.3,
+      "type": "Nature",
+      "learn_level": 1
+    },
+    {
+      "name": "Merge Conflict",
+      "damage_multiplier": 1.6,
+      "type": "Nature",
+      "learn_level": 2
+    },
+    {
+      "name": "Dependency Crush",
+      "damage_multiplier": 1.6,
+      "type": "Earth",
+      "learn_level": 4
+    },
+    {
+      "name": "Rebase Root",
+      "damage_multiplier": 1.9,
+      "type": "Nature",
+      "learn_level": 5
+    }
+  ]
+}

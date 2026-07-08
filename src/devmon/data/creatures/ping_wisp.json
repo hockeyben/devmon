@@ -1,0 +1,61 @@
+{
+  "id": "ping_wisp",
+  "name": "PingWisp",
+  "species": "Timeout Sprite",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    17,
+    21
+  ],
+  "base_hp": 46,
+  "base_attack": 20,
+  "base_defense": 15,
+  "base_speed": 21,
+  "capture_rate": 0.431,
+  "flavor_text": "Flickers in and out of existence every 30 seconds, exactly when your request needed it most.",
+  "ascii_art": [
+    "[bold magenta]   ___   [/bold magenta]",
+    "[bold magenta]  /??\\  [/bold magenta]",
+    "[bright_magenta] ( o  o ) [/bright_magenta]",
+    "[bold magenta] |  ?  | [/bold magenta]",
+    "[bright_magenta]  \\____/  [/bright_magenta]",
+    "[bold magenta]  ?~~?~~?  [/bold magenta]",
+    "[dim]PingWisp[/dim]"
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "bright_magenta",
+  "evolves_from": null,
+  "evolves_to": "latency_phantom",
+  "evolution_level_threshold": 19,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Race Condition",
+      "damage_multiplier": 1.3,
+      "type": "Psychic",
+      "learn_level": 17
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 18
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 20
+    },
+    {
+      "name": "Recursive Loop",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 21
+    }
+  ]
+}

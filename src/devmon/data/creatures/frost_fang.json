@@ -48,6 +48,18 @@
       "damage_multiplier": 2.4,
       "type": "Ice",
       "learn_level": 10
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 15
+    },
+    {
+      "name": "Glacial Lockout",
+      "damage_multiplier": 2.2,
+      "type": "Ice",
+      "learn_level": 20
     }
   ]
 }

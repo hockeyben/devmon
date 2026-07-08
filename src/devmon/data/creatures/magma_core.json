@@ -1,0 +1,67 @@
+{
+  "id": "magma_core",
+  "name": "MagmaCore",
+  "species": "Mantle Furnace",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Earth",
+  "level_range": [
+    58,
+    66
+  ],
+  "base_hp": 130,
+  "base_attack": 60,
+  "base_defense": 53,
+  "base_speed": 53,
+  "capture_rate": 0.082,
+  "flavor_text": "Sits at the hottest point in the rack, quietly explaining why the whole cluster keeps thermal-throttling.",
+  "ascii_art": [
+    "[bold red]   ___   [/bold red]",
+    "[bold red]  /@@\\  [/bold red]",
+    "[dark_orange] ( o  o ) [/dark_orange]",
+    "[bold red] |  @  | [/bold red]",
+    "[dark_orange]  \\____/  [/dark_orange]",
+    "[bold red]  @~~@~~@  [/bold red]",
+    "[dim]MagmaCore[/dim]"
+  ],
+  "primary_color": "bold red",
+  "accent_color": "dark_orange",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Root Slam",
+      "damage_multiplier": 1.3,
+      "type": "Earth",
+      "learn_level": 58
+    },
+    {
+      "name": "Dependency Crush",
+      "damage_multiplier": 1.6,
+      "type": "Earth",
+      "learn_level": 61
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 63
+    },
+    {
+      "name": "Monolith Drop",
+      "damage_multiplier": 1.9,
+      "type": "Earth",
+      "learn_level": 66
+    },
+    {
+      "name": "Bedrock Fracture",
+      "damage_multiplier": 2.2,
+      "type": "Earth",
+      "learn_level": 69
+    }
+  ]
+}

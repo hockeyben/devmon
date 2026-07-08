@@ -1,0 +1,67 @@
+{
+  "id": "latency_phantom",
+  "name": "LatencyPhantom",
+  "species": "Dropped Packet",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Psychic",
+  "level_range": [
+    19,
+    24
+  ],
+  "base_hp": 68,
+  "base_attack": 30,
+  "base_defense": 24,
+  "base_speed": 29,
+  "capture_rate": 0.267,
+  "flavor_text": "Nobody has ever seen it arrive on time. It simply appears, mid-sentence, and finishes your thought late.",
+  "ascii_art": [
+    "[bold magenta]   ___   [/bold magenta]",
+    "[bold magenta]  /!!\\  [/bold magenta]",
+    "[purple] ( o  o ) [/purple]",
+    "[bold magenta] |  !  | [/bold magenta]",
+    "[purple]  \\____/  [/purple]",
+    "[bold magenta]  !~~!~~!  [/bold magenta]",
+    "[dim]LatencyPhantom[/dim]"
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "purple",
+  "evolves_from": "ping_wisp",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Race Condition",
+      "damage_multiplier": 1.3,
+      "type": "Psychic",
+      "learn_level": 19
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 21
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 22
+    },
+    {
+      "name": "Recursive Loop",
+      "damage_multiplier": 1.9,
+      "type": "Psychic",
+      "learn_level": 24
+    },
+    {
+      "name": "Call Stack Collapse",
+      "damage_multiplier": 2.2,
+      "type": "Psychic",
+      "learn_level": 27
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "static_sprite",
+  "name": "StaticSprite",
+  "species": "Signal Flicker",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Electric",
+  "level_range": [
+    30,
+    35
+  ],
+  "base_hp": 40,
+  "base_attack": 16,
+  "base_defense": 13,
+  "base_speed": 20,
+  "capture_rate": 0.518,
+  "flavor_text": "Rides the interference between two flaky WiFi routers. Impossible to pin down, easy to blame for lag.",
+  "ascii_art": [
+    "[bold yellow]   ___   [/bold yellow]",
+    "[bold yellow]  /**\\  [/bold yellow]",
+    "[bright_yellow] ( o  o ) [/bright_yellow]",
+    "[bold yellow] |  *  | [/bold yellow]",
+    "[bright_yellow]  \\____/  [/bright_yellow]",
+    "[bold yellow]  *~~*~~*  [/bold yellow]",
+    "[dim]StaticSprite[/dim]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "bright_yellow",
+  "evolves_from": null,
+  "evolves_to": "arc_falcon",
+  "evolution_level_threshold": 33,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Ping Jolt",
+      "damage_multiplier": 1.3,
+      "type": "Electric",
+      "learn_level": 30
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 32
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 33
+    },
+    {
+      "name": "Short Circuit",
+      "damage_multiplier": 1.9,
+      "type": "Electric",
+      "learn_level": 35
+    }
+  ]
+}

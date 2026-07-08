@@ -46,6 +46,18 @@
       "damage_multiplier": 1.6,
       "type": "Nature",
       "learn_level": 5
+    },
+    {
+      "name": "Dependency Crush",
+      "damage_multiplier": 1.6,
+      "type": "Earth",
+      "learn_level": 10
+    },
+    {
+      "name": "Legacy Overgrowth",
+      "damage_multiplier": 2.2,
+      "type": "Nature",
+      "learn_level": 15
     }
   ]
 }

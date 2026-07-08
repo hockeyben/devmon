@@ -1,0 +1,67 @@
+{
+  "id": "glacial_albatross",
+  "name": "GlacialAlbatross",
+  "species": "Summit Wanderer",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Ice",
+  "level_range": [
+    38,
+    46
+  ],
+  "base_hp": 123,
+  "base_attack": 50,
+  "base_defense": 44,
+  "base_speed": 44,
+  "capture_rate": 0.096,
+  "flavor_text": "Legend says it circumnavigates every CDN edge node on Earth without a single cache miss.",
+  "ascii_art": [
+    "[bold white]   ___   [/bold white]",
+    "[bold white]  /^^\\  [/bold white]",
+    "[cyan] ( o  o ) [/cyan]",
+    "[bold white] |  ^  | [/bold white]",
+    "[cyan]  \\____/  [/cyan]",
+    "[bold white]  ^~~^~~^  [/bold white]",
+    "[dim]GlacialAlbatross[/dim]"
+  ],
+  "primary_color": "bold white",
+  "accent_color": "cyan",
+  "evolves_from": "frost_gull",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Cold Cache",
+      "damage_multiplier": 1.3,
+      "type": "Ice",
+      "learn_level": 38
+    },
+    {
+      "name": "Frozen Pipeline",
+      "damage_multiplier": 1.6,
+      "type": "Ice",
+      "learn_level": 41
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 43
+    },
+    {
+      "name": "Deep Freeze Deploy",
+      "damage_multiplier": 1.9,
+      "type": "Ice",
+      "learn_level": 46
+    },
+    {
+      "name": "Glacial Lockout",
+      "damage_multiplier": 2.2,
+      "type": "Ice",
+      "learn_level": 49
+    }
+  ]
+}

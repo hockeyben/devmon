@@ -1,0 +1,61 @@
+{
+  "id": "frost_gull",
+  "name": "FrostGull",
+  "species": "Altitude Screecher",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Ice",
+  "level_range": [
+    33,
+    38
+  ],
+  "base_hp": 56,
+  "base_attack": 28,
+  "base_defense": 20,
+  "base_speed": 27,
+  "capture_rate": 0.391,
+  "flavor_text": "Circles above frozen cache layers, screeching every time a stale value gets served.",
+  "ascii_art": [
+    "[bold cyan]   ___   [/bold cyan]",
+    "[bold cyan]  />>\\  [/bold cyan]",
+    "[white] ( o  o ) [/white]",
+    "[bold cyan] |  >  | [/bold cyan]",
+    "[white]  \\____/  [/white]",
+    "[bold cyan]  >~~>~~>  [/bold cyan]",
+    "[dim]FrostGull[/dim]"
+  ],
+  "primary_color": "bold cyan",
+  "accent_color": "white",
+  "evolves_from": null,
+  "evolves_to": "glacial_albatross",
+  "evolution_level_threshold": 38,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Cold Cache",
+      "damage_multiplier": 1.3,
+      "type": "Ice",
+      "learn_level": 33
+    },
+    {
+      "name": "Frozen Pipeline",
+      "damage_multiplier": 1.6,
+      "type": "Ice",
+      "learn_level": 35
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 36
+    },
+    {
+      "name": "Deep Freeze Deploy",
+      "damage_multiplier": 1.9,
+      "type": "Ice",
+      "learn_level": 38
+    }
+  ]
+}

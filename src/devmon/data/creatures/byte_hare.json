@@ -1,0 +1,67 @@
+{
+  "id": "byte_hare",
+  "name": "ByteHare",
+  "species": "Latency Runner",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Water",
+  "level_range": [
+    5,
+    9
+  ],
+  "base_hp": 54,
+  "base_attack": 26,
+  "base_defense": 18,
+  "base_speed": 24,
+  "capture_rate": 0.287,
+  "flavor_text": "Outruns every ping it sends. Developers swear its round-trip time is negative, which is obviously impossible.",
+  "ascii_art": [
+    "[bold cyan]   ___   [/bold cyan]",
+    "[bold cyan]  /~~\\  [/bold cyan]",
+    "[cyan] ( o  o ) [/cyan]",
+    "[bold cyan] |  ~  | [/bold cyan]",
+    "[cyan]  \\____/  [/cyan]",
+    "[bold cyan]  ~~~~~~~  [/bold cyan]",
+    "[dim]ByteHare[/dim]"
+  ],
+  "primary_color": "bold cyan",
+  "accent_color": "cyan",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Buffer Flush",
+      "damage_multiplier": 1.3,
+      "type": "Water",
+      "learn_level": 5
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 6
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 8
+    },
+    {
+      "name": "Deadlock Deluge",
+      "damage_multiplier": 1.9,
+      "type": "Water",
+      "learn_level": 9
+    },
+    {
+      "name": "Overflow Tide",
+      "damage_multiplier": 2.2,
+      "type": "Water",
+      "learn_level": 12
+    }
+  ]
+}

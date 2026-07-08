@@ -1,0 +1,67 @@
+{
+  "id": "eldritch_pointer",
+  "name": "EldritchPointer",
+  "species": "Dangling Reference",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Shadow",
+  "level_range": [
+    70,
+    82
+  ],
+  "base_hp": 162,
+  "base_attack": 71,
+  "base_defense": 57,
+  "base_speed": 63,
+  "capture_rate": 0.073,
+  "flavor_text": "Points to memory that was freed eons ago. Reading it should be impossible. It happens anyway.",
+  "ascii_art": [
+    "[bold magenta]   ___   [/bold magenta]",
+    "[bold magenta]  /**\\  [/bold magenta]",
+    "[purple] ( o  o ) [/purple]",
+    "[bold magenta] |  *  | [/bold magenta]",
+    "[purple]  \\____/  [/purple]",
+    "[bold magenta]  *~~*~~*  [/bold magenta]",
+    "[dim]EldritchPointer[/dim]"
+  ],
+  "primary_color": "bold magenta",
+  "accent_color": "purple",
+  "evolves_from": null,
+  "evolves_to": "segmentation_lord",
+  "evolution_level_threshold": 80,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Null Reference",
+      "damage_multiplier": 1.3,
+      "type": "Shadow",
+      "learn_level": 70
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 74
+    },
+    {
+      "name": "Heisenbug Flicker",
+      "damage_multiplier": 1.6,
+      "type": "Psychic",
+      "learn_level": 78
+    },
+    {
+      "name": "Orphaned Process",
+      "damage_multiplier": 1.9,
+      "type": "Shadow",
+      "learn_level": 82
+    },
+    {
+      "name": "Zombie Thread Strike",
+      "damage_multiplier": 2.2,
+      "type": "Shadow",
+      "learn_level": 85
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "molten_forge",
+  "name": "MoltenForge",
+  "species": "Slag Brute",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Fire",
+  "level_range": [
+    17,
+    21
+  ],
+  "base_hp": 47,
+  "base_attack": 21,
+  "base_defense": 15,
+  "base_speed": 23,
+  "capture_rate": 0.434,
+  "flavor_text": "Forged in the heat of a CI pipeline that never once went green. Its hide is scarred with old stack traces.",
+  "ascii_art": [
+    "[bold red]   ___   [/bold red]",
+    "[bold red]  /##\\  [/bold red]",
+    "[dark_orange] ( o  o ) [/dark_orange]",
+    "[bold red] |  #  | [/bold red]",
+    "[dark_orange]  \\____/  [/dark_orange]",
+    "[bold red]  #~~#~~#  [/bold red]",
+    "[dim]MoltenForge[/dim]"
+  ],
+  "primary_color": "bold red",
+  "accent_color": "dark_orange",
+  "evolves_from": "spark_forge",
+  "evolves_to": "crucible_titan",
+  "evolution_level_threshold": 19,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Compile Flare",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 17
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 18
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 20
+    },
+    {
+      "name": "Thermal Throttle",
+      "damage_multiplier": 1.9,
+      "type": "Fire",
+      "learn_level": 21
+    }
+  ]
+}

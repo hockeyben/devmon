@@ -1,0 +1,61 @@
+{
+  "id": "mist_wing",
+  "name": "MistWhelp",
+  "species": "Vapor Hatchling",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Water",
+  "level_range": [
+    30,
+    35
+  ],
+  "base_hp": 44,
+  "base_attack": 16,
+  "base_defense": 14,
+  "base_speed": 19,
+  "capture_rate": 0.514,
+  "flavor_text": "A dragon whelp condensed from the vapor of a thousand ephemeral staging environments. Too small to rain, but it's trying.",
+  "ascii_art": [
+    "[bold blue]   ___   [/bold blue]",
+    "[bold blue]  /~~\\  [/bold blue]",
+    "[white] ( o  o ) [/white]",
+    "[bold blue] |  ~  | [/bold blue]",
+    "[white]  \\____/  [/white]",
+    "[bold blue]  ~~~~~~~  [/bold blue]",
+    "[dim]MistWhelp[/dim]"
+  ],
+  "primary_color": "bold blue",
+  "accent_color": "white",
+  "evolves_from": null,
+  "evolves_to": "nimbus_hawk",
+  "evolution_level_threshold": 33,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Buffer Flush",
+      "damage_multiplier": 1.3,
+      "type": "Water",
+      "learn_level": 30
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 32
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 33
+    },
+    {
+      "name": "Deadlock Deluge",
+      "damage_multiplier": 1.9,
+      "type": "Water",
+      "learn_level": 35
+    }
+  ]
+}

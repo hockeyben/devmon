@@ -1,0 +1,67 @@
+{
+  "id": "thermal_kite",
+  "name": "ThermalKite",
+  "species": "Updraft Glider",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Electric",
+  "level_range": [
+    35,
+    42
+  ],
+  "base_hp": 82,
+  "base_attack": 39,
+  "base_defense": 27,
+  "base_speed": 32,
+  "capture_rate": 0.235,
+  "flavor_text": "Rides rising heat off overworked GPUs. Never flaps its wings, never pays its cloud bill either.",
+  "ascii_art": [
+    "[bold yellow]   ___   [/bold yellow]",
+    "[bold yellow]  />>\\  [/bold yellow]",
+    "[orange1] ( o  o ) [/orange1]",
+    "[bold yellow] |  >  | [/bold yellow]",
+    "[orange1]  \\____/  [/orange1]",
+    "[bold yellow]  >~~>~~>  [/bold yellow]",
+    "[dim]ThermalKite[/dim]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "orange1",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Ping Jolt",
+      "damage_multiplier": 1.3,
+      "type": "Electric",
+      "learn_level": 35
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 37
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 40
+    },
+    {
+      "name": "Short Circuit",
+      "damage_multiplier": 1.9,
+      "type": "Electric",
+      "learn_level": 42
+    },
+    {
+      "name": "Grid Overload",
+      "damage_multiplier": 2.2,
+      "type": "Electric",
+      "learn_level": 45
+    }
+  ]
+}

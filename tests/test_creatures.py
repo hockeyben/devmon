@@ -202,24 +202,24 @@ def test_migrate_3_to_4_preserves_existing():
 # ---------------------------------------------------------------------------
 
 def test_roster_count():
-    """load_all_creatures() must return exactly 27 creatures (CREA-01 + Phase 10 cyber_beetle)."""
+    """load_all_creatures() must return exactly 75 creatures (Phase B1 roster expansion, 27 -> 75)."""
     from devmon.engine.creature_loader import load_all_creatures
     registry = load_all_creatures()
-    assert len(registry) == 27, f"Expected 27 creatures, got {len(registry)}"
+    assert len(registry) == 75, f"Expected 75 creatures, got {len(registry)}"
 
 
 def test_rarity_distribution():
-    """Rarity distribution must be 8 common, 8 uncommon (cyber_beetle added in Phase 10), 5 rare, 3 epic, 2 legendary (D-14)."""
+    """Rarity distribution after Phase B1: 19 common, 21 uncommon, 16 rare, 15 epic, 4 legendary."""
     from devmon.engine.creature_loader import load_all_creatures
     registry = load_all_creatures()
     counts: dict[str, int] = {}
     for t in registry.values():
         counts[t.rarity] = counts.get(t.rarity, 0) + 1
-    assert counts.get("common", 0) == 8
-    assert counts.get("uncommon", 0) == 8
-    assert counts.get("rare", 0) == 6
-    assert counts.get("epic", 0) == 3
-    assert counts.get("legendary", 0) == 2
+    assert counts.get("common", 0) == 19
+    assert counts.get("uncommon", 0) == 21
+    assert counts.get("rare", 0) == 16
+    assert counts.get("epic", 0) == 15
+    assert counts.get("legendary", 0) == 4
 
 
 def test_all_creature_types_used():

@@ -1,0 +1,61 @@
+{
+  "id": "cron_stag",
+  "name": "CronStag",
+  "species": "Recurring Buck",
+  "rarity": "uncommon",
+  "allowed_rarities": [
+    "uncommon"
+  ],
+  "type": "Nature",
+  "level_range": [
+    3,
+    7
+  ],
+  "base_hp": 43,
+  "base_attack": 19,
+  "base_defense": 13,
+  "base_speed": 18,
+  "capture_rate": 0.487,
+  "flavor_text": "Its antlers regrow on a fixed schedule, rain or shine. Old-timers swear it never missed a single sunrise deploy.",
+  "ascii_art": [
+    "[bold green]   ___   [/bold green]",
+    "[bold green]  /YY\\  [/bold green]",
+    "[bright_green] ( o  o ) [/bright_green]",
+    "[bold green] |  Y  | [/bold green]",
+    "[bright_green]  \\____/  [/bright_green]",
+    "[bold green]  Y~~Y~~Y  [/bold green]",
+    "[dim]CronStag[/dim]"
+  ],
+  "primary_color": "bold green",
+  "accent_color": "bright_green",
+  "evolves_from": "cron_cub",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Branch Whip",
+      "damage_multiplier": 1.3,
+      "type": "Nature",
+      "learn_level": 3
+    },
+    {
+      "name": "Merge Conflict",
+      "damage_multiplier": 1.6,
+      "type": "Nature",
+      "learn_level": 4
+    },
+    {
+      "name": "Dependency Crush",
+      "damage_multiplier": 1.6,
+      "type": "Earth",
+      "learn_level": 6
+    },
+    {
+      "name": "Rebase Root",
+      "damage_multiplier": 1.9,
+      "type": "Nature",
+      "learn_level": 7
+    }
+  ]
+}

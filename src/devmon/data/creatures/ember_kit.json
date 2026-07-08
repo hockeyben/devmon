@@ -51,6 +51,18 @@
       "damage_multiplier": 2.1,
       "type": "Fire",
       "learn_level": 10
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 15
+    },
+    {
+      "name": "Segfault Blaze",
+      "damage_multiplier": 2.2,
+      "type": "Fire",
+      "learn_level": 20
     }
   ]
 }

@@ -1,0 +1,67 @@
+{
+  "id": "recursion_hydra",
+  "name": "RecursionHydra",
+  "species": "Infinite Call Stack",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Nature",
+  "level_range": [
+    70,
+    82
+  ],
+  "base_hp": 170,
+  "base_attack": 80,
+  "base_defense": 63,
+  "base_speed": 60,
+  "capture_rate": 0.075,
+  "flavor_text": "Cut off one head and two more spawn on the stack beneath it. Somewhere, deep down, there is still no base case.",
+  "ascii_art": [
+    "[bold green]   ___   [/bold green]",
+    "[bold green]  /YY\\  [/bold green]",
+    "[bright_green] ( o  o ) [/bright_green]",
+    "[bold green] |  Y  | [/bold green]",
+    "[bright_green]  \\____/  [/bright_green]",
+    "[bold green]  Y~~Y~~Y  [/bold green]",
+    "[dim]RecursionHydra[/dim]"
+  ],
+  "primary_color": "bold green",
+  "accent_color": "bright_green",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Branch Whip",
+      "damage_multiplier": 1.3,
+      "type": "Nature",
+      "learn_level": 70
+    },
+    {
+      "name": "Merge Conflict",
+      "damage_multiplier": 1.6,
+      "type": "Nature",
+      "learn_level": 74
+    },
+    {
+      "name": "Dependency Crush",
+      "damage_multiplier": 1.6,
+      "type": "Earth",
+      "learn_level": 78
+    },
+    {
+      "name": "Rebase Root",
+      "damage_multiplier": 1.9,
+      "type": "Nature",
+      "learn_level": 82
+    },
+    {
+      "name": "Legacy Overgrowth",
+      "damage_multiplier": 2.2,
+      "type": "Nature",
+      "learn_level": 85
+    }
+  ]
+}

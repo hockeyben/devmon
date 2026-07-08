@@ -144,13 +144,13 @@ def test_collection_empty_state(tmp_save_dir):
 
 
 def test_codex_progress_line(saved_collection_state, tmp_save_dir):
-    """D-10: Collection list shows 'Codex:' progress line with '/27' (27 creatures after stackcat added)."""
+    """D-10: Collection list shows 'Codex:' progress line with '/75' (Phase B1 roster expansion, 27 -> 75)."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
     result = runner.invoke(collection_app, [])
     assert result.exit_code == 0
     assert "Codex:" in result.output
-    assert "/27" in result.output
+    assert "/75" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +174,35 @@ def test_collection_detail_not_found(saved_collection_state, tmp_save_dir):
     result = runner.invoke(collection_app, ["show", "NonExistent"])
     assert result.exit_code == 0
     assert "No creature named" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Phase A1: nature + IV display in detail view (never capture chances)
+# ---------------------------------------------------------------------------
+
+def test_collection_detail_shows_nature_and_ivs(tmp_save_dir):
+    from devmon.commands.collection import app as collection_app
+    from devmon.persistence.save import save as save_state
+
+    state = GameState(
+        player=PlayerProfile(name="Ash"),
+        creature_collection=[
+            OwnedCreature(
+                template_id="bugbyte",
+                level=5,
+                nature="agile",
+                ivs={"hp": 3, "attack": 5, "defense": 7, "speed": 11},
+            ),
+        ],
+    )
+    save_state(state)
+
+    runner = CliRunner()
+    result = runner.invoke(collection_app, ["show", "Bugbyte"])
+    assert result.exit_code == 0
+    assert "Agile" in result.output
+    assert "11" in result.output  # speed IV
+    assert "%" not in result.output  # hard rule: never show capture chances
 
 
 # ---------------------------------------------------------------------------
@@ -238,13 +267,13 @@ def test_rename_too_long_rejected(tmp_save_dir):
 # ---------------------------------------------------------------------------
 
 def test_codex_lists_all_creatures(saved_collection_state, tmp_save_dir):
-    """COLL-03: codex lists all 27 creatures (26 after Phase 10 cyber_beetle added)."""
+    """COLL-03: codex lists all 75 creatures (Phase B1 roster expansion, 27 -> 75)."""
     from devmon.commands.collection import app as collection_app
     runner = CliRunner()
     result = runner.invoke(collection_app, ["codex"])
     assert result.exit_code == 0
     assert "Creature Codex" in result.output
-    assert "/27" in result.output
+    assert "/75" in result.output
 
 
 def test_codex_unknown_shows_question_marks(tmp_save_dir):

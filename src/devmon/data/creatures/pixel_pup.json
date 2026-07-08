@@ -1,0 +1,61 @@
+{
+  "id": "pixel_pup",
+  "name": "PixelPup",
+  "species": "Sprite Retriever",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Electric",
+  "level_range": [
+    1,
+    5
+  ],
+  "base_hp": 30,
+  "base_attack": 12,
+  "base_defense": 9,
+  "base_speed": 13,
+  "capture_rate": 0.641,
+  "flavor_text": "Fetches loose assets that fell out of the build folder. Yips happily at every dangling `<img>` tag.",
+  "ascii_art": [
+    "[bold yellow]   ___   [/bold yellow]",
+    "[bold yellow]  /**\\  [/bold yellow]",
+    "[yellow] ( o  o ) [/yellow]",
+    "[bold yellow] |  *  | [/bold yellow]",
+    "[yellow]  \\____/  [/yellow]",
+    "[bold yellow]  *~~*~~*  [/bold yellow]",
+    "[dim]PixelPup[/dim]"
+  ],
+  "primary_color": "bold yellow",
+  "accent_color": "yellow",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Ping Jolt",
+      "damage_multiplier": 1.3,
+      "type": "Electric",
+      "learn_level": 1
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 2
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 4
+    },
+    {
+      "name": "Short Circuit",
+      "damage_multiplier": 1.9,
+      "type": "Electric",
+      "learn_level": 5
+    }
+  ]
+}

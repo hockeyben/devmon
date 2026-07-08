@@ -1,0 +1,61 @@
+{
+  "id": "spark_forge",
+  "name": "SparkForge",
+  "species": "Kindling Imp",
+  "rarity": "common",
+  "allowed_rarities": [
+    "common"
+  ],
+  "type": "Fire",
+  "level_range": [
+    15,
+    19
+  ],
+  "base_hp": 33,
+  "base_attack": 13,
+  "base_defense": 10,
+  "base_speed": 15,
+  "capture_rate": 0.607,
+  "flavor_text": "Born from the first warning a linter ever ignored. It loves the smell of a fresh `make` in the morning.",
+  "ascii_art": [
+    "[bold red]   ___   [/bold red]",
+    "[bold red]  /^^\\  [/bold red]",
+    "[orange3] ( o  o ) [/orange3]",
+    "[bold red] |  ^  | [/bold red]",
+    "[orange3]  \\____/  [/orange3]",
+    "[bold red]  ^~~^~~^  [/bold red]",
+    "[dim]SparkForge[/dim]"
+  ],
+  "primary_color": "bold red",
+  "accent_color": "orange3",
+  "evolves_from": null,
+  "evolves_to": "molten_forge",
+  "evolution_level_threshold": 17,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Compile Flare",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 15
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 16
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 18
+    },
+    {
+      "name": "Thermal Throttle",
+      "damage_multiplier": 1.9,
+      "type": "Fire",
+      "learn_level": 19
+    }
+  ]
+}

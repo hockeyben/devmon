@@ -1,0 +1,67 @@
+{
+  "id": "kernel_panic_wyrm",
+  "name": "KernelPanicWyrm",
+  "species": "Blue Screen Drake",
+  "rarity": "epic",
+  "allowed_rarities": [
+    "epic"
+  ],
+  "type": "Fire",
+  "level_range": [
+    70,
+    82
+  ],
+  "base_hp": 166,
+  "base_attack": 76,
+  "base_defense": 57,
+  "base_speed": 61,
+  "capture_rate": 0.074,
+  "flavor_text": "Its roar halts every process in the system at once. What it says right before is never good news.",
+  "ascii_art": [
+    "[bold blue]   ___   [/bold blue]",
+    "[bold blue]  /!!\\  [/bold blue]",
+    "[white] ( o  o ) [/white]",
+    "[bold blue] |  !  | [/bold blue]",
+    "[white]  \\____/  [/white]",
+    "[bold blue]  !~~!~~!  [/bold blue]",
+    "[dim]KernelPanicWyrm[/dim]"
+  ],
+  "primary_color": "bold blue",
+  "accent_color": "white",
+  "evolves_from": null,
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Compile Flare",
+      "damage_multiplier": 1.3,
+      "type": "Fire",
+      "learn_level": 70
+    },
+    {
+      "name": "Hot Reload",
+      "damage_multiplier": 1.6,
+      "type": "Fire",
+      "learn_level": 74
+    },
+    {
+      "name": "Silent Failure",
+      "damage_multiplier": 1.6,
+      "type": "Shadow",
+      "learn_level": 78
+    },
+    {
+      "name": "Thermal Throttle",
+      "damage_multiplier": 1.9,
+      "type": "Fire",
+      "learn_level": 82
+    },
+    {
+      "name": "Segfault Blaze",
+      "damage_multiplier": 2.2,
+      "type": "Fire",
+      "learn_level": 85
+    }
+  ]
+}

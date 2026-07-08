@@ -48,6 +48,18 @@
       "damage_multiplier": 2.5,
       "type": "Electric",
       "learn_level": 10
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 15
+    },
+    {
+      "name": "Grid Overload",
+      "damage_multiplier": 2.2,
+      "type": "Electric",
+      "learn_level": 20
     }
   ]
 }

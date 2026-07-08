@@ -1,0 +1,67 @@
+{
+  "id": "cumulus_drake",
+  "name": "CumulusDrake",
+  "species": "Stratus Wyvern",
+  "rarity": "rare",
+  "allowed_rarities": [
+    "rare"
+  ],
+  "type": "Water",
+  "level_range": [
+    35,
+    42
+  ],
+  "base_hp": 80,
+  "base_attack": 38,
+  "base_defense": 27,
+  "base_speed": 34,
+  "capture_rate": 0.23,
+  "flavor_text": "Its wingspan casts a shadow over entire regions. When it roars, three unrelated services time out at once.",
+  "ascii_art": [
+    "[bold blue]   ___   [/bold blue]",
+    "[bold blue]  /^^\\  [/bold blue]",
+    "[white] ( o  o ) [/white]",
+    "[bold blue] |  ^  | [/bold blue]",
+    "[white]  \\____/  [/white]",
+    "[bold blue]  ^~~^~~^  [/bold blue]",
+    "[dim]CumulusDrake[/dim]"
+  ],
+  "primary_color": "bold blue",
+  "accent_color": "white",
+  "evolves_from": "nimbus_hawk",
+  "evolves_to": null,
+  "evolution_level_threshold": null,
+  "evolution_condition": null,
+  "abilities": [
+    {
+      "name": "Buffer Flush",
+      "damage_multiplier": 1.3,
+      "type": "Water",
+      "learn_level": 35
+    },
+    {
+      "name": "Pipe Surge",
+      "damage_multiplier": 1.6,
+      "type": "Water",
+      "learn_level": 37
+    },
+    {
+      "name": "Voltage Spike",
+      "damage_multiplier": 1.6,
+      "type": "Electric",
+      "learn_level": 40
+    },
+    {
+      "name": "Deadlock Deluge",
+      "damage_multiplier": 1.9,
+      "type": "Water",
+      "learn_level": 42
+    },
+    {
+      "name": "Overflow Tide",
+      "damage_multiplier": 2.2,
+      "type": "Water",
+      "learn_level": 45
+    }
+  ]
+}
