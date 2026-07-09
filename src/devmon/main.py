@@ -27,6 +27,7 @@ from devmon.commands import heal as heal_cmd
 from devmon.commands import indicator as indicator_cmd
 from devmon.commands import perks as perks_cmd
 from devmon.commands import prestige as prestige_cmd
+from devmon.commands import profile as profile_cmd
 from devmon.commands import collection as collection_cmd_mod
 from devmon.commands import party as party_cmd_mod
 from devmon.commands import encounter as encounter_cmd
@@ -80,6 +81,7 @@ app.add_typer(badges_cmd.app, name="badges")
 app.add_typer(perks_cmd.app, name="perks")
 app.add_typer(prestige_cmd.app, name="prestige")
 app.add_typer(indicator_cmd.app, name="indicator")
+app.add_typer(profile_cmd.app, name="profile")
 app.add_typer(protocol_cmd.app, name="protocol")
 app.add_typer(skins_cmd.app, name="skins")
 app.command(name="statusline")(statusline_cmd.statusline)

@@ -15,6 +15,7 @@ Design decisions implemented:
 import json
 import os
 import pathlib
+import shutil
 
 import platformdirs
 
@@ -23,10 +24,12 @@ from devmon.persistence.migrations import migrate
 
 SAVE_FILENAME = "save.json"
 BACKUP_COUNT = 3
+DEFAULT_PROFILE = "default"
+ACTIVE_PROFILE_FILENAME = "active_profile"
 
 
-def _save_dir() -> pathlib.Path:
-    """Return the directory where save files are stored.
+def _base_dir() -> pathlib.Path:
+    """Return the top-level DevMon data directory (profile-agnostic).
 
     Checks DEVMON_HOME env var first (D-08); falls back to platformdirs
     user_data_dir for cross-platform compatibility (D-07, Pitfall 3).
@@ -36,6 +39,108 @@ def _save_dir() -> pathlib.Path:
     if devmon_home:
         return pathlib.Path(devmon_home)
     return pathlib.Path(platformdirs.user_data_dir("devmon", "devmon"))
+
+
+def profile_dir(name: str) -> pathlib.Path:
+    """Return the save directory for the given profile name."""
+    return _base_dir() / "profiles" / name
+
+
+def active_profile() -> str:
+    """Return the currently active profile name.
+
+    DEVMON_PROFILE env var overrides the on-disk marker (mirrors how
+    DEVMON_HOME overrides the base data dir). Otherwise reads
+    ``<data dir>/active_profile``, creating it with "default" the first
+    time it's read if absent.
+    """
+    override = os.environ.get("DEVMON_PROFILE")
+    if override:
+        return override
+
+    base = _base_dir()
+    marker = base / ACTIVE_PROFILE_FILENAME
+    if marker.exists():
+        try:
+            name = marker.read_text(encoding="utf-8").strip()
+            if name:
+                return name
+        except OSError:
+            pass
+
+    base.mkdir(parents=True, exist_ok=True)
+    marker.write_text(DEFAULT_PROFILE, encoding="utf-8")
+    return DEFAULT_PROFILE
+
+
+def set_active_profile(name: str) -> None:
+    """Persist `name` as the active profile (ignored while DEVMON_PROFILE
+    is set — the env var always wins on the next `active_profile()` read)."""
+    base = _base_dir()
+    base.mkdir(parents=True, exist_ok=True)
+    (base / ACTIVE_PROFILE_FILENAME).write_text(name, encoding="utf-8")
+
+
+def list_profiles() -> list[str]:
+    """Return all known profile names, "default" always included."""
+    base = _base_dir()
+    profiles_root = base / "profiles"
+    names: list[str] = []
+    if profiles_root.exists():
+        names = sorted(p.name for p in profiles_root.iterdir() if p.is_dir())
+    if DEFAULT_PROFILE not in names:
+        names = [DEFAULT_PROFILE] + names
+    return names
+
+
+def create_profile(name: str) -> None:
+    """Create a new (empty) profile directory. Idempotent."""
+    profile_dir(name).mkdir(parents=True, exist_ok=True)
+
+
+def delete_profile(name: str) -> None:
+    """Delete a profile's save directory. Refuses to delete the active profile."""
+    if name == active_profile():
+        raise ValueError(f"Cannot delete the active profile: {name}")
+    d = profile_dir(name)
+    if d.exists():
+        shutil.rmtree(d)
+
+
+def _migrate_legacy_single_save() -> None:
+    """One-time, idempotent migration: move a pre-profile top-level
+    save.json (and its .bak1/2/3 siblings) into profiles/default/.
+
+    Runs on every `_save_dir()` call but is a no-op after the first time —
+    once profiles/default/save.json exists, the top-level file (if any) is
+    left alone. Never loses data: uses os.replace, same as save()'s own
+    backup rotation.
+    """
+    base = _base_dir()
+    legacy_save = base / SAVE_FILENAME
+    default_dir = base / "profiles" / DEFAULT_PROFILE
+    default_save = default_dir / SAVE_FILENAME
+
+    if not legacy_save.exists() or default_save.exists():
+        return
+
+    default_dir.mkdir(parents=True, exist_ok=True)
+    os.replace(legacy_save, default_save)
+    for i in range(1, BACKUP_COUNT + 1):
+        legacy_bak = base / f"save.bak{i}"
+        if legacy_bak.exists():
+            os.replace(legacy_bak, default_dir / f"save.bak{i}")
+
+
+def _save_dir() -> pathlib.Path:
+    """Return the directory where the active profile's save files live.
+
+    Transparently migrates a pre-profile single-save install into
+    profiles/default/ the first time it's resolved (see
+    `_migrate_legacy_single_save`).
+    """
+    _migrate_legacy_single_save()
+    return profile_dir(active_profile())
 
 
 def save(state: GameState) -> None:

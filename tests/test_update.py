@@ -58,7 +58,8 @@ def test_update_restores_backup_on_migration_failure(monkeypatch, tmp_devmon_hom
     save_mod.save(state)
     save_mod.save(state)
 
-    pre_update_bytes = (tmp_devmon_home / save_mod.SAVE_FILENAME).read_bytes()
+    save_path = save_mod._save_dir() / save_mod.SAVE_FILENAME
+    pre_update_bytes = save_path.read_bytes()
 
     monkeypatch.setattr(update_mod, "_installed_version", lambda: "0.1.0")
     monkeypatch.setattr(update_mod, "_latest_remote_tag", lambda: "0.2.0")
@@ -74,15 +75,13 @@ def test_update_restores_backup_on_migration_failure(monkeypatch, tmp_devmon_hom
     # Corrupt save.json in-place to simulate a bad pull mutating it, so we
     # can prove restore actually happens rather than the file coincidentally
     # already matching.
-    (tmp_devmon_home / save_mod.SAVE_FILENAME).write_text(
-        '{"broken": true}', encoding="utf-8"
-    )
+    save_path.write_text('{"broken": true}', encoding="utf-8")
 
     result = CliRunner().invoke(main_app, ["update"])
     assert result.exit_code != 0
     assert "restored" in result.output.lower()
 
-    post_bytes = (tmp_devmon_home / save_mod.SAVE_FILENAME).read_bytes()
+    post_bytes = save_path.read_bytes()
     assert post_bytes == pre_update_bytes
 
 

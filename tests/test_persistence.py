@@ -21,27 +21,29 @@ def test_save_persist(tmp_save_dir):
 def test_atomic_write(tmp_save_dir):
     """SAVE-02: Save uses atomic write (write-to-temp + rename) to prevent corruption."""
     from devmon.models.state import GameState
-    from devmon.persistence.save import load, save
+    from devmon.persistence.save import _save_dir, load, save
 
     state = GameState.new_game("Ash")
     save(state)
-    assert not (tmp_save_dir / "save.json.tmp").exists()
-    assert (tmp_save_dir / "save.json").exists()
+    d = _save_dir()
+    assert not (d / "save.json.tmp").exists()
+    assert (d / "save.json").exists()
 
 
 def test_schema_version(tmp_save_dir):
     """SAVE-03: Save file includes schema_version field."""
     from devmon.models.state import GameState
-    from devmon.persistence.save import save
+    from devmon.persistence.save import _save_dir, save
 
     state = GameState.new_game("Ash")
     save(state)
-    data = json_mod.loads((tmp_save_dir / "save.json").read_text(encoding="utf-8"))
+    data = json_mod.loads((_save_dir() / "save.json").read_text(encoding="utf-8"))
     assert data["schema_version"] == 13
 
 
 def test_data_dir(tmp_save_dir):
-    """SAVE-04: Save file stored in platform-appropriate data directory via platformdirs."""
+    """SAVE-04: Save file stored in platform-appropriate data directory via
+    platformdirs, under the active profile's subdirectory (Task 5)."""
     from devmon.models.state import GameState
     from devmon.persistence.save import save
 
@@ -49,33 +51,34 @@ def test_data_dir(tmp_save_dir):
     os.environ["DEVMON_HOME"] = str(new_dir)
     state = GameState.new_game("Ash")
     save(state)
-    assert (new_dir / "save.json").exists()
+    assert (new_dir / "profiles" / "default" / "save.json").exists()
     os.environ["DEVMON_HOME"] = str(tmp_save_dir)  # reset
 
 
 def test_backup_rotation(tmp_save_dir):
     """D-03: Rolling backup keeps last 3 saves."""
     from devmon.models.state import GameState
-    from devmon.persistence.save import save
+    from devmon.persistence.save import _save_dir, save
 
     for name in ["A", "B", "C", "D"]:
         save(GameState.new_game(name))
-    assert (tmp_save_dir / "save.bak1").exists()
-    assert (tmp_save_dir / "save.bak2").exists()
-    assert (tmp_save_dir / "save.bak3").exists()
+    d = _save_dir()
+    assert (d / "save.bak1").exists()
+    assert (d / "save.bak2").exists()
+    assert (d / "save.bak3").exists()
 
 
 def test_corrupt_recovery(tmp_save_dir):
     """D-16: Corrupted save falls back to rolling backup."""
     from devmon.models.state import GameState
-    from devmon.persistence.save import load, save
+    from devmon.persistence.save import _save_dir, load, save
 
     good = GameState.new_game("Ash")
     save(good)
     # Save again to create a backup (bak1 = original "Ash" save)
     save(GameState.new_game("Misty"))
     # Corrupt the primary save
-    (tmp_save_dir / "save.json").write_text("NOT JSON", encoding="utf-8")
+    (_save_dir() / "save.json").write_text("NOT JSON", encoding="utf-8")
     loaded = load()
     assert loaded is not None
     assert loaded.player.name == "Ash"
@@ -288,6 +291,7 @@ def test_load_migrates_pre_quest_save_with_empty_quest_log(tmp_save_dir):
         "player": {"name": "Ash"},
     }
     save_path = _save_dir() / "save.json"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     save_path.write_text(json.dumps(old_save), encoding="utf-8")
 
     state = load()
@@ -433,6 +437,7 @@ def test_owned_creature_loads_with_backfilled_individuality_via_load(tmp_save_di
         "creature_collection": [{"template_id": "bugbyte", "level": 3, "xp": 0}],
     }
     save_path = _save_dir() / "save.json"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     save_path.write_text(json.dumps(old_save), encoding="utf-8")
 
     from devmon.engine.natures import NATURES
@@ -471,6 +476,7 @@ def test_load_purges_unknown_template_ids_and_refills_party(tmp_save_dir):
         },
     }
     save_path = _save_dir() / "save.json"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     save_path.write_text(json.dumps(old_save), encoding="utf-8")
 
     state = load()
@@ -501,6 +507,7 @@ def test_load_keeps_valid_party_and_encounter_untouched(tmp_save_dir):
         },
     }
     save_path = _save_dir() / "save.json"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     save_path.write_text(json.dumps(old_save), encoding="utf-8")
 
     state = load()
@@ -525,6 +532,7 @@ def test_load_no_valid_creature_leaves_party_empty(tmp_save_dir):
         "party": ["not_real"],
     }
     save_path = _save_dir() / "save.json"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     save_path.write_text(json.dumps(old_save), encoding="utf-8")
 
     state = load()

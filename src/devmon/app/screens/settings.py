@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Button, Checkbox, DataTable, Static
+from textual.widgets import Button, Checkbox, DataTable, Select, Static
 
 from devmon.config.loader import load_config, save_config
 
@@ -103,6 +103,10 @@ class SettingsScreen(Horizontal):
             with Horizontal(id="skins-actions"):
                 yield Button("Equip Selected", id="equip-skin-btn")
 
+            yield Static("Profiles", classes="settings-heading")
+            yield Static("", id="profile-current-label")
+            yield Select([], id="profile-select", allow_blank=True)
+
     # ------------------------------------------------------------------
 
     def refresh_data(self) -> None:
@@ -130,6 +134,7 @@ class SettingsScreen(Horizontal):
             self.query_one("#animations-toggle", Checkbox).value = bool(ui_cfg.get("animations", True))
 
             self._refresh_skins()
+            self._refresh_profiles()
         finally:
             self._loading = False
 
@@ -149,9 +154,37 @@ class SettingsScreen(Horizontal):
                 key=skin.id,
             )
 
+    def _refresh_profiles(self) -> None:
+        from devmon.persistence.save import active_profile, list_profiles
+
+        current = active_profile()
+        self.query_one("#profile-current-label", Static).update(f"Active profile: {current}")
+        select = self.query_one("#profile-select", Select)
+        select.set_options([(name, name) for name in list_profiles()])
+        select.value = current
+
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         if event.row_key is not None:
             self._selected_skin_id = event.row_key.value
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if self._loading:
+            return
+        if event.select.id != "profile-select":
+            return
+        event.stop()
+        name = event.value
+        if name is Select.NULL or not name:
+            return
+
+        from devmon.persistence.save import active_profile, set_active_profile
+
+        if name == active_profile():
+            return
+        set_active_profile(name)
+        self.app.reload_state()
+        self.app.refresh_all()
+        self.app.notify(f"Switched to profile '{name}'.")
 
     # ------------------------------------------------------------------
     # Config read-modify-write handlers

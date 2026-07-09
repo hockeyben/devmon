@@ -610,3 +610,33 @@ async def test_quests_panel_lists_available_and_active(tmp_save_dir, app_factory
             row = table.get_row(row_key)
             row_texts.append(" ".join(str(cell) for cell in row))
         assert any("First Compile" in text for text in row_texts)
+
+
+# ---------------------------------------------------------------------------
+# Task 5: Settings profile switcher reloads state
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_settings_profile_switch_reloads_state(tmp_save_dir, app_factory):
+    from textual.widgets import Select, TabbedContent
+
+    from devmon.persistence.save import active_profile, create_profile
+
+    save_state(_seeded_state())
+    create_profile("alt")
+
+    app = app_factory()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#main-tabs", TabbedContent).active = "tab-settings"
+        await pilot.pause()
+
+        select = app.query_one("#profile-select", Select)
+        assert select.value == "default"
+
+        select.value = "alt"
+        await pilot.pause()
+
+        assert active_profile() == "alt"
+        assert app.state is not None
