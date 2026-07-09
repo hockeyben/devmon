@@ -1,0 +1,41 @@
+{
+  "dungeons": [
+    {
+      "dungeon_id": "termina_meadows_story",
+      "region": "termina_meadows",
+      "tier": "story",
+      "title": "The Broken Build",
+      "prerequisites": {"prior_quest": "termina_meadows_01", "level": 1, "rank": null, "required_item": null},
+      "rooms": [
+        {"template_id": "bugbyte", "level": 8},
+        {"template_id": "char_byte", "level": 9},
+        {"template_id": "ember_fox", "level": 10}
+      ],
+      "boss": {"template_id": "cyber_beetle", "level": 14, "stat_multiplier": 1.6},
+      "loot_pool_id": "termina_meadows_story",
+      "narrative": {
+        "entry": "The build has been broken for weeks. Something is nesting in the stack traces.",
+        "clear": "The build is green again. Termina Meadows breathes easier."
+      },
+      "theme_accent": "meadow_green"
+    },
+    {
+      "dungeon_id": "termina_meadows_side_01",
+      "region": "termina_meadows",
+      "tier": "side",
+      "title": "The Leaky Cache",
+      "prerequisites": {"prior_quest": null, "level": 1, "rank": null, "required_item": "cache_key"},
+      "rooms": [
+        {"template_id": "bugbyte", "level": 6},
+        {"template_id": "char_byte", "level": 7}
+      ],
+      "boss": {"template_id": "ember_fox", "level": 10, "stat_multiplier": 1.3},
+      "loot_pool_id": "termina_meadows_side_01",
+      "narrative": {
+        "entry": "Stale entries pile up in the shadows of an unflushed cache.",
+        "clear": "The cache is clean. Something small and shiny was left behind."
+      },
+      "theme_accent": "cache_amber"
+    }
+  ]
+}
