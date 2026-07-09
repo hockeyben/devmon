@@ -111,9 +111,9 @@ def _brighten_color(color: "Color | None", amount: float) -> "Color | None":
     if color is None:
         return None
     triplet = color.get_truecolor()
-    r = min(255, round(triplet.red + (255 - triplet.red) * amount))
-    g = min(255, round(triplet.green + (255 - triplet.green) * amount))
-    b = min(255, round(triplet.blue + (255 - triplet.blue) * amount))
+    r = max(0, min(255, round(triplet.red + (255 - triplet.red) * amount)))
+    g = max(0, min(255, round(triplet.green + (255 - triplet.green) * amount)))
+    b = max(0, min(255, round(triplet.blue + (255 - triplet.blue) * amount)))
     return Color.from_rgb(r, g, b)
 
 
@@ -282,6 +282,50 @@ def flash_frames(
     for _ in range(max(1, pulses)):
         frames.append(_HalfBlockFrame(sprinkled_bright_rows, width))
         frames.append(_HalfBlockFrame(rows, width))
+    return frames
+
+
+def boss_slam_frames(
+    image: "CreatureImage | Sequence[Row]", amplitude: int = 3, cycles: int = 3
+) -> list[_HalfBlockFrame]:
+    """Heavier shake+flash combo for a dungeon boss room only — bigger
+    amplitude/cycle count than the default shake_frames, plus a bright
+    pulse on the first cycle. Reuses shake_frames/flash_frames' exact
+    primitives (_shift_rows, _brighten_style) rather than duplicating
+    them."""
+    rows, width = _rows_and_width(image)
+    if not rows or width <= 0:
+        return []
+
+    frames: list[_HalfBlockFrame] = []
+    bright_rows = [
+        [(char, _brighten_style(style, 0.6) if char != " " else style) for char, style in row]
+        for row in rows
+    ]
+    frames.append(_HalfBlockFrame(bright_rows, width))
+    for _ in range(max(1, cycles)):
+        frames.append(_HalfBlockFrame(_shift_rows(rows, width, -amplitude), width))
+        frames.append(_HalfBlockFrame(_shift_rows(rows, width, amplitude), width))
+    frames.append(_HalfBlockFrame(rows, width))
+    return frames
+
+
+def room_clear_frames(image: "CreatureImage | Sequence[Row]", steps: int = 3) -> list[_HalfBlockFrame]:
+    """Brief wipe/fade transition between dungeon rooms — reuses the same
+    row-dimming approach as _brighten_style but inverted (darkening toward
+    blank), fading the current room's art out over `steps` frames."""
+    rows, width = _rows_and_width(image)
+    if not rows or width <= 0:
+        return []
+
+    frames: list[_HalfBlockFrame] = []
+    for step in range(max(1, steps)):
+        fade_amount = (step + 1) / max(1, steps)
+        faded_rows = [
+            [(char, _brighten_style(style, -fade_amount) if char != " " else style) for char, style in row]
+            for row in rows
+        ]
+        frames.append(_HalfBlockFrame(faded_rows, width))
     return frames
 
 

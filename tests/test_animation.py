@@ -179,6 +179,50 @@ def test_flash_frames_empty_for_no_rows():
 
 
 # ---------------------------------------------------------------------------
+# boss_slam_frames
+# ---------------------------------------------------------------------------
+
+def test_boss_slam_frames_returns_more_frames_than_default_shake():
+    from devmon.render.animation import shake_frames, boss_slam_frames
+
+    rows = _sample_rows(width=5, height=2)
+    default_frames = shake_frames(rows)
+    boss_frames = boss_slam_frames(rows)
+    assert len(boss_frames) >= len(default_frames)
+
+
+def test_boss_slam_frames_empty_for_empty_image():
+    from devmon.render.animation import boss_slam_frames
+    assert boss_slam_frames([]) == []
+
+
+def test_boss_slam_frames_settles_back_to_original():
+    from devmon.render.animation import boss_slam_frames
+
+    rows = _sample_rows(width=5, height=2)
+    frames = boss_slam_frames(rows, amplitude=3, cycles=2)
+    assert frames[-1]._rows == rows
+
+
+# ---------------------------------------------------------------------------
+# room_clear_frames
+# ---------------------------------------------------------------------------
+
+def test_room_clear_frames_returns_nonempty_sequence():
+    from devmon.render.animation import room_clear_frames
+
+    rows = _sample_rows(width=5, height=2)
+    frames = room_clear_frames(rows)
+    assert len(frames) > 0
+    assert all(f.width == 5 for f in frames)
+
+
+def test_room_clear_frames_empty_for_empty_image():
+    from devmon.render.animation import room_clear_frames
+    assert room_clear_frames([]) == []
+
+
+# ---------------------------------------------------------------------------
 # play()
 # ---------------------------------------------------------------------------
 
