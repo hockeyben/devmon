@@ -204,3 +204,20 @@ def unlock_hint(skin_id: str) -> str:
     """Player-facing 'how to use it' hint queued alongside a skin-unlock
     notification, e.g. 'devmon skins equip voidwave'."""
     return f"devmon skins equip {skin_id}"
+
+
+# ---------------------------------------------------------------------------
+# Battle-screen accent resolution (dungeon-system plan)
+# ---------------------------------------------------------------------------
+
+def battle_accent(state: "GameState") -> str:
+    """Return the color-token name the battle screen should render with:
+    the active dungeon run's theme_accent while state.dungeon_run is set,
+    otherwise the player's equipped skin's statusline_accent. Automatic --
+    no separate unlock/equip step, reverts the instant dungeon_run clears."""
+    if state.dungeon_run is not None:
+        from devmon.engine.dungeon_loader import get_dungeon
+
+        dungeon = get_dungeon(state.dungeon_run.dungeon_id)
+        return dungeon.theme_accent
+    return equipped_skin(state).statusline_accent

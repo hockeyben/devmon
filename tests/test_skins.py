@@ -385,3 +385,42 @@ class TestSkinUnlockNotificationIntegration:
         reloaded = load_state()
         assert "prestige_gold" in reloaded.skins_owned
         assert reloaded.pending_skin_unlocks == []
+
+
+# ---------------------------------------------------------------------------
+# battle_accent (dungeon-system plan) -- dungeon theme override during a run
+# ---------------------------------------------------------------------------
+
+class TestBattleAccent:
+    def test_battle_accent_uses_equipped_skin_outside_dungeon(self, tmp_save_dir):
+        from devmon.engine.skins import battle_accent, equipped_skin
+
+        state = GameState.new_game("Ash")
+        expected = equipped_skin(state).statusline_accent
+        assert battle_accent(state) == expected
+
+    def test_battle_accent_uses_dungeon_theme_when_run_active(self, tmp_save_dir):
+        from devmon.engine.dungeons import enter_dungeon
+        from devmon.engine.skins import battle_accent
+
+        state = GameState.new_game("Ash")
+        state.player.level = 5
+        state.quest_log["termina_meadows_01"] = "complete"
+        enter_dungeon(state, "termina_meadows_story")
+        assert battle_accent(state) == "meadow_green"
+
+    def test_battle_accent_reverts_after_dungeon_clears(self, tmp_save_dir):
+        from devmon.engine.dungeons import advance_dungeon_room, enter_dungeon
+        from devmon.engine.skins import battle_accent, equipped_skin
+        from devmon.models.dungeon import DungeonRunState
+
+        state = GameState.new_game("Ash")
+        state.player.level = 5
+        state.quest_log["termina_meadows_01"] = "complete"
+        state.dungeon_run = DungeonRunState(
+            dungeon_id="termina_meadows_story", current_room=3, started_at="2026-01-01T00:00:00"
+        )
+        enter_dungeon(state, "termina_meadows_story")
+        advance_dungeon_room(state)  # boss clear -- dungeon_run becomes None
+        assert state.dungeon_run is None
+        assert battle_accent(state) == equipped_skin(state).statusline_accent
