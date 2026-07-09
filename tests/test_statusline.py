@@ -745,9 +745,10 @@ class TestStatuslineRankTagIntegration:
 class TestTurnXpEstimate:
     """_turn_xp_estimate: live, unbanked "XP since your last message"
     readout. No explicit turn-boundary signal exists in Claude Code's
-    statusline payload, so a turn boundary is approximated as "API activity
-    resumed after sitting flat for _TURN_IDLE_THRESHOLD consecutive polls"
-    -- see the function's own docstring for the full rationale."""
+    statusline payload, so a turn boundary is approximated as "no metric
+    has grown for _TURN_IDLE_SECONDS of real wall-clock time" -- see the
+    function's own docstring for the full rationale (wall-clock, not poll
+    count, so a single slow tool call mid-turn doesn't falsely reset it)."""
 
     def _payload(self, session_id="sess-turn", lines_added=0, lines_removed=0, tokens=0, api_ms=0):
         return {
@@ -789,12 +790,43 @@ class TestTurnXpEstimate:
         )
         assert third >= second
 
+    def test_slow_tool_call_mid_turn_does_not_reset_the_counter(self, tmp_save_dir):
+        """A single flat poll (e.g. Claude is mid-Bash-call, no new tokens
+        or api_ms yet) must NOT reset the baseline just because it's flat --
+        only a real wall-clock idle gap (_TURN_IDLE_SECONDS) should. This is
+        the exact bug reported: the counter used to reset after 3 flat
+        polls, which fires constantly during ordinary tool calls."""
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        config = self._config()
+
+        _turn_xp_estimate(self._payload(tokens=0, api_ms=0), save_path, config)
+        turn1 = _turn_xp_estimate(self._payload(tokens=6000, api_ms=180_000), save_path, config)
+        assert turn1 > 0
+
+        # Several flat polls in a row (simulating a slow tool call) --
+        # nowhere near _TURN_IDLE_SECONDS of real time has passed.
+        for _ in range(5):
+            flat = _turn_xp_estimate(
+                self._payload(tokens=6000, api_ms=180_000), save_path, config
+            )
+            # Still reflects turn 1's accumulated total, not reset to 0.
+            assert flat == turn1
+
+        # Activity resumes (tool call finished) -- still the same turn.
+        resumed = _turn_xp_estimate(
+            self._payload(tokens=6250, api_ms=185_000), save_path, config
+        )
+        assert resumed >= turn1
+
     def test_idle_gap_resets_the_baseline_for_the_next_turn(self, tmp_save_dir):
-        """After _TURN_IDLE_THRESHOLD consecutive no-growth polls (Claude
-        idle, waiting on the user), the next poll with real growth starts a
-        FRESH turn -- its estimate reflects only the new activity, not the
-        old turn's total plus the new activity."""
-        from devmon.commands.statusline import _TURN_IDLE_THRESHOLD, _turn_xp_estimate
+        """Once _TURN_IDLE_SECONDS of real wall-clock time has passed with
+        no growth (Claude idle, waiting on the user), the next poll with
+        real growth starts a FRESH turn -- its estimate reflects only the
+        new activity, not the old turn's total plus the new activity."""
+        import json as _json
+        from devmon.commands.statusline import _turn_xp_estimate, _TURN_IDLE_SECONDS
 
         save_path = tmp_save_dir / "save.json"
         config = self._config()
@@ -804,9 +836,13 @@ class TestTurnXpEstimate:
         turn1_total = _turn_xp_estimate(self._payload(tokens=6000, api_ms=180_000), save_path, config)
         assert turn1_total > 0
 
-        # Idle gap: api_ms/tokens stay flat for _TURN_IDLE_THRESHOLD polls.
-        for _ in range(_TURN_IDLE_THRESHOLD):
-            _turn_xp_estimate(self._payload(tokens=6000, api_ms=180_000), save_path, config)
+        # Simulate real elapsed idle time by rewinding the state file's
+        # last_growth_ts past the idle threshold (can't literally sleep
+        # _TURN_IDLE_SECONDS in a unit test).
+        turn_file = save_path.parent / "claude_sessions" / "sess-turn.turn.json"
+        state = _json.loads(turn_file.read_text(encoding="utf-8"))
+        state["last_growth_ts"] -= (_TURN_IDLE_SECONDS + 5)
+        turn_file.write_text(_json.dumps(state), encoding="utf-8")
 
         # Turn 2 begins: a small burst, much smaller than turn 1's total.
         turn2_first = _turn_xp_estimate(

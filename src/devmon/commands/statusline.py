@@ -400,13 +400,21 @@ def _extract_metrics(payload: dict) -> tuple[int, int, int, int]:
     )
 
 
-_TURN_IDLE_THRESHOLD = 3
-"""Consecutive statusline polls with zero API-duration growth before a gap
-is treated as "between turns" (waiting on you to type) rather than a normal
-in-turn pause. At refreshInterval=1 this is ~3+ seconds of no API activity
--- long enough that a brief lull mid-turn (Claude reading a tool result,
-etc.) doesn't falsely reset the counter, short enough that going idle
-after a real turn ends is detected within a few seconds."""
+_TURN_IDLE_SECONDS = 90
+"""Wall-clock seconds with NO growth in any metric (lines/tokens/api_ms)
+before a gap is treated as "between turns" (waiting on you to type) rather
+than a normal in-turn pause.
+
+Originally this was a poll-count threshold (3 consecutive flat polls). That
+broke mid-turn: cost.total_api_duration_ms (the only "is Claude working"
+proxy in the payload) only tracks time inside actual LLM API calls -- it
+sits completely flat for the whole duration of a tool call (a Bash command,
+a long Read, etc.), which routinely runs longer than 3 statusline polls.
+The counter was being reset to 0 mid-turn every time Claude ran a
+slow-ish tool. Wall-clock time fixes the false positive for realistic tool
+runtimes without fully solving the ambiguity (there's still no true turn
+boundary signal in this payload) -- 90s comfortably covers most tool calls
+while still resetting within a couple minutes of real between-turn idle."""
 
 
 def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
@@ -415,12 +423,13 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
     Claude Code's statusline payload carries no explicit "new turn
     started" signal -- no turn counter, no transcript reference. The only
     proxy available is cost.total_api_duration_ms, which only grows while
-    Claude is actively working and sits flat while it's waiting on you.
-    This treats "API activity resumed after sitting flat for
-    _TURN_IDLE_THRESHOLD consecutive polls" as a turn boundary: the
-    accumulator baseline resets to the last-seen snapshot (i.e. the moment
-    right before the new turn's first unit of work), so the returned
-    estimate starts counting up from 0 for the new turn.
+    Claude is actively generating and sits flat during tool calls AND
+    while waiting on you -- the two are indistinguishable from this payload
+    alone. This treats "no metric has grown for _TURN_IDLE_SECONDS of real
+    wall-clock time" as a turn boundary: the accumulator baseline resets to
+    the last-seen snapshot (the moment right before the new turn's first
+    unit of work), so the returned estimate starts counting up from 0 for
+    the new turn. See _TURN_IDLE_SECONDS for why wall-clock (not poll count).
 
     Uses its own per-session state file (a SEPARATE file from `_xp_bridge`'s
     -- ".turn.json" suffix -- so this display-only, unbanked estimate can
@@ -440,6 +449,7 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
             return 0
 
         added, removed, tokens_total, api_ms_total = _extract_metrics(payload)
+        now = time.time()
 
         session_dir = save_path.parent / "claude_sessions"
         turn_file = session_dir / f"{session_id}.turn.json"
@@ -455,32 +465,34 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
 
         baseline = state.get("baseline") or {}
         last_poll = state.get("last_poll") or {}
-        idle_streak = state.get("idle_streak", 0)
         try:
-            idle_streak = max(0, int(idle_streak))
+            last_growth_ts = float(state.get("last_growth_ts", now))
         except Exception:
-            idle_streak = 0
+            last_growth_ts = now
 
         # First-ever poll for this session: baseline at current values so
         # the very first row shows "+0 XP" rather than a spurious burst
         # computed against a phantom zero baseline.
         if not baseline:
             baseline = {"lines_added": added, "lines_removed": removed, "tokens": tokens_total, "api_ms": api_ms_total}
+            last_growth_ts = now
         if not last_poll:
             last_poll = dict(baseline)
 
-        prev_api_ms = max(0, int(last_poll.get("api_ms", 0)))
-        delta_api_ms_this_poll = max(0, api_ms_total - prev_api_ms)
+        grew = (
+            added > int(last_poll.get("lines_added", 0))
+            or removed > int(last_poll.get("lines_removed", 0))
+            or tokens_total > int(last_poll.get("tokens", 0))
+            or api_ms_total > int(last_poll.get("api_ms", 0))
+        )
 
-        if delta_api_ms_this_poll > 0:
-            if idle_streak >= _TURN_IDLE_THRESHOLD:
+        if grew:
+            if (now - last_growth_ts) >= _TURN_IDLE_SECONDS:
                 # Activity resumed after a real idle gap -- a new turn just
                 # started. Baseline to the snapshot as of the PREVIOUS poll
                 # (the state right before this turn's first work landed).
                 baseline = dict(last_poll)
-            idle_streak = 0
-        else:
-            idle_streak += 1
+            last_growth_ts = now
 
         delta_lines = max(0, added - int(baseline.get("lines_added", 0))) + max(
             0, removed - int(baseline.get("lines_removed", 0))
@@ -496,7 +508,7 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
             json.dumps({
                 "baseline": baseline,
                 "last_poll": {"lines_added": added, "lines_removed": removed, "tokens": tokens_total, "api_ms": api_ms_total},
-                "idle_streak": idle_streak,
+                "last_growth_ts": last_growth_ts,
             }),
             encoding="utf-8",
         )
@@ -719,6 +731,18 @@ def statusline(
 
         snapshot = dict(_DEFAULT_SNAPSHOT)
 
+    # Bank real XP FIRST, before the display-only turn estimate below --
+    # this is the important side effect (it's what actually moves the
+    # Lv./% bar), and must never be starved by the newer, more speculative
+    # turn-tracking code that follows.
+    try:
+        if save_path is None:
+            from devmon.daemon.indicator import _resolve_save_path
+            save_path = _resolve_save_path()
+        _xp_bridge(payload, save_path)
+    except Exception:
+        pass
+
     turn_xp = 0
     try:
         if save_path is None:
@@ -756,15 +780,8 @@ def statusline(
     for line in lines:
         print(line)
 
-    # Side effects below never affect the row already printed above.
-    try:
-        if save_path is None:
-            from devmon.daemon.indicator import _resolve_save_path
-            save_path = _resolve_save_path()
-        _xp_bridge(payload, save_path)
-    except Exception:
-        pass
-
+    # _xp_bridge already ran above (before the row was built) so banking
+    # can never be starved by the row-building/turn-estimate stages.
     try:
         _throttled_sync(config)
     except Exception:
