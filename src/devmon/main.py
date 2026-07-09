@@ -42,6 +42,7 @@ from devmon.commands import statusline as statusline_cmd
 from devmon.commands import quests as quests_cmd
 from devmon.commands import achievements as achievements_cmd
 from devmon.commands import travel as travel_cmd
+from devmon.commands import update as update_cmd
 from devmon.commands.hook import track_app
 from devmon.config.defaults import DEFAULT_CONFIG
 from devmon.config.loader import load_config
@@ -84,6 +85,7 @@ app.add_typer(skins_cmd.app, name="skins")
 app.command(name="statusline")(statusline_cmd.statusline)
 app.add_typer(app_cmd_mod.app, name="app")
 app.add_typer(app_cmd_mod.play_app, name="play")
+app.add_typer(update_cmd.app, name="update")
 
 
 def _ensure_utf8_stdio() -> None:
