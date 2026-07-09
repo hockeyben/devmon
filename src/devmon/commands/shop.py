@@ -58,16 +58,53 @@ def _load_state_or_new():
     return state
 
 
-def _build_numbered_items(items_catalog, inventory):
+def _normalize_category(category_filter: str | None) -> str | None:
+    """Resolve a user-provided category (id or display label) to the internal id.
+
+    Case-insensitive. Returns None if category_filter is None/blank/"all" or
+    doesn't match any known category.
+    """
+    if not category_filter:
+        return None
+    needle = category_filter.strip().lower()
+    if needle in ("", "all"):
+        return None
+    if needle in CATEGORY_ORDER:
+        return needle
+    for cat_id, label in CATEGORY_LABELS.items():
+        if label.lower() == needle:
+            return cat_id
+    return None
+
+
+def _build_numbered_items(
+    items_catalog,
+    inventory,
+    category_filter: str | None = None,
+    search_filter: str | None = None,
+):
     """Build numbered item lists grouped by category.
+
+    Args:
+        category_filter: Internal category id or display label (case-insensitive).
+            When set, only items in this category are included.
+        search_filter: Case-insensitive substring to match against item name.
+            When set, only matching items are included.
 
     Returns:
         grouped: dict[category_str, list[tuple[num, ItemDefinition, qty_owned]]]
         num_to_item: dict[int, ItemDefinition] for interactive input resolution
     """
+    normalized_category = _normalize_category(category_filter)
+    normalized_search = search_filter.strip().lower() if search_filter else None
+
     grouped = {c: [] for c in CATEGORY_ORDER}
     for item in items_catalog.values():
         if item.category in grouped:
+            if normalized_category is not None and item.category != normalized_category:
+                continue
+            if normalized_search is not None and normalized_search not in item.name.lower():
+                continue
             grouped[item.category].append(item)
 
     # Sort each category by price ascending
@@ -92,19 +129,39 @@ def _build_numbered_items(items_catalog, inventory):
     return numbered_grouped, num_to_item
 
 
-def _build_featured_numbered(items_catalog, inventory, rotation, start_num):
+def _build_featured_numbered(
+    items_catalog,
+    inventory,
+    rotation,
+    start_num,
+    category_filter: str | None = None,
+    search_filter: str | None = None,
+):
     """Build the numbered featured (daily rotation) list, continuing from start_num.
+
+    Args:
+        category_filter: Internal category id or display label (case-insensitive).
+            Featured items not matching are excluded.
+        search_filter: Case-insensitive substring match against item name
+            (best-effort; applied the same way as category_filter).
 
     Returns:
         entries: list of (num, ItemDefinition, discounted_price, discount_percent, qty)
         num_to_featured: dict[int, tuple[ItemDefinition, discounted_price]]
     """
+    normalized_category = _normalize_category(category_filter)
+    normalized_search = search_filter.strip().lower() if search_filter else None
+
     entries = []
     num_to_featured: dict[int, tuple] = {}
     n = start_num
     for r in rotation:
         item = items_catalog.get(r["item_id"])
         if item is None:
+            continue
+        if normalized_category is not None and item.category != normalized_category:
+            continue
+        if normalized_search is not None and normalized_search not in item.name.lower():
             continue
         price = rotation_price(item.price, r["discount_percent"])
         qty = inventory.get(item.id, 0)
@@ -114,8 +171,18 @@ def _build_featured_numbered(items_catalog, inventory, rotation, start_num):
     return entries, num_to_featured
 
 
-def _display_shop(state, config, items_catalog):
+def _display_shop(
+    state,
+    config,
+    items_catalog,
+    category_filter: str | None = None,
+    search_filter: str | None = None,
+):
     """Print the full shop: header + all category panels + today's featured rotation.
+
+    Args:
+        category_filter: Active category filter (internal id or display label).
+        search_filter: Active search keyword filter.
 
     Returns:
         Combined dict[int, tuple[ItemDefinition, price]] for interactive
@@ -127,12 +194,30 @@ def _display_shop(state, config, items_catalog):
 
     console.print(render_shop_header(bits, theme))
 
-    numbered_grouped, num_to_item = _build_numbered_items(items_catalog, state.inventory)
+    normalized_category = _normalize_category(category_filter)
+    filter_active = normalized_category is not None or bool(search_filter and search_filter.strip())
 
+    if filter_active:
+        parts = []
+        if normalized_category is not None:
+            parts.append(f"category={normalized_category}")
+        if search_filter and search_filter.strip():
+            parts.append(f'search="{search_filter.strip()}"')
+        console.print(
+            f"  Filtering: {', '.join(parts)} — type `c all` / `s clear` to reset",
+            style="dim white",
+        )
+
+    numbered_grouped, num_to_item = _build_numbered_items(
+        items_catalog, state.inventory, category_filter, search_filter
+    )
+
+    any_items_shown = False
     for cat in CATEGORY_ORDER:
         cat_items = numbered_grouped[cat]
         if not cat_items:
             continue
+        any_items_shown = True
         panel = render_shop_category(
             CATEGORY_LABELS[cat],
             cat_items,
@@ -147,12 +232,16 @@ def _display_shop(state, config, items_catalog):
     if rotation:
         next_num = (max(num_to_item.keys()) + 1) if num_to_item else 1
         featured_entries, num_to_featured = _build_featured_numbered(
-            items_catalog, state.inventory, rotation, next_num
+            items_catalog, state.inventory, rotation, next_num, category_filter, search_filter
         )
         if featured_entries:
+            any_items_shown = True
             hours_left = hours_until_next_rotation()
             console.print(render_shop_featured(featured_entries, hours_left, theme))
             combined.update(num_to_featured)
+
+    if filter_active and not any_items_shown:
+        console.print("  No items match your filter.", style="dim white")
 
     return combined
 
@@ -175,19 +264,38 @@ def _do_purchase(state, item, qty: int, unit_price: int | None = None) -> bool:
     return True
 
 
-def _interactive_shop():
-    """Run the interactive shop loop."""
+def _interactive_shop(category_filter: str | None = None, search_filter: str | None = None):
+    """Run the interactive shop loop.
+
+    Args:
+        category_filter: Initial category filter (internal id or display label).
+        search_filter: Initial search keyword filter.
+    """
     items_catalog = load_all_items()
     config = load_config()
 
     while True:
         state = _load_state_or_new()
-        num_to_entry = _display_shop(state, config, items_catalog)
+        num_to_entry = _display_shop(state, config, items_catalog, category_filter, search_filter)
 
-        raw = input("  Enter number to buy (or q to quit): ").strip()
+        raw = input(
+            "  Enter number to buy, `c <category>` to filter, `s <text>` to search, or q to quit: "
+        ).strip()
 
         if raw.lower() == "q":
             break
+
+        lowered = raw.lower()
+        if lowered == "c" or lowered.startswith("c "):
+            category_filter = raw[1:].strip() or None
+            if category_filter and category_filter.strip().lower() == "all":
+                category_filter = None
+            continue
+        if lowered == "s" or lowered.startswith("s "):
+            search_filter = raw[1:].strip() or None
+            if search_filter and search_filter.strip().lower() == "clear":
+                search_filter = None
+            continue
 
         # Validate input is an integer
         try:
@@ -355,6 +463,12 @@ def shop(
     ctx: typer.Context,
     buy: str = typer.Option(None, "--buy", help="Item ID to quick-purchase"),
     qty: int = typer.Option(1, "--qty", help="Quantity to purchase"),
+    category: str = typer.Option(
+        None, "--category", "-c", help="Filter the interactive view to one category"
+    ),
+    search: str = typer.Option(
+        None, "--search", "-q", help="Filter the interactive view by item name"
+    ),
 ) -> None:
     """Browse and buy items from the shop."""
     if ctx.invoked_subcommand is not None:
@@ -362,4 +476,4 @@ def shop(
     if buy is not None:
         _quick_purchase(buy, qty)
     else:
-        _interactive_shop()
+        _interactive_shop(category_filter=category, search_filter=search)
