@@ -17,7 +17,7 @@
         "entry": "The build has been broken for weeks. Something is nesting in the stack traces.",
         "clear": "The build is green again. Termina Meadows breathes easier."
       },
-      "theme_accent": "meadow_green"
+      "theme_accent": "green"
     },
     {
       "dungeon_id": "termina_meadows_side_01",
@@ -35,7 +35,7 @@
         "entry": "Stale entries pile up in the shadows of an unflushed cache.",
         "clear": "The cache is clean. Something small and shiny was left behind."
       },
-      "theme_accent": "cache_amber"
+      "theme_accent": "bright_yellow"
     }
   ]
 }

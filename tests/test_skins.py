@@ -407,7 +407,7 @@ class TestBattleAccent:
         state.player.level = 5
         state.quest_log["termina_meadows_01"] = "complete"
         enter_dungeon(state, "termina_meadows_story")
-        assert battle_accent(state) == "meadow_green"
+        assert battle_accent(state) == "green"
 
     def test_battle_accent_reverts_after_dungeon_clears(self, tmp_save_dir):
         from devmon.engine.dungeons import advance_dungeon_room, enter_dungeon

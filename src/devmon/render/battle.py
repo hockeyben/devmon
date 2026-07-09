@@ -142,6 +142,7 @@ def render_battle_creature_panel(
     energy: int | None = None,
     energy_max: int | None = None,
     status: str | None = None,
+    accent_override: str | None = None,
 ) -> Panel:
     """Render a compact creature panel for the battle screen.
 
@@ -189,11 +190,19 @@ def render_battle_creature_panel(
         status: Optional in-battle status effect name (e.g. "burn" -- see
             devmon.engine.status_effects.STATUS_TAGS). None (the default)
             omits the status tag entirely.
+        accent_override: Rich color name that replaces the rarity-derived
+            border/title color when given (dungeon-system plan -- a
+            dungeon's theme_accent during an active run). Only meaningful
+            for the "YOUR" panel: overriding the WILD panel would destroy
+            the rarity signal the color conveys (common/rare/epic), so
+            callers must only ever pass this for prefix="YOUR". None (the
+            default, and every pre-existing call site) is a pure no-op --
+            byte-identical rarity-color output.
 
     Returns:
         Rich Panel ready to be rendered.
     """
-    rarity_color = RARITY_COLORS.get(rarity, "white")
+    rarity_color = accent_override if accent_override is not None else RARITY_COLORS.get(rarity, "white")
     art_width = (
         resolve_battle_art_width(console_width)
         if console_width is not None

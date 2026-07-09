@@ -183,6 +183,45 @@ def test_your_panel_uses_back_view_art():
     assert isinstance(wild_art, CreatureImage) and wild_art.view == "front"
 
 
+def test_accent_override_replaces_rarity_border_color():
+    """accent_override (dungeon-system plan) replaces the rarity-derived
+    border/title color when given -- used to apply a dungeon's theme_accent
+    to the player's own panel during a run without disturbing the WILD
+    panel's rarity signal."""
+    from devmon.render.battle import render_battle_creature_panel
+
+    template = _real_battle_template()
+    default_panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="YOUR", rarity="common",
+    )
+    accented_panel = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="YOUR", rarity="common", accent_override="bright_yellow",
+    )
+
+    assert default_panel.border_style != "bright_yellow"
+    assert accented_panel.border_style == "bright_yellow"
+
+
+def test_accent_override_none_is_byte_identical_to_no_override():
+    """accent_override=None (the default, every pre-existing call site) is
+    a pure no-op -- output is identical to omitting the parameter."""
+    from devmon.render.battle import render_battle_creature_panel
+
+    template = _real_battle_template()
+    without_param = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="WILD", rarity="rare",
+    )
+    with_none = render_battle_creature_panel(
+        template=template, current_hp=10, max_hp=20, level=3,
+        prefix="WILD", rarity="rare", accent_override=None,
+    )
+    assert without_param.border_style == with_none.border_style
+    assert str(without_param.title) == str(with_none.title)
+
+
 def test_battle_panel_art_caps_rows_at_battle_art_max_rows():
     """The art embedded in a battle panel always carries the shared
     BATTLE_ART_MAX_ROWS cap, regardless of prefix."""

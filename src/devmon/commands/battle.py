@@ -686,6 +686,7 @@ def battle_cmd() -> None:
                 _player_max_hp=player_max_hp,
                 _narrow=narrow,
             ):
+                from devmon.engine.skins import battle_accent
                 return render_battle_creature_panel(
                     _player_template,
                     _player_owned.current_hp,
@@ -700,6 +701,7 @@ def battle_cmd() -> None:
                     energy=player_energy if energy_enabled else None,
                     energy_max=battle_energy_max if energy_enabled else None,
                     status=player_status if status_enabled else None,
+                    accent_override=battle_accent(state) if state.dungeon_run is not None else None,
                 )
 
             # Build renderable
@@ -934,9 +936,11 @@ def battle_cmd() -> None:
 
                 if player_fainted:
                     apply_faint(player_owned)
+                    from devmon.engine.skins import battle_accent as _battle_accent
+                    _accent = _battle_accent(state) if state.dungeon_run is not None else None
                     live.update(build_battle_renderable(
                         render_battle_creature_panel(wild_template, wild.current_hp, wild.max_hp, wild.level, "WILD", wild.rarity, narrow=narrow, console_width=console.width),
-                        render_battle_creature_panel(player_template, 0, player_max_hp, player_owned.level, "YOUR", player_template.rarity, narrow=narrow, console_width=console.width),
+                        render_battle_creature_panel(player_template, 0, player_max_hp, player_owned.level, "YOUR", player_template.rarity, narrow=narrow, console_width=console.width, accent_override=_accent),
                         turn, last_narration,
                         render_action_menu(ability_name, False, turn),
                     ))
