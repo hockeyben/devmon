@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from devmon.models.badge import BadgeUnlock
 from devmon.models.creature import OwnedCreature
+from devmon.models.dungeon import DungeonRunState
 from devmon.models.encounter import EncounterEntry
 from devmon.models.quest import ActiveQuest, AchievementUnlock, QuestCompletion
 from devmon.models.skin import SkinUnlock
@@ -282,6 +283,15 @@ class GameState(BaseModel):
     """charm_ids currently equipped, max length 3. Charms are also present
     in inventory (as a regular item) -- equipping does NOT consume the
     inventory copy, only marks it active (unequip is always possible)."""
+
+    dungeon_run: Optional["DungeonRunState"] = None
+    """The dungeon run currently in progress, if any. One at a time (mirrors
+    encounter_queue's single-slot shape). Cleared on boss clear."""
+
+    dungeon_log: dict[str, str] = Field(default_factory=dict)
+    """dungeon_id -> 'complete'. Only completed dungeons are recorded (unlike
+    quest_log, there is no 'active'/'offered' status here -- state.dungeon_run
+    already tracks the one in-progress run)."""
 
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":
