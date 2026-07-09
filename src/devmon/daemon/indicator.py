@@ -179,7 +179,32 @@ def detect_emoji_support() -> bool:
 
 
 def _resolve_save_path() -> Path:
-    """Resolve save file path using same logic as persistence layer."""
+    """Resolve the ACTIVE PROFILE's save file path.
+
+    Multi-profile saves moved the real save file to
+    `<data dir>/profiles/<active profile>/save.json`; this used to return
+    the old single-save top-level `<data dir>/save.json`, which no longer
+    exists once `_migrate_legacy_single_save` has run (every install that's
+    used any devmon command since profiles shipped). Every indicator/
+    statusline reader (this daemon, `devmon indicator`, `devmon
+    statusline`) went through this path and silently fell back to the
+    default Lv.1/0% snapshot -- XP was banking correctly the whole time
+    (sync writes via `persistence.save`, which IS profile-aware), it just
+    never displayed. Delegates to the persistence layer's own resolution
+    instead of duplicating it, so this can't drift from where
+    `devmon.persistence.save.load()`/`save()` actually read/write.
+    """
+    try:
+        from devmon.persistence.save import (
+            SAVE_FILENAME,
+            _migrate_legacy_single_save,
+            active_profile,
+            profile_dir,
+        )
+        _migrate_legacy_single_save()
+        return profile_dir(active_profile()) / SAVE_FILENAME
+    except Exception:
+        pass
     try:
         devmon_home = os.environ.get("DEVMON_HOME")
         if devmon_home:

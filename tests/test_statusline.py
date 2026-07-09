@@ -264,7 +264,10 @@ class TestStatuslineXpBridge:
         assert ai_code_events[0]["lines"] == 10   # first call: 10 added, 0 removed
         assert ai_code_events[1]["lines"] == 20   # second call: +15 added, +5 removed
 
-        session_file = tmp_save_dir / "claude_sessions" / "sess-1.json"
+        # claude_sessions lives alongside the ACTIVE PROFILE's save.json
+        # (profiles/default/ by default) -- not the top-level data dir --
+        # since _resolve_save_path is profile-aware (see daemon/indicator.py).
+        session_file = tmp_save_dir / "profiles" / "default" / "claude_sessions" / "sess-1.json"
         assert session_file.exists()
         state = json.loads(session_file.read_text(encoding="utf-8"))
         assert state["lines_added"] == 25
