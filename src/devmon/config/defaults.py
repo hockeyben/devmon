@@ -6,8 +6,13 @@ Exposes DEFAULT_CONFIG, a dict with exactly three top-level keys:
   - "shell" — shell integration behavior (event log path, ignored commands)
 
 The shell.event_log path is resolved at import time via _default_event_log():
-  1. If DEVMON_HOME is set, use that directory.
+  1. If DEVMON_HOME is set, use that directory as the base data dir.
   2. Otherwise, fall back to platformdirs.user_data_dir("devmon", "devmon").
+  3. The log then lives under the ACTIVE PROFILE's directory (same directory
+     as save.json -- see persistence.save.profile_dir), so it stays scoped
+     per-profile. Callers should use resolve_event_log_path(config) (below)
+     rather than this default directly, since it also honors a genuine user
+     override in config.toml.
 
 Architecture note (D-12): Three config categories align with the three subsystems
 that need runtime configuration — game balance, UI rendering, and shell hooks.
@@ -21,12 +26,51 @@ from pathlib import Path
 from platformdirs import user_data_dir
 
 
+def _migrate_legacy_event_log(base: Path) -> None:
+    """One-time, idempotent migration: move a pre-profile top-level
+    events.log into the active ("default") profile's directory.
+
+    Mirrors the exact idiom used by persistence.save._migrate_legacy_single_save:
+    os.replace, only runs when the legacy file exists and the profile-scoped
+    destination doesn't yet exist. Never loses a queued backlog on upgrade --
+    this must run BEFORE any caller reads/consumes the event log so an
+    existing unprocessed backlog lands in the default profile rather than
+    vanishing or getting silently re-created empty at the new path.
+    """
+    legacy_log = base / "events.log"
+    if not legacy_log.exists():
+        return
+
+    # Lazy import: persistence.save only imports config.defaults lazily
+    # inside function bodies (see save.load()'s config import), so this
+    # stays import-safe in the other direction too.
+    from devmon.persistence.save import DEFAULT_PROFILE, profile_dir
+
+    default_log = profile_dir(DEFAULT_PROFILE) / "events.log"
+    if default_log.exists():
+        return
+
+    default_log.parent.mkdir(parents=True, exist_ok=True)
+    os.replace(legacy_log, default_log)
+
+
 def _default_event_log() -> str:
-    """Resolve the default event log path.
+    """Resolve the default event log path, scoped to the active profile.
 
     Resolution order:
-    1. DEVMON_HOME env var (test/dev isolation).
-    2. platformdirs.user_data_dir("devmon", "devmon") (production).
+    1. DEVMON_HOME env var (test/dev isolation) determines the base data dir.
+    2. Otherwise, platformdirs.user_data_dir("devmon", "devmon") (production).
+    3. The event log then lives at <base>/profiles/<active profile>/events.log
+       -- the same directory save.json lives in (persistence.save.profile_dir),
+       so switching profiles (DEVMON_PROFILE env var or the on-disk marker)
+       switches which backlog gets processed, exactly like it already does
+       for save data. Without this, a shared top-level events.log would let
+       whichever profile happens to be active when the backlog is next
+       processed drain XP/encounters actually earned under another profile.
+
+    A pre-profile top-level events.log (if present) is migrated into the
+    default profile's directory the first time this resolves (see
+    `_migrate_legacy_event_log`) so no queued backlog is lost on upgrade.
 
     Returns:
         Absolute path string for the events.log file.
@@ -36,7 +80,37 @@ def _default_event_log() -> str:
         base = Path(devmon_home)
     else:
         base = Path(user_data_dir("devmon", "devmon"))
-    return str(base / "events.log")
+
+    _migrate_legacy_event_log(base)
+
+    from devmon.persistence.save import active_profile, profile_dir
+
+    return str(profile_dir(active_profile()) / "events.log")
+
+
+def resolve_event_log_path(config: dict) -> str:
+    """Resolve the effective event log path for an already-loaded config.
+
+    Prefers a genuine user override (an explicit `shell.event_log` set in
+    config.toml) over the dynamically-resolved, profile-aware default.
+    `DEFAULT_CONFIG["shell"]["event_log"]` is computed once at import time
+    and goes stale across anything that changes DEVMON_HOME/DEVMON_PROFILE
+    afterwards (test fixtures, profile switches), so a configured value is
+    only treated as a real override when it differs from BOTH the stale
+    import-time default AND the freshly-resolved dynamic default.
+
+    This is the single source of truth for event log path resolution --
+    `devmon.main._process_event_log_on_startup`, `devmon.engine.sync.
+    sync_game_state`, and `devmon.commands.hook.resolve_event_log_path` all
+    delegate here so the three entry points can never disagree on which
+    file holds the backlog.
+    """
+    dynamic_default = _default_event_log()
+    shell_cfg = config.get("shell", {})
+    configured_log = shell_cfg.get("event_log", dynamic_default)
+    if configured_log == DEFAULT_CONFIG["shell"]["event_log"] and configured_log != dynamic_default:
+        return dynamic_default
+    return configured_log
 
 
 DEFAULT_CONFIG: dict = {

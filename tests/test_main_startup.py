@@ -53,8 +53,15 @@ def test_startup_processing_awards_xp_from_event_log(tmp_save_dir):
 
 
 def test_startup_processing_consumes_event_log(tmp_save_dir):
-    """After startup processing, the event log is truncated (consumed)."""
+    """After startup processing, the event log is truncated (consumed).
+
+    Event logs are now profile-scoped (live under profiles/<active>/
+    events.log, same as save.json) -- a legacy top-level events.log gets
+    migrated there the first time it's resolved, so the original
+    top-level path no longer exists post-migration (it moved, not copied).
+    """
     from devmon.main import app
+    from devmon.persistence.save import DEFAULT_PROFILE, profile_dir
 
     log_path = tmp_save_dir / "events.log"
     event = {
@@ -68,8 +75,12 @@ def test_startup_processing_consumes_event_log(tmp_save_dir):
 
     runner.invoke(app, ["status"])
 
-    # Log should be empty after consumption
-    assert log_path.read_text(encoding="utf-8") == ""
+    # Legacy top-level path was migrated away (moved, not copied).
+    assert not log_path.exists()
+
+    # The profile-scoped log should be empty after consumption.
+    profile_log = profile_dir(DEFAULT_PROFILE) / "events.log"
+    assert profile_log.read_text(encoding="utf-8") == ""
 
 
 def test_startup_processing_never_crashes_on_bad_log(tmp_save_dir):

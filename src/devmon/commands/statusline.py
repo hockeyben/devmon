@@ -138,28 +138,37 @@ def _read_stdin_payload() -> tuple[bytes, dict]:
     return raw, payload
 
 
-def _chain_cache_path() -> Path:
+def _chain_cache_path(session_id: "str | None" = None) -> Path:
+    """Cache file for the chained statusline's last-successful output.
+
+    Scoped per session_id so two concurrent devmon statusline invocations
+    (different terminals/sessions, both using --chain) never see each
+    other's cached output or interleave writes to a shared file. Falls
+    back to a generic filename only when no session_id is available.
+    """
+    if session_id:
+        return _runtime_dir() / f"statusline.chain.{session_id}.cache"
     return _runtime_dir() / "statusline.chain.cache"
 
 
-def _read_chain_cache() -> list[str]:
+def _read_chain_cache(session_id: "str | None" = None) -> list[str]:
     try:
-        text = _chain_cache_path().read_text(encoding="utf-8").rstrip()
+        text = _chain_cache_path(session_id).read_text(encoding="utf-8").rstrip()
         return text.splitlines() if text else []
     except Exception:
         return []
 
 
-def _write_chain_cache(lines: list[str]) -> None:
+def _write_chain_cache(lines: list[str], session_id: "str | None" = None) -> None:
     try:
-        path = _chain_cache_path()
+        path = _chain_cache_path(session_id)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("\n".join(lines), encoding="utf-8")
     except Exception:
         pass
 
 
-def _run_chain(chain: str, raw_stdin: bytes) -> list[str]:
+def _run_chain(chain: str, raw_stdin: bytes, session_id: "str | None" = None) -> list[str]:
     """Run the user's existing statusline chain command; return its stdout lines.
 
     Receives the same raw stdin bytes DevMon got. When the chain fails
@@ -169,20 +178,24 @@ def _run_chain(chain: str, raw_stdin: bytes) -> list[str]:
     statusline vanish for one refresh and reappear on the next (visible
     stutter). DevMon's own row (printed by the caller regardless) never
     depends on the chain succeeding.
+
+    The cache is scoped to *session_id* (see _chain_cache_path) so
+    concurrent devmon statusline invocations across different
+    terminals/sessions never collide on a shared global cache file.
     """
     try:
         result = subprocess.run(
             chain, shell=True, input=raw_stdin, capture_output=True, timeout=3,
         )
         if result.returncode != 0:
-            return _read_chain_cache()
+            return _read_chain_cache(session_id)
         text = result.stdout.decode("utf-8", errors="replace").rstrip()
     except Exception:
-        return _read_chain_cache()
+        return _read_chain_cache(session_id)
     if not text:
-        return _read_chain_cache()
+        return _read_chain_cache(session_id)
     lines = text.splitlines()
-    _write_chain_cache(lines)
+    _write_chain_cache(lines, session_id)
     return lines
 
 
@@ -454,6 +467,42 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
         session_dir = save_path.parent / "claude_sessions"
         turn_file = session_dir / f"{session_id}.turn.json"
 
+        session_dir.mkdir(parents=True, exist_ok=True)
+        lock = session_dir / f"{session_id}.turn.lock"
+        if not _acquire_lock(lock):
+            # Another process holds the lock for this session's turn
+            # estimate -- skip this poll's read-modify-write entirely
+            # rather than racing it (fail-safe: never block, never crash
+            # the row).
+            return 0
+        try:
+            return _turn_xp_estimate_locked(
+                added, removed, tokens_total, api_ms_total, now,
+                turn_file, session_dir, config,
+            )
+        finally:
+            try:
+                lock.unlink()
+            except FileNotFoundError:
+                pass
+    except Exception:
+        return 0
+
+
+def _turn_xp_estimate_locked(
+    added: int,
+    removed: int,
+    tokens_total: int,
+    api_ms_total: int,
+    now: float,
+    turn_file: Path,
+    session_dir: Path,
+    config: dict,
+) -> int:
+    """Locked read-check-emit-write critical section for _turn_xp_estimate,
+    guarded by the caller's per-session `.turn.lock` file (same O_CREAT|
+    O_EXCL pattern as `_acquire_lock`/`_throttled_sync`)."""
+    try:
         state = {}
         if turn_file.exists():
             try:
@@ -504,7 +553,8 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
         estimate = compute_ai_burst_xp(delta_lines, delta_tokens, delta_api_ms, config)
 
         session_dir.mkdir(parents=True, exist_ok=True)
-        turn_file.write_text(
+        tmp_path = turn_file.with_suffix(turn_file.suffix + ".tmp")
+        tmp_path.write_text(
             json.dumps({
                 "baseline": baseline,
                 "last_poll": {"lines_added": added, "lines_removed": removed, "tokens": tokens_total, "api_ms": api_ms_total},
@@ -512,6 +562,7 @@ def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
             }),
             encoding="utf-8",
         )
+        os.replace(tmp_path, turn_file)
         return max(0, estimate)
     except Exception:
         return 0
@@ -548,6 +599,38 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
         session_dir = save_path.parent / "claude_sessions"
         session_file = session_dir / f"{session_id}.json"
 
+        session_dir.mkdir(parents=True, exist_ok=True)
+        lock = session_dir / f"{session_id}.xpbridge.lock"
+        if not _acquire_lock(lock):
+            # Another process holds the lock for this session's XP bridge --
+            # skip this poll's read-check-emit-write entirely rather than
+            # racing it (fail-safe: never block, never crash the row, never
+            # double-credit XP).
+            return
+        try:
+            _xp_bridge_locked(added, removed, tokens_total, api_ms_total, cwd, session_dir, session_file)
+        finally:
+            try:
+                lock.unlink()
+            except FileNotFoundError:
+                pass
+    except Exception:
+        pass
+
+
+def _xp_bridge_locked(
+    added: int,
+    removed: int,
+    tokens_total: int,
+    api_ms_total: int,
+    cwd,
+    session_dir: Path,
+    session_file: Path,
+) -> None:
+    """Locked read-check-emit-write critical section for _xp_bridge, guarded
+    by the caller's per-session `.xpbridge.lock` file (same O_CREAT|O_EXCL
+    pattern as `_acquire_lock`/`_throttled_sync`)."""
+    try:
         prev = {}
         if session_file.exists():
             try:
@@ -588,8 +671,8 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
             return
 
         from devmon.commands.hook import resolve_event_log_path
+        from devmon.shell.event_reader import append_event
         log_path = resolve_event_log_path(config)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
         event = {
             "ts": int(time.time() * 1000),
             "exit": 0,
@@ -600,11 +683,15 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
             "tokens": delta_tokens,
             "api_ms": delta_api_ms,
         }
-        with log_path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(event) + "\n")
+        # Locked append (devmon.shell.event_reader) — same lock
+        # read_and_consume() takes around its read+truncate, so this write
+        # can never be wiped by a concurrent drain (double XP / lost events
+        # bug — see event_reader.read_and_consume docstring).
+        append_event(log_path, json.dumps(event))
 
         session_dir.mkdir(parents=True, exist_ok=True)
-        session_file.write_text(
+        tmp_path = session_file.with_suffix(session_file.suffix + ".tmp")
+        tmp_path.write_text(
             json.dumps({
                 "lines_added": added,
                 "lines_removed": removed,
@@ -613,6 +700,7 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
             }),
             encoding="utf-8",
         )
+        os.replace(tmp_path, session_file)
     except Exception:
         pass
 
@@ -695,7 +783,7 @@ def statusline(
     chain_lines: list[str] = []
     if chain:
         try:
-            chain_lines = _run_chain(chain, raw_stdin)
+            chain_lines = _run_chain(chain, raw_stdin, payload.get("session_id"))
         except Exception:
             chain_lines = []
 

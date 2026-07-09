@@ -93,10 +93,18 @@ def roll_loot(
     if state is not None:
         from devmon.engine.perks import loot_chance_bonus
         from devmon.engine.auras import material_drop_chance_bonus
+        from devmon.engine.charms import charm_bonus
         # Phase E: Rootd's mythic aura (+10% material drop chance) stacks
         # additively alongside the loot_hoarder perk bonus at this same
-        # site (both are additive bonuses to one probability).
-        chance = min(1.0, chance + loot_chance_bonus(state) + material_drop_chance_bonus(state))
+        # site (both are additive bonuses to one probability). Equipped
+        # charm_scavenger (bonus_type "material_drop") stacks the same way.
+        chance = min(
+            1.0,
+            chance
+            + loot_chance_bonus(state)
+            + material_drop_chance_bonus(state)
+            + charm_bonus(state, "material_drop"),
+        )
     if rng_source.random() >= chance:
         return None
 

@@ -212,7 +212,7 @@ def _current_save_path() -> Path:
     return save_mod._save_dir() / save_mod.SAVE_FILENAME
 
 
-def _back_up_save() -> None:
+def _back_up_save() -> bool:
     """Back up save.json using persistence.save's existing rotation logic.
 
     save.save() rotates bak1/2/3 and promotes the current save.json to
@@ -220,10 +220,17 @@ def _back_up_save() -> None:
     state (if any) and re-saving it, which triggers the same rotation the
     persistence layer already implements — no reimplementation of the
     rotation itself.
+
+    Returns True only if a backup was freshly rotated in THIS call (i.e. a
+    save existed before this update). If no save existed, returns False even
+    if a stale bak1 file happens to already exist on disk from an unrelated
+    earlier session — that stale file must never be treated as restorable.
     """
     state = save_mod.load()
     if state is not None:
         save_mod.save(state)
+        return True
+    return False
 
 
 @app.callback(invoke_without_command=True)
@@ -249,10 +256,9 @@ def update_command() -> None:
         )
         raise typer.Exit(code=1)
 
-    _back_up_save()
+    had_backup = _back_up_save()
     backup = _backup_path()
     current = _current_save_path()
-    had_backup = backup.exists()
 
     try:
         _git_pull()
@@ -260,10 +266,20 @@ def update_command() -> None:
         _run_post_pull_migration_check()
     except Exception as exc:
         if had_backup:
-            shutil.copyfile(backup, current)
-        typer.echo(
-            f"devmon: update failed ({exc}); restored previous save from backup"
-        )
+            try:
+                shutil.copyfile(backup, current)
+            except Exception as restore_exc:
+                typer.echo(
+                    f"devmon: update failed ({exc}) AND the automatic restore "
+                    f"also failed ({restore_exc}); your backup is safe at "
+                    f"{backup}, please restore it manually"
+                )
+                raise typer.Exit(code=1)
+            typer.echo(
+                f"devmon: update failed ({exc}); restored previous save from backup"
+            )
+        else:
+            typer.echo(f"devmon: update failed ({exc})")
         raise typer.Exit(code=1)
 
     typer.echo(f"devmon: updated v{installed} -> v{latest}")

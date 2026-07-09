@@ -100,6 +100,22 @@ def enter_dungeon(state: "GameState", dungeon_id: str) -> str:
     if not resuming and not dungeon_prerequisites_met(state, dungeon):
         raise ValueError(f"Dungeon prerequisites for {dungeon.title} are not met.")
 
+    # A queued WILD encounter (not one of this dungeon's own pinned room/boss
+    # encounters) would otherwise be silently destroyed by _pin_room's
+    # unconditional overwrite below. Mirrors the "one encounter at a time"
+    # guard engine.encounter_engine's own spawn logic already enforces
+    # (state.encounter_queue is None check) — refuse entry rather than
+    # warn-and-clobber, since that's the safer, more consistent choice for
+    # a player action explicitly requested via `devmon dungeon enter`.
+    if (
+        state.encounter_queue is not None
+        and not state.encounter_queue.is_boss_pin
+    ):
+        raise ValueError(
+            "A wild encounter is already queued. Resolve it (battle or flee) "
+            "before entering a dungeon."
+        )
+
     if not resuming:
         from datetime import datetime, timezone
         state.dungeon_run = DungeonRunState(
@@ -118,8 +134,10 @@ def advance_dungeon_room(state: "GameState") -> Optional[str]:
     complete.
 
     Returns:
-        dungeon.narrative.clear if the boss was just defeated (run
-        complete), None otherwise (mid-run advancement).
+        A player-facing message combining dungeon.narrative.clear and the
+        boss chest's loot messages (roll_dungeon_loot's return value) if the
+        boss was just defeated (run complete), None otherwise (mid-run
+        advancement).
     """
     if state.dungeon_run is None:
         return None
@@ -134,7 +152,7 @@ def advance_dungeon_room(state: "GameState") -> Optional[str]:
 
     # The boss (pinned at current_room == total_rooms) was just defeated.
     from devmon.engine.dungeon_loot import roll_dungeon_loot
-    roll_dungeon_loot(state, dungeon.loot_pool_id)
+    loot_messages = roll_dungeon_loot(state, dungeon.loot_pool_id)
     state.dungeon_log[dungeon.dungeon_id] = "complete"
     state.dungeon_run = None
-    return dungeon.narrative.clear
+    return " ".join([dungeon.narrative.clear, *loot_messages])

@@ -27,6 +27,7 @@ from devmon.commands import dungeon as dungeon_cmd
 from devmon.commands import npcs as npcs_cmd
 from devmon.commands import heal as heal_cmd
 from devmon.commands import indicator as indicator_cmd
+from devmon.commands import integrity as integrity_cmd
 from devmon.commands import perks as perks_cmd
 from devmon.commands import prestige as prestige_cmd
 from devmon.commands import profile as profile_cmd
@@ -83,6 +84,7 @@ app.add_typer(badges_cmd.app, name="badges")
 app.add_typer(perks_cmd.app, name="perks")
 app.add_typer(prestige_cmd.app, name="prestige")
 app.add_typer(indicator_cmd.app, name="indicator")
+app.add_typer(integrity_cmd.app, name="integrity")
 app.add_typer(profile_cmd.app, name="profile")
 app.add_typer(charms_cmd.app, name="charms")
 app.add_typer(dungeon_cmd.app, name="dungeon")
@@ -140,19 +142,11 @@ def _process_event_log_on_startup() -> None:
         config = DEFAULT_CONFIG
 
     try:
-        # Resolve event log path dynamically — DEFAULT_CONFIG["shell"]["event_log"]
-        # is computed at import time and can be stale across test fixture changes.
-        # _default_event_log() reads DEVMON_HOME at call time (correct behavior).
-        from devmon.config.defaults import _default_event_log
-        dynamic_default = _default_event_log()
-        shell_cfg = config.get("shell", {})
-        configured_log = shell_cfg.get("event_log", dynamic_default)
-        # Use configured_log only if it differs from the stale DEFAULT_CONFIG value
-        # (i.e., the user explicitly overrode via config.toml). Otherwise use dynamic.
-        if configured_log == DEFAULT_CONFIG["shell"]["event_log"] and configured_log != dynamic_default:
-            log_path = Path(dynamic_default)
-        else:
-            log_path = Path(configured_log)
+        # Resolve event log path via the single source of truth (profile-
+        # scoped, config-override-aware) -- also used by engine/sync.py and
+        # commands/hook.py so all entry points agree on the same file.
+        from devmon.config.defaults import resolve_event_log_path
+        log_path = Path(resolve_event_log_path(config))
         events = read_and_consume(log_path)
         if not events:
             return  # Nothing to process — fast path

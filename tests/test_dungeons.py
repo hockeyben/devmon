@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_available_dungeons_requires_prior_quest(tmp_save_dir):
     from devmon.models.state import GameState
     from devmon.engine.dungeons import available_dungeons
@@ -133,6 +136,76 @@ def test_advance_dungeon_room_clears_run_on_boss_clear(tmp_save_dir):
     assert "green" in result.lower() or "breathes" in result.lower()
     assert state.dungeon_run is None
     assert state.dungeon_log["termina_meadows_story"] == "complete"
+
+
+def test_advance_dungeon_room_boss_clear_includes_loot_message(tmp_save_dir):
+    """Bug 3: roll_dungeon_loot's return value (player-facing loot text,
+    e.g. 'You found Scrap Silicon!') must be threaded through
+    advance_dungeon_room's return value alongside dungeon.narrative.clear
+    -- not silently discarded. termina_meadows_story's loot pool has a
+    guaranteed material drop, so a "You found" message is always present."""
+    from devmon.models.state import GameState
+    from devmon.engine.dungeons import enter_dungeon, advance_dungeon_room
+    from devmon.models.dungeon import DungeonRunState
+
+    state = GameState.new_game("Ash")
+    state.player.level = 5
+    state.quest_log["termina_meadows_01"] = "complete"
+    state.dungeon_run = DungeonRunState(dungeon_id="termina_meadows_story", current_room=3, started_at="2026-01-01T00:00:00")
+    enter_dungeon(state, "termina_meadows_story")
+
+    result = advance_dungeon_room(state)
+    assert result is not None
+    # Both the clear narrative AND the loot message must be present.
+    assert "green" in result.lower() or "breathes" in result.lower()
+    assert "you found" in result.lower()
+
+
+def test_enter_dungeon_refuses_entry_when_wild_encounter_queued(tmp_save_dir):
+    """Bug 4: entering a dungeon must not silently destroy a queued wild
+    (non-dungeon) encounter. Judgment call: refuse entry with a clear
+    ValueError (matching the existing 'another dungeon in progress' refusal
+    pattern and engine.encounter_engine's own 'one encounter at a time'
+    spawn guard) rather than warn-and-clobber."""
+    from devmon.models.state import GameState
+    from devmon.models.encounter import EncounterEntry
+    from devmon.engine.dungeons import enter_dungeon
+
+    state = GameState.new_game("Ash")
+    state.player.level = 5
+    state.quest_log["termina_meadows_01"] = "complete"
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=1,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+
+    with pytest.raises(ValueError, match="queued"):
+        enter_dungeon(state, "termina_meadows_story")
+
+    # The wild encounter must survive the failed entry attempt.
+    assert state.encounter_queue.template_id == "pebblite"
+    assert state.dungeon_run is None
+
+
+def test_enter_dungeon_allows_entry_when_only_own_boss_pin_queued(tmp_save_dir):
+    """Resuming a dungeon (its own pinned room/boss encounter still queued)
+    must NOT be blocked by the Bug 4 guard -- only a genuine wild encounter
+    should refuse entry."""
+    from devmon.models.state import GameState
+    from devmon.engine.dungeons import enter_dungeon
+
+    state = GameState.new_game("Ash")
+    state.player.level = 5
+    state.quest_log["termina_meadows_01"] = "complete"
+    enter_dungeon(state, "termina_meadows_story")
+    assert state.encounter_queue.is_boss_pin is True
+
+    # Re-entering (resuming) the same dungeon must succeed.
+    message = enter_dungeon(state, "termina_meadows_story")
+    assert "resuming" in message.lower()
 
 
 def test_side_dungeon_unlocked_by_completing_voss_fetch_quest(tmp_save_dir):

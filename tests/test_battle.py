@@ -1149,3 +1149,194 @@ def test_dungeon_room_win_advances_run(tmp_path, monkeypatch):
     reloaded = load()
     assert reloaded.dungeon_run is not None
     assert reloaded.dungeon_run.current_room == 1
+
+
+# ---------------------------------------------------------------------------
+# Bug 1: Ration/Insight Scanner wired into the Items sub-menu
+# ---------------------------------------------------------------------------
+
+def test_items_menu_offers_dungeon_items_regardless_of_full_hp(tmp_path, monkeypatch):
+    """Insight Scanner (and Ration) must be offered whenever owned, even
+    when the active creature is at full HP -- an HP-based menu filter never
+    applies to a scan-type/whole-party item."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+
+    state = GameState.new_game("TestPlayer")
+    # Full-HP active creature (current_hp left None -> resolves to max_hp).
+    state.creature_collection.append(OwnedCreature(template_id="bugbyte", level=5))
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.inventory["ration"] = 1
+    state.inventory["insight_scanner"] = 1
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="5\nb\n6\n")
+
+    assert result.exit_code == 0, result.output
+    assert "Use which item?" in result.output
+    assert "Ration" in result.output
+    assert "Insight Scanner" in result.output
+
+
+def test_ration_heals_whole_party_not_just_active_creature(tmp_path, monkeypatch):
+    """Bug 1: Ration must heal every non-fainted party creature (per its own
+    description 'Heals your party mid-dungeon'), not just the active one."""
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+
+    state = GameState.new_game("TestPlayer")
+    active = OwnedCreature(template_id="bugbyte", level=5, current_hp=1)
+    bench = OwnedCreature(template_id="char_byte", level=5, current_hp=1)
+    state.creature_collection.append(active)
+    state.creature_collection.append(bench)
+    state.party.append("bugbyte")
+    state.party.append("char_byte")
+    state.codex_state["bugbyte"] = "captured"
+    state.codex_state["char_byte"] = "captured"
+    # Clear the starter kit's potions so Ration is the ONLY usable item --
+    # avoids ambiguity about which menu index "1" selects.
+    state.inventory.clear()
+    state.inventory["ration"] = 1
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    # [5] Items -> [1] Ration (only usable dungeon_item owned) -> [6] Flee.
+    result = runner.invoke(battle_app, input="5\n1\n6\n")
+    assert result.exit_code == 0, result.output
+
+    reloaded = load()
+    healed = {c.template_id: c.current_hp for c in reloaded.creature_collection}
+    assert healed["bugbyte"] > 1
+    assert healed["char_byte"] > 1  # bench creature healed too -- whole party
+    assert reloaded.inventory.get("ration", 0) == 0  # consumed exactly once
+
+
+# ---------------------------------------------------------------------------
+# Bug 5: wild's "free attack" after failed capture / item use must use
+# effective_stat() (IV + nature adjusted), not compute_stat() (raw base).
+# ---------------------------------------------------------------------------
+
+def test_free_attack_after_failed_capture_uses_effective_defense(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.engine.natures import effective_stat
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    monkeypatch.setattr(battle_engine, "attempt_capture", lambda *a, **k: False)
+    monkeypatch.setattr(battle_engine, "resolve_wild_flee_after_failed_capture", lambda *a, **k: False)
+
+    recorded = {}
+    real_compute_damage = battle_engine.compute_damage
+
+    def _spy_compute_damage(attack, level, speed, defense, effectiveness, crit):
+        recorded["defense"] = defense
+        return real_compute_damage(attack, level, speed, defense, effectiveness, crit)
+
+    monkeypatch.setattr(battle_engine, "compute_damage", _spy_compute_damage)
+
+    state = GameState.new_game("TestPlayer")
+    # "bold" nature (or any non-neutral nature) + a non-zero defense IV so
+    # effective_stat() and compute_stat() diverge measurably.
+    owned = OwnedCreature(template_id="bugbyte", level=10, nature="bold", ivs={"defense": 15})
+    state.creature_collection.append(owned)
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.inventory["basic_capsule"] = 1
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="3\n1\n6\n")
+    assert result.exit_code == 0, result.output
+
+    from devmon.engine.creature_loader import get_creature
+    template = get_creature("bugbyte")
+    expected_defense = effective_stat(template.base_defense, 10, 15, "bold", "defense")
+    assert recorded["defense"] == expected_defense
+
+
+def test_free_attack_after_item_use_uses_effective_defense(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.engine.natures import effective_stat
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.encounter import EncounterEntry
+    from devmon.models.state import GameState
+    from devmon.persistence.save import save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+
+    recorded = {}
+    real_compute_damage = battle_engine.compute_damage
+
+    def _spy_compute_damage(attack, level, speed, defense, effectiveness, crit):
+        recorded["defense"] = defense
+        return real_compute_damage(attack, level, speed, defense, effectiveness, crit)
+
+    monkeypatch.setattr(battle_engine, "compute_damage", _spy_compute_damage)
+
+    state = GameState.new_game("TestPlayer")
+    owned = OwnedCreature(
+        template_id="bugbyte", level=10, current_hp=10, nature="bold", ivs={"defense": 15}
+    )
+    state.creature_collection.append(owned)
+    state.party.append("bugbyte")
+    state.codex_state["bugbyte"] = "captured"
+    state.encounter_queue = EncounterEntry(
+        template_id="pebblite",
+        encounter_level=2,
+        encounter_type="normal",
+        rarity="common",
+        queued_at=0.0,
+    )
+    save(state)
+
+    runner = CliRunner()
+    # [5] Items -> [1] Small Potion (from starter kit) -> [6] Flee.
+    result = runner.invoke(battle_app, input="5\n1\n6\n")
+    assert result.exit_code == 0, result.output
+
+    from devmon.engine.creature_loader import get_creature
+    template = get_creature("bugbyte")
+    expected_defense = effective_stat(template.base_defense, 10, 15, "bold", "defense")
+    assert recorded["defense"] == expected_defense

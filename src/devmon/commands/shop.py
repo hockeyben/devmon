@@ -24,6 +24,7 @@ from devmon.engine.marketplace import (
     hours_until_next_rotation,
     rotation_price,
 )
+from devmon.persistence.integrity_gate import is_blocked, print_block_message
 from devmon.persistence.save import load, save
 from devmon.render.shop import (
     render_purchase_confirmation,
@@ -201,6 +202,10 @@ def _interactive_shop():
             continue
         item, unit_price = entry
 
+        if is_blocked(state):
+            print_block_message(console)
+            continue
+
         # Check funds
         if state.player.currency < unit_price:
             console.print(
@@ -247,6 +252,11 @@ def _quick_purchase(item_id: str, qty: int):
 
     item = items_catalog[item_id]
 
+    state = _load_state_or_new()
+    if is_blocked(state):
+        print_block_message(console)
+        raise typer.Exit(code=1)
+
     # T-08-06: validate item is sold in shop -- OR is in today's featured
     # rotation (Phase A2: rarer items/materials that aren't normal base
     # stock, but ARE purchasable today at the rotation's price).
@@ -266,7 +276,6 @@ def _quick_purchase(item_id: str, qty: int):
         else rotation_price(item.price, rotation_entry["discount_percent"])
     )
 
-    state = _load_state_or_new()
     total_cost = unit_price * qty
 
     if state.player.currency < total_cost:
@@ -307,6 +316,9 @@ def _sell(item_id: str, count: int) -> None:
 
     item = items_catalog[item_id]
     state = _load_state_or_new()
+    if is_blocked(state):
+        print_block_message(console)
+        raise typer.Exit(code=1)
     owned = state.inventory.get(item_id, 0)
     if owned < count:
         console.print(

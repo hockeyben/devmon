@@ -489,6 +489,7 @@ def battle_cmd() -> None:
         energy_max,
         regen_energy,
     )
+    from devmon.engine.charms import charm_bonus
     from devmon.engine.creature_loader import get_creature
     from devmon.engine.item_engine import (
         activate_booster,
@@ -791,6 +792,9 @@ def battle_cmd() -> None:
                         narration_parts.append(f"{player_template.name} is locked up by {STATUS_LABELS[player_status]}!")
                         return False
                     p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
+                    # charm_focus (bonus_type "attack"): multiplicative bonus
+                    # applied to the player's effective attack stat.
+                    p_atk = int(p_atk * (1.0 + charm_bonus(state, "attack")))
                     w_def = compute_stat(wild_template.base_defense, wild.level)
                     p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                     effectiveness = get_type_effectiveness(player_template.type, wild_template.type)
@@ -870,7 +874,11 @@ def battle_cmd() -> None:
                     from devmon.engine.legendary_quests import record_battle_win_for_chains
                     from devmon.engine.perks import battle_xp_multiplier_bonus
                     record_battle_win_for_chains(state)
-                    rewards["creature_xp"] = int(rewards["creature_xp"] * battle_xp_multiplier_bonus(state))
+                    rewards["creature_xp"] = int(
+                        rewards["creature_xp"]
+                        * battle_xp_multiplier_bonus(state)
+                        * (1.0 + charm_bonus(state, "xp"))
+                    )
                     medibot_msg = record_battle_win(state)
                     loot_msg = _roll_and_apply_loot(state, wild.rarity)
                     config = load_config()
@@ -1030,6 +1038,9 @@ def battle_cmd() -> None:
                         narration_parts.append(f"{player_template.name} is locked up by {STATUS_LABELS[player_status]}!")
                         return False
                     p_atk = effective_stat(player_template.base_attack, player_owned.level, player_owned.ivs.get("attack", 0), player_owned.nature, "attack")
+                    # charm_focus (bonus_type "attack"): multiplicative bonus
+                    # applied to the player's effective attack stat.
+                    p_atk = int(p_atk * (1.0 + charm_bonus(state, "attack")))
                     w_def = compute_stat(wild_template.base_defense, wild.level)
                     p_spd = effective_stat(player_template.base_speed, player_owned.level, player_owned.ivs.get("speed", 0), player_owned.nature, "speed")
                     effectiveness = get_type_effectiveness(ability.type, wild_template.type)
@@ -1136,7 +1147,11 @@ def battle_cmd() -> None:
                     from devmon.engine.legendary_quests import record_battle_win_for_chains
                     from devmon.engine.perks import battle_xp_multiplier_bonus
                     record_battle_win_for_chains(state)
-                    rewards["creature_xp"] = int(rewards["creature_xp"] * battle_xp_multiplier_bonus(state))
+                    rewards["creature_xp"] = int(
+                        rewards["creature_xp"]
+                        * battle_xp_multiplier_bonus(state)
+                        * (1.0 + charm_bonus(state, "xp"))
+                    )
                     medibot_msg = record_battle_win(state)
                     loot_msg = _roll_and_apply_loot(state, wild.rarity)
                     config = load_config()
@@ -1235,6 +1250,13 @@ def battle_cmd() -> None:
                 # Exit Live context before sub-menu (critical — UI-SPEC Pitfall 1)
                 live.stop()
 
+                from devmon.persistence.integrity_gate import is_blocked, print_block_message
+                if is_blocked(state):
+                    print_block_message(console)
+                    live = Live(auto_refresh=False, console=console)
+                    live.start()
+                    continue
+
                 # Build list of owned capsules (filter to those with qty > 0)
                 capsule_ids = [
                     "basic_capsule", "great_capsule", "ultra_capsule",
@@ -1297,10 +1319,15 @@ def battle_cmd() -> None:
                     # surfaced as a number, per the hard no-capture-% rule).
                     from devmon.engine.perks import capture_multiplier_bonus
                     from devmon.engine.auras import capture_multiplier as mythic_capture_multiplier
+                    # charm_snare (bonus_type "capture_tier"): multiplicative
+                    # bonus stacking with the capture_bond perk and Singulon
+                    # aura at this same site (never surfaced as a number,
+                    # per the hard no-capture-% rule).
                     effective_capture_multiplier = (
                         selected_capsule.capture_multiplier
                         * capture_multiplier_bonus(state)
                         * mythic_capture_multiplier(state)
+                        * (1.0 + charm_bonus(state, "capture_tier"))
                     )
                     # Compute capture chance — capture_rate NEVER shown to player (T-06-06, D-15)
                     capture_chance = compute_capture_chance(
@@ -1415,7 +1442,7 @@ def battle_cmd() -> None:
                         # Wild gets a free attack after failed capture
                         w_abilities = get_available_abilities(wild_template.abilities, wild.level)
                         w_atk = compute_stat(wild_template.base_attack, wild.level)
-                        p_def = compute_stat(player_template.base_defense, player_owned.level)
+                        p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                         w_spd = compute_stat(wild_template.base_speed, wild.level)
                         effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                         crit = roll_crit(w_spd)
@@ -1570,6 +1597,13 @@ def battle_cmd() -> None:
                         continue  # materials are crafting ingredients, never "used" (Phase A2)
                     if item_def.category == "booster":
                         usable_items.append((item_id, item_def, qty))
+                    elif item_def.category == "dungeon_item":
+                        # Dungeon items (Ration, Insight Scanner) are always
+                        # offered when owned — Ration heals the whole party
+                        # (not gated on the active creature's HP) and Insight
+                        # Scanner is a scan, not a heal, so an HP-based filter
+                        # never applies to either.
+                        usable_items.append((item_id, item_def, qty))
                     elif item_def.restores_fainted:
                         # Revive: only show if any party creature is fainted
                         has_fainted = any(c.is_fainted for c in state.creature_collection)
@@ -1615,14 +1649,30 @@ def battle_cmd() -> None:
                     continue
 
                 selected_id, selected_def, _ = usable_items[item_idx - 1]
-                consume_item(state.inventory, selected_id)
 
                 item_narration = ""
 
-                if selected_def.category == "booster":
+                if selected_def.category == "dungeon_item":
+                    # Ration/Insight Scanner consume their own item internally
+                    # (engine.dungeon_items) — do NOT also consume_item() here,
+                    # that would double-deduct from inventory.
+                    from devmon.engine.dungeon_items import use_ration, use_insight_scanner
+
+                    if selected_id == "ration":
+                        _, item_narration = use_ration(state)
+                    elif selected_id == "insight_scanner":
+                        _, item_narration = use_insight_scanner(state)
+                    else:
+                        # Unknown dungeon_item id — fall back to consuming it
+                        # with no effect rather than silently doing nothing.
+                        consume_item(state.inventory, selected_id)
+                        item_narration = f"Used {selected_def.name}."
+                elif selected_def.category == "booster":
+                    consume_item(state.inventory, selected_id)
                     activate_booster(state)
                     item_narration = f"{selected_def.name} activated! XP x1.5 for 30 min."
                 elif selected_def.restores_fainted:
+                    consume_item(state.inventory, selected_id)
                     # Revive — pick a fainted creature
                     fainted = [c for c in state.creature_collection if c.is_fainted]
                     if len(fainted) == 1:
@@ -1645,6 +1695,7 @@ def battle_cmd() -> None:
                     item_narration = use_potion_on_creature(target, selected_def, t_max_hp)
                 else:
                     # Regular potion on active creature
+                    consume_item(state.inventory, selected_id)
                     item_narration = use_potion_on_creature(
                         player_owned, selected_def, player_max_hp
                     )
@@ -1653,7 +1704,7 @@ def battle_cmd() -> None:
 
                 # Wild gets a free attack (item use costs a turn)
                 w_atk = compute_stat(wild_template.base_attack, wild.level)
-                p_def = compute_stat(player_template.base_defense, player_owned.level)
+                p_def = effective_stat(player_template.base_defense, player_owned.level, player_owned.ivs.get("defense", 0), player_owned.nature, "defense")
                 w_spd = compute_stat(wild_template.base_speed, wild.level)
                 effectiveness = get_type_effectiveness(wild_template.type, player_template.type)
                 crit = roll_crit(w_spd)

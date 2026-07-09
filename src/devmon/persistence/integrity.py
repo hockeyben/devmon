@@ -52,6 +52,40 @@ def get_or_create_integrity_key() -> bytes:
     return key
 
 
+def get_integrity_key_for_verification(profile_dir) -> tuple[bytes, bool]:
+    """Resolve the HMAC key for verifying a load, distinguishing a truly
+    first-run key creation from a suspicious "checksum exists but its key
+    vanished" situation (Bug 2).
+
+    Returns (key, suspicious). `suspicious` is True when `.integrity_key`
+    was missing/unreadable AND `profile_dir` already has at least one
+    integrity sidecar on disk (save.integrity or a save.bakN.integrity) --
+    i.e. a checksum trail exists that could only have been produced by a
+    now-vanished key. In that case a fresh key is still generated/persisted
+    (so future saves work), but the caller must NOT treat the resulting
+    verification as trustworthy.
+    """
+    base = _base_dir()
+    key_path = base / INTEGRITY_KEY_FILENAME
+
+    if key_path.exists():
+        try:
+            hex_text = key_path.read_text(encoding="utf-8").strip()
+            key = bytes.fromhex(hex_text)
+            if len(key) == 32:
+                return key, False
+        except (OSError, ValueError):
+            pass
+
+    # Key file missing/unreadable. Check whether a checksum trail already
+    # exists for this profile -- if so, the key's disappearance is suspicious.
+    has_prior_sidecar = (profile_dir / "save.integrity").exists() or any(
+        (profile_dir / f"save.bak{i}.integrity").exists() for i in range(1, 4)
+    )
+    key = get_or_create_integrity_key()
+    return key, has_prior_sidecar
+
+
 def compute_checksum(state: GameState, key: bytes) -> str:
     """Compute an HMAC-SHA256 hex digest over a canonical JSON serialization
     of `state` (sorted keys, so Pydantic v2's non-guaranteed dict ordering

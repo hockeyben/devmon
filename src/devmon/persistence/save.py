@@ -26,6 +26,7 @@ SAVE_FILENAME = "save.json"
 BACKUP_COUNT = 3
 DEFAULT_PROFILE = "default"
 ACTIVE_PROFILE_FILENAME = "active_profile"
+INTEGRITY_INITIALIZED_MARKER = ".integrity_initialized"
 
 
 def _base_dir() -> pathlib.Path:
@@ -163,16 +164,40 @@ def save(state: GameState) -> None:
     current = d / SAVE_FILENAME
     tmp = d / (SAVE_FILENAME + ".tmp")
 
-    # Rotate backups backward to avoid overwriting (Pitfall 4)
+    # Rotate backups backward to avoid overwriting (Pitfall 4). Each backup's
+    # matching integrity sidecar (Bug 3 fix) rotates alongside it, so a
+    # restored backup can always be verified against ITS OWN checksum
+    # instead of the stale sidecar that belongs to the current save.json.
     for i in range(BACKUP_COUNT - 1, 0, -1):  # 2, 1
         src = d / f"save.bak{i}"
         dst = d / f"save.bak{i + 1}"  # bak2->bak3, bak1->bak2
         if src.exists():
             os.replace(src, dst)
 
-    # Promote current save to bak1
+        src_sidecar = d / f"save.bak{i}.integrity"
+        dst_sidecar = d / f"save.bak{i + 1}.integrity"
+        if src_sidecar.exists():
+            os.replace(src_sidecar, dst_sidecar)
+        elif dst_sidecar.exists():
+            # No matching sidecar was promoted for this slot -- an old,
+            # now-mismatched sidecar left behind would be worse than none.
+            try:
+                dst_sidecar.unlink()
+            except OSError:
+                pass
+
+    # Promote current save (and its sidecar) to bak1
     if current.exists():
         os.replace(current, d / "save.bak1")
+    current_sidecar = d / "save.integrity"
+    bak1_sidecar = d / "save.bak1.integrity"
+    if current_sidecar.exists():
+        os.replace(current_sidecar, bak1_sidecar)
+    elif bak1_sidecar.exists():
+        try:
+            bak1_sidecar.unlink()
+        except OSError:
+            pass
 
     # Write to temp file then atomically rename (SAVE-02)
     tmp.write_text(state.model_dump_json(indent=2), encoding="utf-8")
@@ -185,6 +210,10 @@ def save(state: GameState) -> None:
         key = get_or_create_integrity_key()
         checksum = compute_checksum(state, key)
         (d / "save.integrity").write_text(checksum, encoding="utf-8")
+        # Bug 1 fix marker: once a sidecar has ever been written for this
+        # profile, its later absence during load() is suspicious rather than
+        # "brand new profile, integrity tracking never started" -- see load().
+        (d / INTEGRITY_INITIALIZED_MARKER).write_text("1", encoding="utf-8")
     except Exception:
         # Best-effort -- an integrity-write failure must never block a save.
         pass
@@ -246,20 +275,50 @@ def load() -> GameState | None:
         except Exception:
             pass
 
-        # Tamper-evident integrity check (Task 6): compare the sidecar
-        # checksum against a freshly computed one. A save that predates
-        # this feature (no sidecar) is treated as unflagged, not tampered.
-        try:
+        # Tamper-evident integrity check (Task 6, hardened by Bugs 1-3 fixes).
+        #
+        # Each candidate file (save.json or a save.bakN) has its OWN matching
+        # sidecar (save.integrity / save.bakN.integrity -- Bug 3) written at
+        # the time that file became the "current" save. We validate against
+        # THAT sidecar, never against a different file's checksum.
+        #
+        # Sidecar-missing handling (Bug 1): a save that has genuinely never
+        # been through save()'s integrity write (no INTEGRITY_INITIALIZED_MARKER
+        # in this profile dir) is unflagged -- there was never a checksum to
+        # compare against. But if the marker IS present, integrity tracking
+        # was established for this profile at some point and a missing
+        # sidecar now means it was deleted -- that's suspicious, not trusted.
+        if path.name == SAVE_FILENAME:
             sidecar = path.parent / "save.integrity"
+        else:
+            sidecar = path.parent / (path.name + ".integrity")
+        marker = path.parent / INTEGRITY_INITIALIZED_MARKER
+
+        try:
             if sidecar.exists():
-                from devmon.persistence.integrity import compute_checksum, get_or_create_integrity_key, verify_checksum
-                key = get_or_create_integrity_key()
-                stored = sidecar.read_text(encoding="utf-8").strip()
-                object.__setattr__(state, "integrity_flagged", not verify_checksum(state, key, stored))
+                from devmon.persistence.integrity import compute_checksum, verify_checksum
+                from devmon.persistence.integrity import get_integrity_key_for_verification
+
+                key, key_suspicious = get_integrity_key_for_verification(path.parent)
+                if key_suspicious:
+                    # Bug 2: a checksum trail exists but its key vanished --
+                    # do not silently trust a freshly minted key's verdict.
+                    object.__setattr__(state, "integrity_flagged", True)
+                else:
+                    stored = sidecar.read_text(encoding="utf-8").strip()
+                    object.__setattr__(state, "integrity_flagged", not verify_checksum(state, key, stored))
+            elif marker.exists():
+                # Bug 1: sidecar existed before (tracking was established)
+                # but is now gone -- fail closed, do not launder the tamper.
+                object.__setattr__(state, "integrity_flagged", True)
             else:
+                # Truly first-ever save for this profile -- no sidecar could
+                # possibly have existed yet.
                 object.__setattr__(state, "integrity_flagged", False)
         except Exception:
-            object.__setattr__(state, "integrity_flagged", False)
+            # Unexpected error while checking integrity -- fail closed rather
+            # than silently trusting an unverifiable save.
+            object.__setattr__(state, "integrity_flagged", True)
 
         return state
 

@@ -254,7 +254,7 @@ class TestStatuslineXpBridge:
         result2 = runner.invoke(app, ["statusline"], input=payload2)
         assert result2.exit_code == 0
 
-        log_path = tmp_save_dir / "events.log"
+        log_path = tmp_save_dir / "profiles" / "default" / "events.log"
         assert log_path.exists()
         events = [
             json.loads(l) for l in log_path.read_text(encoding="utf-8").splitlines() if l.strip()
@@ -290,7 +290,7 @@ class TestStatuslineXpBridge:
         result = runner.invoke(app, ["statusline"], input=payload)
         assert result.exit_code == 0
 
-        log_path = tmp_save_dir / "events.log"
+        log_path = tmp_save_dir / "profiles" / "default" / "events.log"
         events = [
             json.loads(l) for l in log_path.read_text(encoding="utf-8").splitlines() if l.strip()
         ]
@@ -309,7 +309,7 @@ class TestStatuslineXpBridge:
 
         from devmon.main import app
         runner = CliRunner()
-        log_path = tmp_save_dir / "events.log"
+        log_path = tmp_save_dir / "profiles" / "default" / "events.log"
 
         # 2 lines = 1 XP-worth < min burst (3) -> banked, nothing emitted.
         p1 = json.dumps({
@@ -343,7 +343,7 @@ class TestStatuslineXpBridge:
         result = runner.invoke(app, ["statusline"], input=payload)
 
         assert result.exit_code == 0
-        log_path = tmp_save_dir / "events.log"
+        log_path = tmp_save_dir / "profiles" / "default" / "events.log"
         assert not log_path.exists() or log_path.read_text(encoding="utf-8").strip() == ""
 
 
@@ -743,6 +743,169 @@ class TestStatuslineRankTagIntegration:
         result = runner.invoke(app, ["statusline"], input=b"{}")
         assert result.exit_code == 0
         assert "[Sr]" in _strip(result.output)
+
+
+class TestStatuslineChainCacheIsSessionScoped:
+    def test_cache_path_is_a_function_of_session_id(self, tmp_save_dir):
+        from devmon.commands.statusline import _chain_cache_path
+
+        path_a = _chain_cache_path("sess-a")
+        path_b = _chain_cache_path("sess-b")
+        assert path_a != path_b
+        assert "sess-a" in path_a.name
+        assert "sess-b" in path_b.name
+
+    def test_two_sessions_get_two_different_cache_files(self, tmp_save_dir, monkeypatch):
+        """Two concurrent devmon statusline invocations for DIFFERENT
+        session_ids must never read/write the same chain cache file."""
+        from devmon.main import app
+
+        monkeypatch.setenv("COLUMNS", "80")
+        runner = CliRunner()
+
+        payload_a = json.dumps({"session_id": "sess-a"}).encode("utf-8")
+        payload_b = json.dumps({"session_id": "sess-b"}).encode("utf-8")
+
+        ok_a = runner.invoke(app, ["statusline", "--chain", "echo fromA"], input=payload_a)
+        ok_b = runner.invoke(app, ["statusline", "--chain", "echo fromB"], input=payload_b)
+        assert ok_a.exit_code == 0
+        assert ok_b.exit_code == 0
+
+        from devmon.commands.statusline import _chain_cache_path
+        cache_a = _chain_cache_path("sess-a")
+        cache_b = _chain_cache_path("sess-b")
+        assert cache_a != cache_b
+        assert cache_a.exists()
+        assert cache_b.exists()
+        assert cache_a.read_text(encoding="utf-8").strip() == "fromA"
+        assert cache_b.read_text(encoding="utf-8").strip() == "fromB"
+
+        # Session A's failed chain must serve session A's cache, never B's.
+        fail_cmd = f'"{sys.executable}" -c "import sys; sys.exit(1)"'
+        failed_a = runner.invoke(app, ["statusline", "--chain", fail_cmd], input=payload_a)
+        assert failed_a.exit_code == 0
+        assert "fromA" in _strip(failed_a.output)
+        assert "fromB" not in _strip(failed_a.output)
+
+
+class TestStatuslineXpBridgeLocking:
+    def test_lock_file_does_not_persist_after_a_normal_call(self, tmp_save_dir, monkeypatch):
+        import devmon.commands.statusline as statusline_mod
+        monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)
+
+        from devmon.main import app
+        runner = CliRunner()
+
+        payload = json.dumps({
+            "session_id": "sess-lock",
+            "cost": {"total_lines_added": 10, "total_lines_removed": 0},
+        }).encode("utf-8")
+        result = runner.invoke(app, ["statusline"], input=payload)
+        assert result.exit_code == 0
+
+        session_dir = tmp_save_dir / "profiles" / "default" / "claude_sessions"
+        lock = session_dir / "sess-lock.xpbridge.lock"
+        assert not lock.exists()
+
+    def test_preexisting_lock_causes_silent_skip_no_double_credit(self, tmp_save_dir, monkeypatch):
+        """A pre-existing (freshly-held) lock file must make the bridge skip
+        this poll's emission entirely -- no raise, no event appended -- the
+        exact scenario that prevents double-crediting XP under a race."""
+        import devmon.commands.statusline as statusline_mod
+        monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)
+
+        from devmon.main import app
+        runner = CliRunner()
+
+        session_dir = tmp_save_dir / "profiles" / "default" / "claude_sessions"
+        session_dir.mkdir(parents=True, exist_ok=True)
+        lock = session_dir / "sess-locked.xpbridge.lock"
+        lock.write_text("", encoding="utf-8")
+
+        payload = json.dumps({
+            "session_id": "sess-locked",
+            "cost": {"total_lines_added": 10, "total_lines_removed": 0},
+        }).encode("utf-8")
+        result = runner.invoke(app, ["statusline"], input=payload)
+
+        assert result.exit_code == 0  # never raises
+        # events.log lives alongside the ACTIVE PROFILE's save.json
+        # (profiles/default/ by default), same as claude_sessions above.
+        log_path = tmp_save_dir / "profiles" / "default" / "events.log"
+        assert not log_path.exists() or log_path.read_text(encoding="utf-8").strip() == ""
+        assert lock.exists()  # the held lock is left untouched, not stolen
+
+    def test_same_session_twice_growing_deltas_emits_expected_events(self, tmp_save_dir, monkeypatch):
+        import devmon.commands.statusline as statusline_mod
+        monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)
+
+        from devmon.main import app
+        runner = CliRunner()
+
+        payload1 = json.dumps({
+            "session_id": "sess-grow",
+            "cost": {"total_lines_added": 10, "total_lines_removed": 0},
+        }).encode("utf-8")
+        payload2 = json.dumps({
+            "session_id": "sess-grow",
+            "cost": {"total_lines_added": 30, "total_lines_removed": 0},
+        }).encode("utf-8")
+
+        assert runner.invoke(app, ["statusline"], input=payload1).exit_code == 0
+        assert runner.invoke(app, ["statusline"], input=payload2).exit_code == 0
+
+        log_path = tmp_save_dir / "profiles" / "default" / "events.log"
+        events = [
+            json.loads(l) for l in log_path.read_text(encoding="utf-8").splitlines() if l.strip()
+        ]
+        ai_code_events = [e for e in events if e.get("type") == "ai_code"]
+        assert len(ai_code_events) == 2
+        assert ai_code_events[0]["lines"] == 10
+        assert ai_code_events[1]["lines"] == 20
+
+
+class TestTurnXpEstimateLocking:
+    def _payload(self, session_id="sess-turnlock", lines_added=0, lines_removed=0, tokens=0, api_ms=0):
+        return {
+            "session_id": session_id,
+            "cost": {"total_lines_added": lines_added, "total_lines_removed": lines_removed, "total_api_duration_ms": api_ms},
+            "context_window": {"total_output_tokens": tokens},
+        }
+
+    def _config(self):
+        from devmon.config.defaults import DEFAULT_CONFIG
+        return DEFAULT_CONFIG
+
+    def test_lock_file_does_not_persist_after_a_normal_call(self, tmp_save_dir):
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        _turn_xp_estimate(self._payload(tokens=1000, api_ms=30_000), save_path, self._config())
+
+        session_dir = tmp_save_dir / "claude_sessions"
+        lock = session_dir / "sess-turnlock.turn.lock"
+        assert not lock.exists()
+
+    def test_preexisting_lock_causes_silent_skip_returns_zero(self, tmp_save_dir):
+        """A pre-existing lock must make the call skip its read-modify-write
+        and return 0 rather than racing the lock holder."""
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        session_dir = tmp_save_dir / "claude_sessions"
+        session_dir.mkdir(parents=True, exist_ok=True)
+        lock = session_dir / "sess-turnlocked.turn.lock"
+        lock.write_text("", encoding="utf-8")
+
+        estimate = _turn_xp_estimate(
+            self._payload(session_id="sess-turnlocked", tokens=6000, api_ms=180_000),
+            save_path, self._config(),
+        )
+
+        assert estimate == 0
+        turn_file = session_dir / "sess-turnlocked.turn.json"
+        assert not turn_file.exists()  # no write happened under the held lock
+        assert lock.exists()  # held lock left untouched
 
 
 class TestTurnXpEstimate:

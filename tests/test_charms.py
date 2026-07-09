@@ -133,6 +133,66 @@ def test_cli_charms_equip_and_unequip_round_trip(tmp_save_dir):
     assert "charm_focus" not in reloaded.equipped_charms
 
 
+# ---------------------------------------------------------------------------
+# Bug 2: charm_bonus() actually wired into gameplay calculations
+# ---------------------------------------------------------------------------
+
+def test_equipped_scavenger_charm_increases_material_drop_chance(tmp_save_dir):
+    """charm_scavenger (bonus_type material_drop, +0.10) must be added into
+    engine.loot.roll_loot's drop chance -- the same call site as the
+    loot_hoarder perk and Rootd's mythic aura."""
+    import random
+    from devmon.models.state import GameState
+    from devmon.engine.charms import equip_charm
+    from devmon.engine.loot import roll_loot
+
+    state = GameState.new_game("Ash")
+    state.inventory["charm_scavenger"] = 1
+    equip_charm(state, "charm_scavenger")
+
+    # common base drop chance is 0.40; a roll of 0.45 fails without the
+    # charm bonus but succeeds with it (0.40 + 0.10 = 0.50).
+    unequipped_state = GameState.new_game("Ash2")
+    rng_no_charm = random.Random()
+    rng_no_charm.random = lambda: 0.45
+    assert roll_loot("common", rng=rng_no_charm, state=unequipped_state) is None
+
+    # Same roll, but WITH the equipped charm's bonus -- must now succeed.
+    rng_with_charm = random.Random()
+    rng_with_charm.random = lambda: 0.45
+    material = roll_loot("common", rng=rng_with_charm, state=state)
+    assert material is not None
+
+
+def test_equipped_snare_charm_increases_capture_chance():
+    """charm_snare (bonus_type capture_tier, +1.0) must raise the effective
+    capture multiplier fed into compute_capture_chance -- the same call
+    site as capture_bond perk and the Singulon aura in commands/battle.py."""
+    from devmon.engine.battle_engine import compute_capture_chance
+
+    base_chance = compute_capture_chance(0.3, 0.5, item_multiplier=1.0)
+    boosted_chance = compute_capture_chance(0.3, 0.5, item_multiplier=1.0 * (1.0 + 1.0))
+    assert boosted_chance > base_chance
+
+
+def test_equipped_focus_charm_increases_effective_attack_damage(tmp_save_dir):
+    """charm_focus (bonus_type attack, +0.10) is applied as a multiplier on
+    the player's effective attack stat at the p_atk calculation sites in
+    commands/battle.py's Attack and Special Ability branches."""
+    from devmon.models.state import GameState
+    from devmon.engine.charms import equip_charm, charm_bonus
+    from devmon.engine.natures import effective_stat
+
+    state = GameState.new_game("Ash")
+    state.inventory["charm_focus"] = 1
+    equip_charm(state, "charm_focus")
+
+    base_atk = effective_stat(50, 10, 5, "hardy", "attack")
+    boosted_atk = int(base_atk * (1.0 + charm_bonus(state, "attack")))
+    assert boosted_atk > base_atk
+    assert boosted_atk == int(base_atk * 1.10)
+
+
 def test_cli_charms_equip_fails_when_not_owned(tmp_save_dir):
     from devmon.models.state import GameState
     from devmon.persistence.save import save

@@ -34,19 +34,14 @@ def sync_game_state(config: dict) -> None:
         config: DevMon config dict (as returned by `load_config()`).
     """
     try:
-        from devmon.config.defaults import DEFAULT_CONFIG, _default_event_log
+        from devmon.config.defaults import resolve_event_log_path
         from devmon.shell.event_reader import read_and_consume
 
-        # Resolve event log path dynamically -- DEFAULT_CONFIG["shell"]["event_log"]
-        # is computed at import time and can be stale across DEVMON_HOME changes
-        # (mirrors main.py's _process_event_log_on_startup resolution).
-        dynamic_default = _default_event_log()
-        shell_cfg = config.get("shell", {})
-        configured_log = shell_cfg.get("event_log", dynamic_default)
-        if configured_log == DEFAULT_CONFIG["shell"]["event_log"] and configured_log != dynamic_default:
-            log_path = Path(dynamic_default)
-        else:
-            log_path = Path(configured_log)
+        # Resolve event log path via the single source of truth (profile-
+        # scoped, config-override-aware) -- mirrors main.py's
+        # _process_event_log_on_startup resolution by construction, since
+        # both delegate to the same function.
+        log_path = Path(resolve_event_log_path(config))
 
         events = read_and_consume(log_path)
         if not events:

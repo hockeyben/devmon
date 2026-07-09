@@ -350,6 +350,16 @@ def check_quest_completions(state: "GameState", config: dict) -> None:
         state: The current GameState (mutated in place).
         config: Game config dict (reserved for future use — currently unused).
     """
+    # Bug 4 enforcement: while the save is flagged as tamper-suspicious,
+    # pause reward granting entirely. Quests stay in active_quests (criteria
+    # progress recorded elsewhere is unaffected) and are simply re-evaluated
+    # on the next call once the flag is cleared via `devmon integrity reset`.
+    # This is an engine-layer choke point (called from battle.py and the
+    # progression sync path) so it has no console to print to -- the
+    # existing `devmon status` badge is the user-facing signal here.
+    if getattr(state, "integrity_flagged", False):
+        return
+
     completed: list[ActiveQuest] = []
     remaining: list[ActiveQuest] = []
 

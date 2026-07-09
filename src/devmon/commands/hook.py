@@ -161,15 +161,14 @@ def resolve_event_log_path(config: dict) -> Path:
     Shared by `devmon track test-pass` (this module) and `devmon
     statusline`'s XP bridge (commands/statusline.py) -- both must land
     events in the exact same log file the backlog processor reads from.
-    """
-    from devmon.config.defaults import DEFAULT_CONFIG, _default_event_log
 
-    dynamic_default = _default_event_log()
-    shell_cfg = config.get("shell", {})
-    configured_log = shell_cfg.get("event_log", dynamic_default)
-    if configured_log == DEFAULT_CONFIG["shell"]["event_log"] and configured_log != dynamic_default:
-        return Path(dynamic_default)
-    return Path(configured_log)
+    Delegates to devmon.config.defaults.resolve_event_log_path, the single
+    source of truth also used by main.py and engine/sync.py, so all entry
+    points resolve the same (profile-scoped) path.
+    """
+    from devmon.config.defaults import resolve_event_log_path as _resolve
+
+    return Path(_resolve(config))
 
 
 @track_app.command("test-pass")
@@ -183,6 +182,8 @@ def track_test_pass() -> None:
     import os
     import time
 
+    from devmon.shell.event_reader import append_event
+
     try:
         from devmon.config.loader import load_config
         config = load_config()
@@ -191,7 +192,6 @@ def track_test_pass() -> None:
         config = DEFAULT_CONFIG
 
     log_path = resolve_event_log_path(config)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
 
     event = {
         "ts": int(time.time() * 1000),
@@ -201,7 +201,11 @@ def track_test_pass() -> None:
         "type": "test_pass",
     }
 
-    with log_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(event) + "\n")
+    # Locked append (devmon.shell.event_reader) — prevents this write from
+    # interleaving with a concurrent devmon process's read_and_consume()
+    # read+truncate pair, which would otherwise silently wipe this event
+    # before it's ever read. Best-effort: a failed append (lock contention
+    # exhausted) is silent, matching this command's non-blocking convention.
+    append_event(log_path, json.dumps(event))
 
     console.print("[green]Test pass recorded![/green] XP will be awarded on next devmon invocation.")
