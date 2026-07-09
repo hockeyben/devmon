@@ -1,0 +1,8 @@
+{
+  "charms": [
+    {"charm_id": "charm_focus", "name": "Focus Charm", "bonus_type": "attack", "bonus_value": 0.10},
+    {"charm_id": "charm_grind", "name": "Grind Charm", "bonus_type": "xp", "bonus_value": 0.10},
+    {"charm_id": "charm_scavenger", "name": "Scavenger Charm", "bonus_type": "material_drop", "bonus_value": 0.10},
+    {"charm_id": "charm_snare", "name": "Snare Charm", "bonus_type": "capture_tier", "bonus_value": 1.0}
+  ]
+}

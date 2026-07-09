@@ -277,6 +277,12 @@ class GameState(BaseModel):
     """Skin-unlock notifications awaiting display on next invocation
     (mirrors pending_badge_unlocks)."""
 
+    # Dungeon system -- equippable charms
+    equipped_charms: list[str] = Field(default_factory=list)
+    """charm_ids currently equipped, max length 3. Charms are also present
+    in inventory (as a regular item) -- equipping does NOT consume the
+    inventory copy, only marks it active (unequip is always possible)."""
+
     @classmethod
     def new_game(cls, player_name: str) -> "GameState":
         """Bootstrap a fresh game state for a new player (SAVE-01 fresh install)."""
