@@ -1,7 +1,7 @@
 {
   "id": "insight_scanner",
   "name": "Insight Scanner",
-  "category": "potion",
+  "category": "dungeon_item",
   "price": 30,
   "sold_in_shop": true,
   "effect_description": "Gives a qualitative read on the next room's threat.",

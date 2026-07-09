@@ -21,12 +21,14 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-ItemCategory = Literal["capsule", "potion", "booster", "gear", "material"]
+ItemCategory = Literal["capsule", "potion", "booster", "gear", "material", "dungeon_item"]
 """'gear' (Phase A1): persistent, never-consumed items whose effect is
 "owning >=1 makes it active" — e.g. the Medibot Module. Distinct from
 'booster', which is consumed and grants a time-limited buff.
 'material' (Phase A2): crafting ingredient — dropped from battle wins,
-never directly usable, spent by engine.crafting.craft()."""
+never directly usable, spent by engine.crafting.craft().
+'dungeon_item' (dungeon-system plan): consumables usable mid-dungeon-run
+(Ration, Insight Scanner) — see engine.dungeon_items."""
 
 
 class ItemDefinition(BaseModel):

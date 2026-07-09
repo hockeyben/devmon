@@ -552,12 +552,12 @@ def test_items_exits_ok(tmp_save_dir):
 # ---------------------------------------------------------------------------
 
 def test_item_loader_load_all_items_returns_twenty() -> None:
-    """load_all_items() returns exactly 20 items (9 pre-Phase-A2 + root_capsule
-    + 10 crafting materials)."""
+    """load_all_items() returns exactly 22 items (9 pre-Phase-A2 + root_capsule
+    + 10 crafting materials + 2 dungeon-system items: ration, insight_scanner)."""
     from devmon.engine.item_loader import load_all_items
 
     items = load_all_items()
-    assert len(items) == 20, f"Expected 20 items, got {len(items)}: {list(items.keys())}"
+    assert len(items) == 22, f"Expected 22 items, got {len(items)}: {list(items.keys())}"
 
 
 def test_item_loader_keys_match_ids() -> None:
@@ -586,6 +586,8 @@ def test_item_loader_keys_match_ids() -> None:
         "kernel_fragment",
         "void_shard",
         "root_of_all",
+        "ration",
+        "insight_scanner",
     }
     assert set(items.keys()) == expected_ids
 

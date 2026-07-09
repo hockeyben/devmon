@@ -1,7 +1,7 @@
 {
   "id": "ration",
   "name": "Ration",
-  "category": "potion",
+  "category": "dungeon_item",
   "price": 20,
   "sold_in_shop": true,
   "effect_description": "Heals your party mid-dungeon without needing to leave.",
