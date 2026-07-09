@@ -12,9 +12,13 @@ cost.total_lines_added/removed, workspace.current_dir) and prints:
      locally, reusing only the bar segment constants from
      `daemon.frames` -- see module note below on width-safe glyphs), or a
      WILD DEVMON encounter row with a plain (non-hyperlinked) "[battle]"
-     label -- OSC 8 hyperlinks were removed (see fix note below); the icon
-     and label text render identically, just without the clickable escape
-     sequences.
+     label -- OSC 8 hyperlinks were removed (see fix note below); the
+     label text renders identically, just without the clickable escape
+     sequences. Every row variant leads with a live "+N XP" marker (see
+     `_turn_xp_marker`/`_turn_xp_estimate`) showing XP earned since your
+     last message -- this replaced an earlier clickable [≡] app-opener
+     icon (user request 2026-07-09; opening the app is `devmon play`/the
+     desktop icon/`/devmon app` now, unaffected by this row).
 
 Width-safe glyphs: statusline rows use ONLY unambiguous width-1 characters
 (anything below U+2600, plus the ▰▱ bar chars U+25B0/U+25B1) -- never the
@@ -56,9 +60,11 @@ import typer
 
 # OSC 8 hyperlinks were removed from every row builder below (some terminals
 # mis-render the escape sequences, corrupting the statusline row). The
-# "battle" label and app-opener icon keep their exact visible text/styling
-# (bold-yellow "[battle]", dim "[≡]") -- just no longer wrapped in a
-# clickable OSC 8 link.
+# "battle" label keeps its exact visible text/styling (bold-yellow
+# "[battle]") -- just no longer wrapped in a clickable OSC 8 link. The old
+# clickable [≡] app-opener icon was removed entirely (not just unlinked)
+# per user request 2026-07-09 -- see _turn_xp_marker below for what
+# replaced it.
 _BOLD_YELLOW = "\033[1;33m"
 _BRIGHT_YELLOW = "\033[93m"
 _CYAN = "\033[36m"
@@ -102,14 +108,13 @@ def _accent_code(name: "str | None") -> str:
 # extra character, never a new glyph (ord('+') well below 0x2600).
 _AURA_MARKER = " \033[2m+\033[0m"
 
-# App-opener icon: the very first visible glyph of the FULL idle row only
-# (never the compact row, never either encounter row variant). U+2261
-# "IDENTICAL TO" (ord 0x2261 < 0x2600) is width-safe under this file's own
-# glyph rule. Dim-styled (not bold/colored like the battle label) since this
-# is a secondary, always-present affordance rather than an urgent call to
-# action. No longer OSC 8-linked (see removal note above) -- plain dim text.
-_APP_ICON = "≡"
-_APP_ICON_LINK = f"\033[2m[{_APP_ICON}]\033[0m"
+def _turn_xp_marker(turn_xp: int) -> str:
+    """Build the leading 'this turn's XP so far' marker -- the very first
+    visible glyph of EVERY row variant, replacing the old [≡] app-opener
+    icon (removed per user request 2026-07-09; opening the app is now only
+    `devmon play`/the desktop icon/`/devmon app`, all unaffected by this
+    row). Plain ASCII, dim-styled -- width-safe (every character < U+2600)."""
+    return f"\033[2m+{max(0, turn_xp)} XP\033[0m"
 
 
 def _read_stdin_payload() -> tuple[bytes, dict]:
@@ -208,6 +213,7 @@ def _normal_row(
     prestige_count: int = 0,
     accent: "str | None" = None,
     aura_active: bool = False,
+    turn_xp: int = 0,
 ) -> str:
     """Build the idle Lv./xp-bar row, built locally (not via
     daemon.frames.build_status_strip -- that surface renders the daemon's
@@ -229,6 +235,10 @@ def _normal_row(
     appends a single dim '+' marker after the percent when True (an owned
     mythic's aura is active) -- False (the default) is a byte-identical
     no-op versus the pre-Phase-E row.
+
+    `turn_xp` (2026-07-09): live estimate of XP earned since your last
+    message (see `_turn_xp_estimate`), rendered via `_turn_xp_marker` as the
+    leading element of the row -- replaces the old [≡] app-opener icon.
     """
     from devmon.daemon.frames import (
         compute_bar_progress,
@@ -244,6 +254,7 @@ def _normal_row(
     rank_tag = f"\033[2m{_rank_tag(level, badge_count, prestige_count)}\033[0m"
     accent_code = _accent_code(accent)
     marker = _AURA_MARKER if aura_active else ""
+    turn_marker = _turn_xp_marker(turn_xp)
 
     if use_emoji:
         bar = (
@@ -251,47 +262,49 @@ def _normal_row(
             + (STRIP_BAR_EMPTY_EMOJI * empty)
         )
         glyph = f"{accent_code}{_UP_ARROW}{_RESET}"
-        return f"{_APP_ICON_LINK} {rank_tag}{glyph} Lv.{level} {bar} {pct}%{marker}"
+        return f"{turn_marker} {rank_tag}{glyph} Lv.{level} {bar} {pct}%{marker}"
 
     bar = (
         f"{accent_code}{STRIP_BAR_FILLED_ASCII * filled}{_RESET}{_CYAN}"
         + (STRIP_BAR_EMPTY_ASCII * empty)
     )
     text = f"DevMon Lv.{level} [{bar}] {pct}%"
-    return f"{_APP_ICON_LINK} {rank_tag}{_CYAN}{text}{_RESET}{marker}"
+    return f"{turn_marker} {rank_tag}{_CYAN}{text}{_RESET}{marker}"
 
 
-def _normal_row_compact(level: int, earned: int, needed: int, use_emoji: bool) -> str:
+def _normal_row_compact(
+    level: int, earned: int, needed: int, use_emoji: bool, turn_xp: int = 0
+) -> str:
     """Narrow-terminal variant of the idle row: level + percent, no bar.
-    Carries the [≡] app opener too -- the opener must be reachable on EVERY
-    row variant (a player whose statusline sat on the encounter/compact rows
-    otherwise never sees a way into the app)."""
+    Carries the turn-XP marker too -- it must be reachable on EVERY row
+    variant, same as the [≡] app opener it replaced."""
     from devmon.daemon.frames import compute_bar_progress
 
     _, pct = compute_bar_progress(earned, needed)
+    turn_marker = _turn_xp_marker(turn_xp)
     if use_emoji:
         glyph = f"{_BRIGHT_YELLOW}{_UP_ARROW}{_RESET}"
-        return f"{_APP_ICON_LINK} {glyph} Lv.{level} {pct}%"
-    return f"{_APP_ICON_LINK} {_CYAN}DevMon Lv.{level} {pct}%{_RESET}"
+        return f"{turn_marker} {glyph} Lv.{level} {pct}%"
+    return f"{turn_marker} {_CYAN}DevMon Lv.{level} {pct}%{_RESET}"
 
 
-def _encounter_row(use_emoji: bool) -> str:
+def _encounter_row(use_emoji: bool, turn_xp: int = 0) -> str:
     """Build the wild-encounter row with a bold-yellow `[battle]` label
     (component 3 -- registered via `devmon protocol install`; no longer
     OSC 8-linked, see removal note above). Width-safe: "(!)" replaces the
     ambiguous-width ⚠/⚔ glyphs; the em dash (U+2014) is unambiguous width-1.
-    Also carries the [≡] app opener -- encounters can sit queued for a long
-    time, and the opener must never disappear with them."""
+    Also carries the turn-XP marker -- encounters can sit queued for a long
+    time, and it must never disappear with them."""
     prefix = "(!) WILD DEVMON — " if use_emoji else "(!) WILD DEVMON - "
     label = f"{_BOLD_YELLOW}[battle]{_RESET}"
-    return f"{_APP_ICON_LINK} {prefix}{label}"
+    return f"{_turn_xp_marker(turn_xp)} {prefix}{label}"
 
 
-def _encounter_row_compact(use_emoji: bool) -> str:
+def _encounter_row_compact(use_emoji: bool, turn_xp: int = 0) -> str:
     """Narrow-terminal variant of the encounter row: the `[battle]` label
-    plus the [≡] app opener -- identical in emoji and ascii mode (no glyph
+    plus the turn-XP marker -- identical in emoji and ascii mode (no glyph
     to swap)."""
-    return f"{_APP_ICON_LINK} {_BOLD_YELLOW}[battle]{_RESET}"
+    return f"{_turn_xp_marker(turn_xp)} {_BOLD_YELLOW}[battle]{_RESET}"
 
 
 def _effective_cols(config: dict) -> int:
@@ -372,6 +385,126 @@ def _payload_int(container: dict, key: str) -> int:
         return 0
 
 
+def _extract_metrics(payload: dict) -> tuple[int, int, int, int]:
+    """Pull the four cumulative-since-session-start counters both the
+    banked XP bridge and the live turn-XP estimate key off of: (lines
+    added, lines removed, output tokens, API-active ms). Shared so the two
+    features never drift out of sync on which payload fields they read."""
+    cost = payload.get("cost") or {}
+    ctx = payload.get("context_window") or {}
+    return (
+        _payload_int(cost, "total_lines_added"),
+        _payload_int(cost, "total_lines_removed"),
+        _payload_int(ctx, "total_output_tokens"),
+        _payload_int(cost, "total_api_duration_ms"),
+    )
+
+
+_TURN_IDLE_THRESHOLD = 3
+"""Consecutive statusline polls with zero API-duration growth before a gap
+is treated as "between turns" (waiting on you to type) rather than a normal
+in-turn pause. At refreshInterval=1 this is ~3+ seconds of no API activity
+-- long enough that a brief lull mid-turn (Claude reading a tool result,
+etc.) doesn't falsely reset the counter, short enough that going idle
+after a real turn ends is detected within a few seconds."""
+
+
+def _turn_xp_estimate(payload: dict, save_path: Path, config: dict) -> int:
+    """Live, unbanked estimate of XP earned since your last message.
+
+    Claude Code's statusline payload carries no explicit "new turn
+    started" signal -- no turn counter, no transcript reference. The only
+    proxy available is cost.total_api_duration_ms, which only grows while
+    Claude is actively working and sits flat while it's waiting on you.
+    This treats "API activity resumed after sitting flat for
+    _TURN_IDLE_THRESHOLD consecutive polls" as a turn boundary: the
+    accumulator baseline resets to the last-seen snapshot (i.e. the moment
+    right before the new turn's first unit of work), so the returned
+    estimate starts counting up from 0 for the new turn.
+
+    Uses its own per-session state file (a SEPARATE file from `_xp_bridge`'s
+    -- ".turn.json" suffix -- so this display-only, unbanked estimate can
+    never perturb the real banked-XP pipeline's state, and vice versa).
+
+    Unlike `_xp_bridge`, this has NO min-burst gate -- it's a live readout,
+    not an emission decision, so small/zero values are shown as-is (a
+    player mid-turn with barely any activity yet should see "+0 XP", not
+    have the marker silently vanish).
+
+    All failure paths return 0 -- this must never affect (or block) the
+    row that's about to print.
+    """
+    try:
+        session_id = payload.get("session_id")
+        if not session_id:
+            return 0
+
+        added, removed, tokens_total, api_ms_total = _extract_metrics(payload)
+
+        session_dir = save_path.parent / "claude_sessions"
+        turn_file = session_dir / f"{session_id}.turn.json"
+
+        state = {}
+        if turn_file.exists():
+            try:
+                loaded = json.loads(turn_file.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    state = loaded
+            except Exception:
+                state = {}
+
+        baseline = state.get("baseline") or {}
+        last_poll = state.get("last_poll") or {}
+        idle_streak = state.get("idle_streak", 0)
+        try:
+            idle_streak = max(0, int(idle_streak))
+        except Exception:
+            idle_streak = 0
+
+        # First-ever poll for this session: baseline at current values so
+        # the very first row shows "+0 XP" rather than a spurious burst
+        # computed against a phantom zero baseline.
+        if not baseline:
+            baseline = {"lines_added": added, "lines_removed": removed, "tokens": tokens_total, "api_ms": api_ms_total}
+        if not last_poll:
+            last_poll = dict(baseline)
+
+        prev_api_ms = max(0, int(last_poll.get("api_ms", 0)))
+        delta_api_ms_this_poll = max(0, api_ms_total - prev_api_ms)
+
+        if delta_api_ms_this_poll > 0:
+            if idle_streak >= _TURN_IDLE_THRESHOLD:
+                # Activity resumed after a real idle gap -- a new turn just
+                # started. Baseline to the snapshot as of the PREVIOUS poll
+                # (the state right before this turn's first work landed).
+                baseline = dict(last_poll)
+            idle_streak = 0
+        else:
+            idle_streak += 1
+
+        delta_lines = max(0, added - int(baseline.get("lines_added", 0))) + max(
+            0, removed - int(baseline.get("lines_removed", 0))
+        )
+        delta_tokens = max(0, tokens_total - int(baseline.get("tokens", 0)))
+        delta_api_ms = max(0, api_ms_total - int(baseline.get("api_ms", 0)))
+
+        from devmon.engine.progression import compute_ai_burst_xp
+        estimate = compute_ai_burst_xp(delta_lines, delta_tokens, delta_api_ms, config)
+
+        session_dir.mkdir(parents=True, exist_ok=True)
+        turn_file.write_text(
+            json.dumps({
+                "baseline": baseline,
+                "last_poll": {"lines_added": added, "lines_removed": removed, "tokens": tokens_total, "api_ms": api_ms_total},
+                "idle_streak": idle_streak,
+            }),
+            encoding="utf-8",
+        )
+        return max(0, estimate)
+    except Exception:
+        return 0
+
+
 def _xp_bridge(payload: dict, save_path: Path) -> None:
     """Diff Claude's session metrics against a per-session state file and
     append one `ai_code` event carrying the deltas.
@@ -395,12 +528,7 @@ def _xp_bridge(payload: dict, save_path: Path) -> None:
         if not session_id:
             return  # No session to key state on -- skip the bridge entirely
 
-        cost = payload.get("cost") or {}
-        ctx = payload.get("context_window") or {}
-        added = _payload_int(cost, "total_lines_added")
-        removed = _payload_int(cost, "total_lines_removed")
-        tokens_total = _payload_int(ctx, "total_output_tokens")
-        api_ms_total = _payload_int(cost, "total_api_duration_ms")
+        added, removed, tokens_total, api_ms_total = _extract_metrics(payload)
 
         workspace = payload.get("workspace") or {}
         cwd = workspace.get("current_dir") or payload.get("cwd") or os.getcwd()
@@ -591,6 +719,15 @@ def statusline(
 
         snapshot = dict(_DEFAULT_SNAPSHOT)
 
+    turn_xp = 0
+    try:
+        if save_path is None:
+            from devmon.daemon.indicator import _resolve_save_path
+            save_path = _resolve_save_path()
+        turn_xp = _turn_xp_estimate(payload, save_path, config)
+    except Exception:
+        turn_xp = 0
+
     try:
         level = snapshot.get("level", 1)
         earned = snapshot.get("earned", 0)
@@ -600,14 +737,17 @@ def statusline(
         accent = snapshot.get("accent")
         aura_active = bool(snapshot.get("aura_active", False))
         if snapshot.get("encounter"):
-            candidates = [_encounter_row(use_emoji), _encounter_row_compact(use_emoji)]
+            candidates = [
+                _encounter_row(use_emoji, turn_xp=turn_xp),
+                _encounter_row_compact(use_emoji, turn_xp=turn_xp),
+            ]
         else:
             candidates = [
                 _normal_row(
                     level, earned, needed, use_emoji, badge_count, prestige_count,
-                    accent=accent, aura_active=aura_active,
+                    accent=accent, aura_active=aura_active, turn_xp=turn_xp,
                 ),
-                _normal_row_compact(level, earned, needed, use_emoji),
+                _normal_row_compact(level, earned, needed, use_emoji, turn_xp=turn_xp),
             ]
         lines = _compose_lines(chain_lines, candidates, _effective_cols(config))
     except Exception:

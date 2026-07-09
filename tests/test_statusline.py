@@ -501,13 +501,16 @@ class TestStatuslineSkinAccentAndAuraMarker:
         assert _BRIGHT_YELLOW in row_default  # unrecognized/None accent falls back
 
     def test_aura_marker_appears_only_when_active(self):
-        from devmon.commands.statusline import _normal_row
+        from devmon.commands.statusline import _AURA_MARKER, _normal_row
 
         with_aura = _normal_row(5, 40, 100, use_emoji=True, aura_active=True)
         without_aura = _normal_row(5, 40, 100, use_emoji=True, aura_active=False)
         assert with_aura != without_aura
-        assert "+" in with_aura
-        assert "+" not in without_aura
+        # Both rows carry the leading "+0 XP" turn marker regardless of aura
+        # state -- the aura marker specifically is the trailing dim '+'
+        # appended after the percent (_AURA_MARKER), so check for THAT.
+        assert with_aura.endswith(_AURA_MARKER)
+        assert not without_aura.endswith(_AURA_MARKER)
 
     def test_aura_marker_and_accent_are_width_safe(self):
         from devmon.commands.statusline import _normal_row
@@ -627,10 +630,11 @@ class TestStatuslineIndicatorSnapshotPhaseE:
         assert snapshot["aura_active"] is False
 
 
-class TestStatuslineAppIcon:
-    """The FULL idle row gets a dim, clickable `[≡]` app-opener icon as its
-    leftmost glyph, OSC 8-linked to `devmon://app` -- a separate link target
-    from the encounter row's `devmon://battle` link, which stays untouched."""
+class TestStatuslineTurnXpMarker:
+    """Every row variant leads with a dim "+N XP" marker showing XP earned
+    since the last message -- replaces the old clickable [≡] app-opener
+    icon entirely (user request 2026-07-09; opening the app is now
+    `devmon play`/the desktop icon/`/devmon app`, unaffected by this row)."""
 
     def _assert_width_safe(self, text: str) -> None:
         stripped = _strip(text)
@@ -639,43 +643,65 @@ class TestStatuslineAppIcon:
                 f"ambiguous-width codepoint {ch!r} (U+{ord(ch):04X}) in row: {text!r}"
             )
 
-    def test_full_row_has_app_icon(self):
+    def test_app_icon_is_fully_removed(self):
+        """The old [≡] glyph must not appear anywhere -- it wasn't just
+        unlinked, it was removed."""
+        from devmon.commands.statusline import (
+            _encounter_row,
+            _encounter_row_compact,
+            _normal_row,
+            _normal_row_compact,
+        )
+
+        for use_emoji in (True, False):
+            assert "≡" not in _strip(_normal_row(5, 40, 100, use_emoji))
+            assert "≡" not in _strip(_normal_row_compact(5, 40, 100, use_emoji))
+            assert "≡" not in _strip(_encounter_row(use_emoji))
+            assert "≡" not in _strip(_encounter_row_compact(use_emoji))
+
+    def test_full_row_has_turn_xp_marker(self):
         from devmon.commands.statusline import _normal_row
 
         for use_emoji in (True, False):
-            row = _normal_row(5, 40, 100, use_emoji)
-            assert "≡" in _strip(row)
+            row = _normal_row(5, 40, 100, use_emoji, turn_xp=12)
+            assert "+12 XP" in _strip(row)
             assert "\x1b]8" not in row
 
-    def test_app_icon_is_leftmost_visible_glyph_of_full_row(self):
+    def test_turn_xp_marker_is_leftmost_visible_element_of_full_row(self):
         from devmon.commands.statusline import _normal_row
 
-        row = _normal_row(5, 40, 100, use_emoji=False)
+        row = _normal_row(5, 40, 100, use_emoji=False, turn_xp=7)
         stripped = _strip(row)
-        assert stripped.lstrip().startswith("[≡]")
+        assert stripped.lstrip().startswith("+7 XP")
 
-    def test_compact_row_has_app_icon(self):
-        """The opener must be reachable on EVERY row variant -- a statusline
-        that sits on the compact row would otherwise offer no way into the
-        app (user report 2026-07-08)."""
+    def test_turn_xp_defaults_to_zero_and_is_never_negative(self):
+        from devmon.commands.statusline import _normal_row, _turn_xp_marker
+
+        row = _normal_row(5, 40, 100, use_emoji=False)
+        assert "+0 XP" in _strip(row)
+        assert _turn_xp_marker(-5) == _turn_xp_marker(0)
+
+    def test_compact_row_has_turn_xp_marker(self):
+        """The marker must be reachable on EVERY row variant -- a statusline
+        that sits on the compact row would otherwise never show it."""
         from devmon.commands.statusline import _normal_row_compact
 
         for use_emoji in (True, False):
-            row = _normal_row_compact(5, 40, 100, use_emoji)
-            assert "≡" in _strip(row)
+            row = _normal_row_compact(5, 40, 100, use_emoji, turn_xp=3)
+            assert "+3 XP" in _strip(row)
             assert "\x1b]8" not in row
 
-    def test_encounter_rows_have_app_icon_and_battle_label_untouched(self):
-        """Encounters can sit queued for a long time; the app opener must not
+    def test_encounter_rows_have_turn_xp_marker_and_battle_label_untouched(self):
+        """Encounters can sit queued for a long time; the marker must not
         vanish with them. The battle label stays intact alongside it (no
         longer OSC 8-linked)."""
         from devmon.commands.statusline import _encounter_row, _encounter_row_compact
 
         for use_emoji in (True, False):
-            full = _encounter_row(use_emoji)
-            compact = _encounter_row_compact(use_emoji)
-            assert "≡" in _strip(full)
-            assert "≡" in _strip(compact)
+            full = _encounter_row(use_emoji, turn_xp=5)
+            compact = _encounter_row_compact(use_emoji, turn_xp=5)
+            assert "+5 XP" in _strip(full)
+            assert "+5 XP" in _strip(compact)
             assert "[battle]" in _strip(full)
             assert "[battle]" in _strip(compact)
             assert "\x1b]8" not in full
@@ -714,3 +740,131 @@ class TestStatuslineRankTagIntegration:
         result = runner.invoke(app, ["statusline"], input=b"{}")
         assert result.exit_code == 0
         assert "[Sr]" in _strip(result.output)
+
+
+class TestTurnXpEstimate:
+    """_turn_xp_estimate: live, unbanked "XP since your last message"
+    readout. No explicit turn-boundary signal exists in Claude Code's
+    statusline payload, so a turn boundary is approximated as "API activity
+    resumed after sitting flat for _TURN_IDLE_THRESHOLD consecutive polls"
+    -- see the function's own docstring for the full rationale."""
+
+    def _payload(self, session_id="sess-turn", lines_added=0, lines_removed=0, tokens=0, api_ms=0):
+        return {
+            "session_id": session_id,
+            "cost": {"total_lines_added": lines_added, "total_lines_removed": lines_removed, "total_api_duration_ms": api_ms},
+            "context_window": {"total_output_tokens": tokens},
+        }
+
+    def _config(self):
+        from devmon.config.defaults import DEFAULT_CONFIG
+        return DEFAULT_CONFIG
+
+    def test_first_poll_returns_zero(self, tmp_save_dir):
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        estimate = _turn_xp_estimate(
+            self._payload(tokens=500, api_ms=5000), save_path, self._config()
+        )
+        assert estimate == 0
+
+    def test_activity_within_a_turn_accumulates(self, tmp_save_dir):
+        """Two consecutive active polls (no idle gap between them) keep
+        adding to the SAME turn's total -- it doesn't reset every poll."""
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        # First poll establishes the baseline (returns 0, per above).
+        _turn_xp_estimate(self._payload(tokens=0, api_ms=0), save_path, self._config())
+        # Second poll: real growth, no idle gap yet (idle_streak stayed 0).
+        second = _turn_xp_estimate(
+            self._payload(tokens=3000, api_ms=90_000), save_path, self._config()
+        )
+        assert second > 0
+        # Third poll: more growth on top -- must be >= second, not reset to
+        # a smaller delta, since we're still in the same turn.
+        third = _turn_xp_estimate(
+            self._payload(tokens=6000, api_ms=180_000), save_path, self._config()
+        )
+        assert third >= second
+
+    def test_idle_gap_resets_the_baseline_for_the_next_turn(self, tmp_save_dir):
+        """After _TURN_IDLE_THRESHOLD consecutive no-growth polls (Claude
+        idle, waiting on the user), the next poll with real growth starts a
+        FRESH turn -- its estimate reflects only the new activity, not the
+        old turn's total plus the new activity."""
+        from devmon.commands.statusline import _TURN_IDLE_THRESHOLD, _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        config = self._config()
+
+        # Turn 1: baseline, then a real burst.
+        _turn_xp_estimate(self._payload(tokens=0, api_ms=0), save_path, config)
+        turn1_total = _turn_xp_estimate(self._payload(tokens=6000, api_ms=180_000), save_path, config)
+        assert turn1_total > 0
+
+        # Idle gap: api_ms/tokens stay flat for _TURN_IDLE_THRESHOLD polls.
+        for _ in range(_TURN_IDLE_THRESHOLD):
+            _turn_xp_estimate(self._payload(tokens=6000, api_ms=180_000), save_path, config)
+
+        # Turn 2 begins: a small burst, much smaller than turn 1's total.
+        turn2_first = _turn_xp_estimate(
+            self._payload(tokens=6250, api_ms=185_000), save_path, config
+        )
+        assert turn2_first < turn1_total
+
+    def test_no_session_id_returns_zero(self, tmp_save_dir):
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        payload = {"cost": {"total_lines_added": 500}}  # no session_id
+        assert _turn_xp_estimate(payload, save_path, self._config()) == 0
+
+    def test_never_negative(self, tmp_save_dir):
+        from devmon.commands.statusline import _turn_xp_estimate
+
+        save_path = tmp_save_dir / "save.json"
+        estimate = _turn_xp_estimate(self._payload(), save_path, self._config())
+        assert estimate >= 0
+
+    def test_uses_separate_state_file_from_banked_xp_bridge(self, tmp_save_dir):
+        """The turn estimate's state file must be distinct from _xp_bridge's
+        -- they track different things (live unbanked estimate vs. banked
+        emission state) and must never perturb each other."""
+        from devmon.commands.statusline import _turn_xp_estimate, _xp_bridge
+
+        save_path = tmp_save_dir / "save.json"
+        payload = self._payload(lines_added=50, tokens=1000, api_ms=30_000)
+
+        _turn_xp_estimate(payload, save_path, self._config())
+        _xp_bridge(payload, save_path)
+
+        session_dir = tmp_save_dir / "claude_sessions"
+        assert (session_dir / "sess-turn.turn.json").exists()
+        assert (session_dir / "sess-turn.json").exists()
+
+    def test_statusline_command_shows_nonzero_turn_xp_after_activity(self, tmp_save_dir, monkeypatch):
+        """End-to-end: a statusline invocation with real cost/token growth
+        renders a "+N XP" marker with N > 0 in its output."""
+        import devmon.commands.statusline as statusline_mod
+        monkeypatch.setattr(statusline_mod, "_throttled_sync", lambda config: None)
+
+        from devmon.main import app
+        runner = CliRunner()
+
+        payload1 = json.dumps({"session_id": "sess-e2e", "cost": {"total_api_duration_ms": 0}, "context_window": {"total_output_tokens": 0}}).encode("utf-8")
+        runner.invoke(app, ["statusline"], input=payload1)
+
+        payload2 = json.dumps({
+            "session_id": "sess-e2e",
+            "cost": {"total_api_duration_ms": 180_000},
+            "context_window": {"total_output_tokens": 6000},
+        }).encode("utf-8")
+        result2 = runner.invoke(app, ["statusline"], input=payload2)
+        assert result2.exit_code == 0
+        stripped = _strip(result2.output)
+        assert "+0 XP" not in stripped
+        import re as _re
+        match = _re.search(r"\+(\d+) XP", stripped)
+        assert match is not None and int(match.group(1)) > 0
