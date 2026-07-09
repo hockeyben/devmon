@@ -38,9 +38,9 @@
         "material_id": "scrap_silicon",
         "qty_required": 8,
         "reward_currency": 40,
-        "reward_item_id": null,
-        "reward_item_qty": 0,
-        "description": "We're bootstrapped. Bring 8 Scrap Silicon and I'll pay you in runway."
+        "reward_item_id": "cache_key",
+        "reward_item_qty": 1,
+        "description": "We're bootstrapped. Bring 8 Scrap Silicon and I'll pay you in runway -- and the spare key to our old cache server, if you're into that kind of thing."
       }
     },
     {

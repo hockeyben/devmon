@@ -552,12 +552,13 @@ def test_items_exits_ok(tmp_save_dir):
 # ---------------------------------------------------------------------------
 
 def test_item_loader_load_all_items_returns_twenty() -> None:
-    """load_all_items() returns exactly 22 items (9 pre-Phase-A2 + root_capsule
-    + 10 crafting materials + 2 dungeon-system items: ration, insight_scanner)."""
+    """load_all_items() returns exactly 23 items (9 pre-Phase-A2 + root_capsule
+    + 10 crafting materials + 2 dungeon-system items: ration, insight_scanner
+    + cache_key, the termina_meadows side-dungeon entry key)."""
     from devmon.engine.item_loader import load_all_items
 
     items = load_all_items()
-    assert len(items) == 22, f"Expected 22 items, got {len(items)}: {list(items.keys())}"
+    assert len(items) == 23, f"Expected 23 items, got {len(items)}: {list(items.keys())}"
 
 
 def test_item_loader_keys_match_ids() -> None:
@@ -588,6 +589,7 @@ def test_item_loader_keys_match_ids() -> None:
         "root_of_all",
         "ration",
         "insight_scanner",
+        "cache_key",
     }
     assert set(items.keys()) == expected_ids
 

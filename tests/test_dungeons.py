@@ -133,3 +133,26 @@ def test_advance_dungeon_room_clears_run_on_boss_clear(tmp_save_dir):
     assert "green" in result.lower() or "breathes" in result.lower()
     assert state.dungeon_run is None
     assert state.dungeon_log["termina_meadows_story"] == "complete"
+
+
+def test_side_dungeon_unlocked_by_completing_voss_fetch_quest(tmp_save_dir):
+    """termina_meadows_side_01 is gated on owning a cache_key -- Voss's
+    (the termina_meadows resident NPC) weekly fetch quest grants exactly
+    that item as its reward, so turning it in is the intended way to
+    unlock the side dungeon."""
+    from devmon.models.state import GameState
+    from devmon.engine.dungeons import available_dungeons
+    from devmon.engine.npc_loader import load_all_npcs
+    from devmon.engine.npcs import turn_in_quest
+
+    state = GameState.new_game("Ash")
+    state.player.level = 5
+    assert not any(d.dungeon_id == "termina_meadows_side_01" for d in available_dungeons(state))
+
+    voss = load_all_npcs()["voss"]
+    state.inventory[voss.quest.material_id] = voss.quest.qty_required
+    ok, msg = turn_in_quest(state, voss)
+    assert ok is True
+    assert state.inventory.get("cache_key", 0) == 1
+
+    assert any(d.dungeon_id == "termina_meadows_side_01" for d in available_dungeons(state))

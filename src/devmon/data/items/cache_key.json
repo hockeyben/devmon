@@ -1,0 +1,9 @@
+{
+  "id": "cache_key",
+  "name": "Cache Key",
+  "category": "gear",
+  "price": 0,
+  "sold_in_shop": false,
+  "effect_description": "Unlocks entry to The Leaky Cache dungeon (termina_meadows). Never used up.",
+  "icon": "[K]"
+}
