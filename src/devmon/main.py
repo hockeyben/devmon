@@ -23,6 +23,7 @@ from devmon.commands import battle as battle_cmd
 from devmon.commands import candy as candy_cmd
 from devmon.commands import charms as charms_cmd
 from devmon.commands import craft as craft_cmd
+from devmon.commands import dungeon as dungeon_cmd
 from devmon.commands import npcs as npcs_cmd
 from devmon.commands import heal as heal_cmd
 from devmon.commands import indicator as indicator_cmd
@@ -84,6 +85,7 @@ app.add_typer(prestige_cmd.app, name="prestige")
 app.add_typer(indicator_cmd.app, name="indicator")
 app.add_typer(profile_cmd.app, name="profile")
 app.add_typer(charms_cmd.app, name="charms")
+app.add_typer(dungeon_cmd.app, name="dungeon")
 app.add_typer(protocol_cmd.app, name="protocol")
 app.add_typer(skins_cmd.app, name="skins")
 app.command(name="statusline")(statusline_cmd.statusline)

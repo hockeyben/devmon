@@ -1066,3 +1066,47 @@ def test_interactive_battle_unaffordable_ability_is_grayed_out_and_uncallable(tm
     assert result.exit_code == 0, result.output
     assert "not enough energy" in result.output.lower()
     assert "You fled from Pebblite" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Task 6 (dungeon-system plan): dungeon room advancement wired into battle win
+# ---------------------------------------------------------------------------
+
+def test_dungeon_room_win_advances_run(tmp_path, monkeypatch):
+    """Winning a dungeon-pinned battle advances state.dungeon_run.current_room.
+
+    Mirrors test_interactive_attack_win_increments_streak_and_medibot_heals's
+    deterministic-win pattern (force player-first turn order + lethal damage)
+    rather than the "3\n1\n\n" menu-index sequence, since that pattern is the
+    one already proven reliable in this file for a guaranteed one-shot win.
+    """
+    from typer.testing import CliRunner
+    from devmon.commands.battle import app as battle_app
+    from devmon.engine import battle_engine
+    from devmon.engine.dungeons import enter_dungeon
+    from devmon.models.creature import OwnedCreature
+    from devmon.models.state import GameState
+    from devmon.persistence.save import load, save
+
+    monkeypatch.setenv("DEVMON_HOME", str(tmp_path))
+    # Force the player to one-shot the pinned room encounter (deterministic win).
+    monkeypatch.setattr(battle_engine, "determine_turn_order", lambda *a, **k: "player")
+    monkeypatch.setattr(battle_engine, "compute_damage", lambda *a, **k: 9999)
+
+    state = GameState.new_game("Ash")
+    state.player.level = 5
+    state.quest_log["termina_meadows_01"] = "complete"
+    # Give the player a strong party creature before pinning the room.
+    state.creature_collection.append(OwnedCreature(template_id="ember_fox", level=50))
+    state.party.append("ember_fox")
+    state.codex_state["ember_fox"] = "captured"
+    enter_dungeon(state, "termina_meadows_story")
+    save(state)
+
+    runner = CliRunner()
+    result = runner.invoke(battle_app, input="1\n\n")
+    assert result.exit_code == 0, result.output
+
+    reloaded = load()
+    assert reloaded.dungeon_run is not None
+    assert reloaded.dungeon_run.current_room == 1

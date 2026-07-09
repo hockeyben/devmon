@@ -898,6 +898,10 @@ def battle_cmd() -> None:
                         state, QuestEvent(type="defeat", region=state.current_region)
                     ):
                         complete_quest(state, _completed_quest_id)
+                    # Dungeon system: advance an in-progress dungeon run after
+                    # a room/boss win (no-op if no dungeon_run is active).
+                    from devmon.engine.dungeons import advance_dungeon_room
+                    _dungeon_clear_msg = advance_dungeon_room(state)
                     # Quest/achievement rewards grant XP after the first
                     # level check — re-check so reward XP can level up too.
                     player_leveled = check_player_level_up(state.player, _battle_config) or player_leveled
@@ -910,6 +914,8 @@ def battle_cmd() -> None:
                         console.print(f"  [bold green]{medibot_msg}[/bold green]")
                     if loot_msg:
                         console.print(f"  [bold cyan]{loot_msg}[/bold cyan]")
+                    if _dungeon_clear_msg:
+                        console.print(f"  [bold cyan]{_dungeon_clear_msg}[/bold cyan]")
                     for name, new_level in leveled_creatures:
                         console.print(
                             f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
@@ -1156,6 +1162,10 @@ def battle_cmd() -> None:
                         state, QuestEvent(type="defeat", region=state.current_region)
                     ):
                         complete_quest(state, _completed_quest_id)
+                    # Dungeon system: advance an in-progress dungeon run after
+                    # a room/boss win (no-op if no dungeon_run is active).
+                    from devmon.engine.dungeons import advance_dungeon_room
+                    _dungeon_clear_msg = advance_dungeon_room(state)
                     # Quest/achievement rewards grant XP after the first
                     # level check — re-check so reward XP can level up too.
                     player_leveled = check_player_level_up(state.player, _battle_config) or player_leveled
@@ -1168,6 +1178,8 @@ def battle_cmd() -> None:
                         console.print(f"  [bold green]{medibot_msg}[/bold green]")
                     if loot_msg:
                         console.print(f"  [bold cyan]{loot_msg}[/bold cyan]")
+                    if _dungeon_clear_msg:
+                        console.print(f"  [bold cyan]{_dungeon_clear_msg}[/bold cyan]")
                     for name, new_level in leveled_creatures:
                         console.print(
                             f"  [bold yellow]{name} leveled up to level {new_level}![/bold yellow]"
@@ -1365,6 +1377,10 @@ def battle_cmd() -> None:
                         state, QuestEvent(type="capture", species_id=wild.template_id)
                     ):
                         complete_quest(state, _completed_quest_id)
+                    # Dungeon system: advance an in-progress dungeon run after
+                    # a room/boss win (no-op if no dungeon_run is active).
+                    from devmon.engine.dungeons import advance_dungeon_room
+                    _dungeon_clear_msg = advance_dungeon_room(state)
                     # Re-check: reward XP from quests/achievements can level up
                     player_leveled = check_player_level_up(state.player, _capture_config) or player_leveled
                     # Save BEFORE rendering (T-06-09)
@@ -1376,6 +1392,8 @@ def battle_cmd() -> None:
                         console.print(
                             f"  [bold cyan]You reached level {state.player.level}![/bold cyan]"
                         )
+                    if _dungeon_clear_msg:
+                        console.print(f"  [bold cyan]{_dungeon_clear_msg}[/bold cyan]")
                     _auto_heal(state)
                     save(state)
                     battle_active = False
