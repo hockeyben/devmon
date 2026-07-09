@@ -1,0 +1,26 @@
+{
+  "pools": {
+    "termina_meadows_story": {
+      "materials": [["scrap_silicon", 3], ["thermal_paste", 4], ["cooled_slag", 2]],
+      "capsules": [["great_capsule", 5], ["ultra_capsule", 2]],
+      "capsule_chance": 0.5,
+      "dungeon_items": [["ration", 4], ["insight_scanner", 2]],
+      "dungeon_item_chance": 0.35,
+      "charms": [["charm_focus", 1]],
+      "charm_chance": 0.10,
+      "guaranteed_rare_creature_chance": 0.03,
+      "rare_creature_pool": ["cyber_beetle"]
+    },
+    "termina_meadows_side_01": {
+      "materials": [["scrap_silicon", 5], ["copper_trace", 5]],
+      "capsules": [["great_capsule", 5]],
+      "capsule_chance": 0.35,
+      "dungeon_items": [["ration", 5]],
+      "dungeon_item_chance": 0.25,
+      "charms": [],
+      "charm_chance": 0.0,
+      "guaranteed_rare_creature_chance": 0.0,
+      "rare_creature_pool": []
+    }
+  }
+}
