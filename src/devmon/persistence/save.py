@@ -178,6 +178,17 @@ def save(state: GameState) -> None:
     tmp.write_text(state.model_dump_json(indent=2), encoding="utf-8")
     os.replace(tmp, current)
 
+    # Tamper-evident integrity sidecar (Task 6): recompute and persist a
+    # checksum alongside the profile's save.json every time we save.
+    try:
+        from devmon.persistence.integrity import compute_checksum, get_or_create_integrity_key
+        key = get_or_create_integrity_key()
+        checksum = compute_checksum(state, key)
+        (d / "save.integrity").write_text(checksum, encoding="utf-8")
+    except Exception:
+        # Best-effort -- an integrity-write failure must never block a save.
+        pass
+
 
 def load() -> GameState | None:
     """Load GameState from the best available save file.
@@ -234,6 +245,21 @@ def load() -> GameState | None:
             _repair_unknown_creatures(state)
         except Exception:
             pass
+
+        # Tamper-evident integrity check (Task 6): compare the sidecar
+        # checksum against a freshly computed one. A save that predates
+        # this feature (no sidecar) is treated as unflagged, not tampered.
+        try:
+            sidecar = path.parent / "save.integrity"
+            if sidecar.exists():
+                from devmon.persistence.integrity import compute_checksum, get_or_create_integrity_key, verify_checksum
+                key = get_or_create_integrity_key()
+                stored = sidecar.read_text(encoding="utf-8").strip()
+                object.__setattr__(state, "integrity_flagged", not verify_checksum(state, key, stored))
+            else:
+                object.__setattr__(state, "integrity_flagged", False)
+        except Exception:
+            object.__setattr__(state, "integrity_flagged", False)
 
         return state
 

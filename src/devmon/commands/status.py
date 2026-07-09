@@ -167,6 +167,12 @@ def render_status(state: GameState, config: dict, con: Console) -> None:
     con.print(Columns([identity_panel, stats_panel], expand=True))
     con.print(xp_panel)
 
+    # Tamper-evident integrity flag (Task 6). "(!)" is the repo's ASCII-safe
+    # glyph convention (see commands/statusline.py's _encounter_row) -- never
+    # the U+26A0 warning character.
+    if getattr(state, "integrity_flagged", False):
+        con.print(Text("(!) save modified outside DevMon", style="bold red"))
+
 
 def render_levelup_banner(new_level: int, theme: dict, con: Console) -> None:
     """Render a full-width level-up celebration banner.

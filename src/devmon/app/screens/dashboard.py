@@ -161,6 +161,9 @@ class DashboardScreen(Horizontal):
         if auras:
             body.append("\nAuras: " + " ".join(f"+{a}" for a in auras) + "\n", style="green")
 
+        if getattr(state, "integrity_flagged", False):
+            body.append("\n(!) save modified outside DevMon\n", style="bold red")
+
         return body
 
     def _render_party(self, state) -> Table:
